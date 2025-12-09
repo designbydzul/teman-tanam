@@ -16,6 +16,9 @@ export default function Home() {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [plants, setPlants] = useState<Plant[]>([])
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [editName, setEditName] = useState('')
+  const [editType, setEditType] = useState('')
 
   // Fetch plants from database
   const fetchPlants = async () => {
@@ -31,6 +34,74 @@ export default function Home() {
     }
   }
 
+  // Delete plant
+const deletePlant = async (id: number, name: string) => {
+  if (!confirm(`Hapus "${name}"?`)) {
+    return
+  }
+
+  try {
+    const { error } = await supabase
+      .from('plants')
+      .delete()
+      .eq('id', id)
+
+    if (error) throw error
+
+    setMessage(`✅ "${name}" berhasil dihapus!`)
+    fetchPlants() // Refresh the list
+    
+    // Clear message after 3 seconds
+    setTimeout(() => setMessage(''), 3000)
+  } catch (error) {
+    console.error('Error:', error)
+    setMessage('❌ Gagal menghapus tanaman')
+  }
+}
+
+// Start editing
+const startEdit = (plant: Plant) => {
+  setEditingId(plant.id)
+  setEditName(plant.name)
+  setEditType(plant.type || '')
+}
+
+// Save edit
+const saveEdit = async (id: number) => {
+  if (!editName.trim()) {
+    setMessage('❌ Nama tanaman harus diisi!')
+    return
+  }
+
+  try {
+    const { error } = await supabase
+      .from('plants')
+      .update({
+        name: editName.trim(),
+        type: editType.trim() || null
+      })
+      .eq('id', id)
+
+    if (error) throw error
+
+    setMessage('✅ Tanaman berhasil diupdate!')
+    setEditingId(null)
+    fetchPlants()
+    
+    setTimeout(() => setMessage(''), 3000)
+  } catch (error) {
+    console.error('Error:', error)
+    setMessage('❌ Gagal mengupdate tanaman')
+  }
+}
+
+// Cancel edit
+const cancelEdit = () => {
+  setEditingId(null)
+  setEditName('')
+  setEditType('')
+}
+  
   // Load plants when page loads
   useEffect(() => {
     fetchPlants()
@@ -166,25 +237,81 @@ export default function Home() {
           <div className="space-y-3">
             {plants.map((plant) => (
               <div 
-                key={plant.id}
-                className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-semibold text-[#2C2C2C]">
-                      {plant.name}
-                    </h3>
-                    {plant.type && (
-                      <span className="text-sm text-[#666666]">
-                        {plant.type}
-                      </span>
-                    )}
-                  </div>
+  key={plant.id}
+  className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <div 
+  key={plant.id}
+  className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+>
+            {editingId === plant.id ? (
+              // EDIT MODE
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#7CB342]"
+                  placeholder="Nama tanaman"
+                />
+                <input
+                  type="text"
+                  value={editType}
+                  onChange={(e) => setEditType(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#7CB342]"
+                  placeholder="Jenis (optional)"
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => saveEdit(plant.id)}
+                    className="flex-1 bg-[#7CB342] text-white px-4 py-2 rounded hover:bg-[#689F38] transition-colors"
+                  >
+                    💾 Simpan
+                  </button>
+                  <button
+                    onClick={cancelEdit}
+                    className="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300 transition-colors"
+                  >
+                    ❌ Batal
+                  </button>
+                </div>
+              </div>
+            ) : (
+              // VIEW MODE
+              <div className="flex justify-between items-start">
+                <div className="flex-1">
+                  <h3 className="font-semibold text-[#2C2C2C]">
+                    {plant.name}
+                  </h3>
+                  {plant.type && (
+                    <span className="text-sm text-[#666666]">
+                      {plant.type}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-3">
                   <span className="text-xs text-[#999999]">
                     {new Date(plant.created_at).toLocaleDateString('id-ID')}
                   </span>
+                  <button
+                    onClick={() => startEdit(plant)}
+                    className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 p-2 rounded transition-colors"
+                    title="Edit tanaman"
+                  >
+                    ✏️
+                  </button>
+                  <button
+                    onClick={() => deletePlant(plant.id, plant.name)}
+                    className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded transition-colors"
+                    title="Hapus tanaman"
+                  >
+                    🗑️
+                  </button>
                 </div>
               </div>
+            )}
+          </div>
+          </div>
             ))}
           </div>
         </div>
