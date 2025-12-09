@@ -1,26 +1,37 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Teman Tanam Brand Colors */
+  --color-fresh-green: #7CB342;
+  --color-forest-green: #2D5016;
+  --color-cream: #F5F5DC;
+  --color-white: #FFFFFF;
+
+  /* Semantic colors */
+  --background: #F5F5DC;
+  --foreground: #2D5016;
+
+  /* Typography */
+  --font-inter: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-caveat: 'Caveat', cursive, 'Comic Sans MS', sans-serif;
 }
 
 @theme inline {
+  /* Brand Colors */
+  --color-fresh-green: #7CB342;
+  --color-forest-green: #2D5016;
+  --color-cream: #F5F5DC;
+
+  /* Semantic aliases */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-primary: #7CB342;
+  --color-primary-dark: #689F38;
+  --color-secondary: #2D5016;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-inter);
 }
