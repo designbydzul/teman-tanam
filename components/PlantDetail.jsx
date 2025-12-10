@@ -13,12 +13,14 @@ import {
   Plant,
   X
 } from '@phosphor-icons/react';
+import DiagnosaHama from './DiagnosaHama';
 
 const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
   const [activeTab, setActiveTab] = useState('perawatan');
   const [showMenu, setShowMenu] = useState(false);
   const [quickTipsExpanded, setQuickTipsExpanded] = useState(false);
   const [showImagePreview, setShowImagePreview] = useState(false);
+  const [showDiagnosaHama, setShowDiagnosaHama] = useState(false);
 
   // Normalize plant data structure
   const plantData = plant ? {
@@ -120,7 +122,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
         handleActionLog('fertilize');
         break;
       case 'diagnose':
-        console.log('Navigate to diagnosis');
+        setShowDiagnosaHama(true);
         break;
       case 'edit':
         if (onEdit) onEdit(plantData);
@@ -1037,6 +1039,14 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Diagnosa Hama Screen */}
+      {showDiagnosaHama && (
+        <DiagnosaHama
+          plant={plant}
+          onBack={() => setShowDiagnosaHama(false)}
+        />
+      )}
     </div>
   );
 };

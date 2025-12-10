@@ -51,6 +51,7 @@ const Home = ({ userName }) => {
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [userEmail, setUserEmail] = useState('designbydzul@gmail.com');
   const [currentUserName, setCurrentUserName] = useState(userName || 'Dzul');
+  const [userPhoto, setUserPhoto] = useState(null);
 
   // Add Location Modal state
   const [showAddLocationModal, setShowAddLocationModal] = useState(false);
@@ -59,8 +60,10 @@ const Home = ({ userName }) => {
   useEffect(() => {
     const savedName = localStorage.getItem('temanTanamUserName');
     const savedEmail = localStorage.getItem('temanTanamUserEmail');
+    const savedPhoto = localStorage.getItem('temanTanamUserPhoto');
     if (savedName) setCurrentUserName(savedName);
     if (savedEmail) setUserEmail(savedEmail);
+    if (savedPhoto) setUserPhoto(savedPhoto);
   }, []);
 
   // Dynamic locations from localStorage
@@ -209,8 +212,14 @@ const Home = ({ userName }) => {
 
   // Handle profile save
   const handleProfileSave = (profileData) => {
+    console.log('handleProfileSave received:', { name: profileData.name, email: profileData.email, hasPhoto: !!profileData.photo });
     setCurrentUserName(profileData.name);
     setUserEmail(profileData.email);
+    // Always update photo (can be null to clear, or base64 string)
+    if (profileData.photo) {
+      console.log('Setting userPhoto');
+      setUserPhoto(profileData.photo);
+    }
   };
 
   // Handle add location save
@@ -707,6 +716,7 @@ const Home = ({ userName }) => {
         onClose={() => setShowProfileModal(false)}
         userName={currentUserName}
         userEmail={userEmail}
+        userPhoto={userPhoto}
         onNavigate={handleProfileNavigation}
       />
 
@@ -721,6 +731,7 @@ const Home = ({ userName }) => {
           onBack={() => setShowEditProfile(false)}
           userName={currentUserName}
           userEmail={userEmail}
+          userPhoto={userPhoto}
           onSave={handleProfileSave}
         />
       )}

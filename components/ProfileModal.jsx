@@ -1,9 +1,31 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { User } from '@phosphor-icons/react';
 
-const ProfileModal = ({ isOpen, onClose, userName, userEmail, onNavigate }) => {
+const ProfileModal = ({ isOpen, onClose, userName, userEmail, userPhoto, onNavigate, onLogout }) => {
+  console.log('ProfileModal render - userPhoto:', !!userPhoto);
+
   const handleMenuAction = (action) => {
     console.log('Menu action:', action);
+
+    if (action === 'logout') {
+      onClose();
+      // Small delay to ensure modal closes before reload
+      setTimeout(() => {
+        if (onLogout) {
+          onLogout();
+        } else {
+          // Default logout behavior: clear localStorage and reload
+          localStorage.removeItem('temanTanamUserName');
+          localStorage.removeItem('temanTanamUserEmail');
+          localStorage.removeItem('temanTanamUserPhoto');
+          localStorage.removeItem('temanTanamLocations');
+          window.location.reload();
+        }
+      }, 100);
+      return;
+    }
+
     onClose();
     if (onNavigate) {
       onNavigate(action);
@@ -88,7 +110,7 @@ const ProfileModal = ({ isOpen, onClose, userName, userEmail, onNavigate }) => {
                 width: '96px',
                 height: '96px',
                 borderRadius: '24px',
-                backgroundColor: '#7CB342',
+                backgroundColor: userPhoto ? 'transparent' : '#F5F5F5',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -96,16 +118,19 @@ const ProfileModal = ({ isOpen, onClose, userName, userEmail, onNavigate }) => {
                 overflow: 'hidden',
               }}
             >
-              {/* Placeholder image - replace with actual user photo */}
-              <img
-                src="https://images.unsplash.com/photo-1560807707-8cc77767d783?w=300"
-                alt="Profile"
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover',
-                }}
-              />
+              {userPhoto ? (
+                <img
+                  src={userPhoto}
+                  alt="Profile"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                  }}
+                />
+              ) : (
+                <User size={48} weight="regular" color="#CCCCCC" />
+              )}
             </div>
 
             {/* User Name */}

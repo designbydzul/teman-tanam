@@ -1,10 +1,10 @@
 import React, { useState, useRef } from 'react';
 import { ArrowLeft, UploadSimple } from '@phosphor-icons/react';
 
-const EditProfile = ({ onBack, userName, userEmail, onSave }) => {
+const EditProfile = ({ onBack, userName, userEmail, userPhoto, onSave }) => {
   const [name, setName] = useState(userName || '');
   const [email, setEmail] = useState(userEmail || '');
-  const [photoPreview, setPhotoPreview] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(userPhoto || null);
   const [photoFile, setPhotoFile] = useState(null);
   const fileInputRef = useRef(null);
 
@@ -29,9 +29,10 @@ const EditProfile = ({ onBack, userName, userEmail, onSave }) => {
     const profileData = {
       name: name.trim(),
       email: email.trim(),
-      photo: photoFile,
-      photoPreview,
+      photo: photoPreview,
     };
+
+    console.log('Saving profile:', { name: profileData.name, email: profileData.email, hasPhoto: !!profileData.photo });
 
     // Save to localStorage
     localStorage.setItem('temanTanamUserName', profileData.name);
@@ -40,9 +41,13 @@ const EditProfile = ({ onBack, userName, userEmail, onSave }) => {
       localStorage.setItem('temanTanamUserPhoto', photoPreview);
     }
 
+    // Call onSave callback to update parent state
     if (onSave) {
+      console.log('Calling onSave with photo:', !!profileData.photo);
       onSave(profileData);
     }
+
+    // Close after saving
     onBack();
   };
 
