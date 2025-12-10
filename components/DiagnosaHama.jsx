@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft,
   CaretDown,
+  ClockCounterClockwise,
   PaperclipHorizontal,
   PaperPlaneTilt,
   X,
@@ -31,6 +32,8 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
   const [attachedImages, setAttachedImages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(true);
+  const [inputFocused, setInputFocused] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
 
   // Refs
   const chatAreaRef = useRef(null);
@@ -61,10 +64,34 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
     }
   }, [messages, isLoading]);
 
-  // Handle suggestion click
+  // Handle suggestion click - auto send the message
   const handleSuggestionClick = (question) => {
-    setInputText(question);
-    inputRef.current?.focus();
+    // Hide suggestions
+    setShowSuggestions(false);
+
+    // Create user message
+    const userMessage = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: question,
+      images: [],
+      timestamp: new Date(),
+    };
+
+    setMessages((prev) => [...prev, userMessage]);
+    setIsLoading(true);
+
+    // Simulate AI response
+    setTimeout(() => {
+      const aiMessage = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: mockResponses[Math.floor(Math.random() * mockResponses.length)],
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, aiMessage]);
+      setIsLoading(false);
+    }, 1500);
   };
 
   // Handle image attachment
@@ -111,6 +138,11 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
     setInputText('');
     setAttachedImages([]);
     setIsLoading(true);
+
+    // Reset textarea height
+    if (inputRef.current) {
+      inputRef.current.style.height = 'auto';
+    }
 
     // Simulate AI response
     setTimeout(() => {
@@ -198,6 +230,27 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
           >
             Diagnosa Hama
           </h1>
+
+          {/* History Button */}
+          <button
+            onClick={() => setShowHistoryModal(true)}
+            aria-label="Riwayat chat"
+            style={{
+              position: 'absolute',
+              right: 0,
+              width: '48px',
+              height: '48px',
+              borderRadius: '50%',
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #E0E0E0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+            }}
+          >
+            <ClockCounterClockwise size={24} weight="regular" color="#666666" />
+          </button>
         </div>
       </div>
 
@@ -391,7 +444,8 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
                           width: '60px',
                           height: '60px',
                           borderRadius: '8px',
-                          objectFit: 'cover',
+                          objectFit: 'contain',
+                          backgroundColor: '#F5F5F5',
                         }}
                       />
                     ))}
@@ -485,9 +539,12 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
               exit={{ height: 0, opacity: 0 }}
               style={{
                 display: 'flex',
-                gap: '8px',
+                gap: '12px',
                 marginBottom: '12px',
                 overflowX: 'auto',
+                overflowY: 'visible',
+                padding: '8px 4px',
+                margin: '-8px -4px 12px -4px',
               }}
             >
               {attachedImages.map((img, index) => (
@@ -496,16 +553,19 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
                   style={{
                     position: 'relative',
                     flexShrink: 0,
+                    width: '72px',
+                    height: '72px',
                   }}
                 >
                   <img
                     src={img.preview}
                     alt={`Preview ${index + 1}`}
                     style={{
-                      width: '60px',
-                      height: '60px',
-                      borderRadius: '8px',
+                      width: '72px',
+                      height: '72px',
+                      borderRadius: '12px',
                       objectFit: 'cover',
+                      border: '1px solid #E0E0E0',
                     }}
                   />
                   <button
@@ -513,17 +573,18 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
                     aria-label="Hapus foto"
                     style={{
                       position: 'absolute',
-                      top: '-6px',
-                      right: '-6px',
-                      width: '20px',
-                      height: '20px',
+                      top: '-4px',
+                      right: '-4px',
+                      width: '22px',
+                      height: '22px',
                       borderRadius: '50%',
                       backgroundColor: '#FF4444',
-                      border: 'none',
+                      border: '2px solid #FFFFFF',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       cursor: 'pointer',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
                     }}
                   >
                     <X size={12} weight="bold" color="#FFFFFF" />
@@ -547,12 +608,13 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
             style={{
               flex: 1,
               display: 'flex',
-              alignItems: 'center',
+              alignItems: 'flex-end',
               gap: '12px',
               padding: '12px 16px',
               backgroundColor: '#FFFFFF',
-              border: '1px solid #E0E0E0',
+              border: inputFocused || inputText ? '2px solid #7CB342' : '2px solid #E0E0E0',
               borderRadius: '24px',
+              transition: 'border-color 200ms',
             }}
           >
             {/* Attachment Button */}
@@ -575,28 +637,42 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                flexShrink: 0,
+                marginBottom: '2px',
               }}
             >
               <PaperclipHorizontal size={24} weight="regular" color="#666666" />
             </button>
 
-            {/* Text Input */}
-            <input
+            {/* Text Input - Expandable Textarea */}
+            <textarea
               ref={inputRef}
-              type="text"
               placeholder="Tulis pertanyaan kamu disini"
               value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
+              onChange={(e) => {
+                setInputText(e.target.value);
+                // Auto-resize textarea
+                e.target.style.height = 'auto';
+                e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+              }}
               onKeyPress={handleKeyPress}
+              onFocus={() => setInputFocused(true)}
+              onBlur={() => setInputFocused(false)}
               aria-label="Tulis pertanyaan"
+              rows={1}
               style={{
                 flex: 1,
                 border: 'none',
                 outline: 'none',
                 fontFamily: "'Inter', sans-serif",
                 fontSize: '14px',
+                lineHeight: '1.4',
                 color: '#2C2C2C',
                 backgroundColor: 'transparent',
+                resize: 'none',
+                overflow: 'hidden',
+                minHeight: '21px',
+                maxHeight: '120px',
               }}
             />
           </div>
@@ -628,6 +704,123 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
           </motion.button>
         </div>
       </div>
+
+      {/* History Coming Soon Modal */}
+      <AnimatePresence>
+        {showHistoryModal && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowHistoryModal(false)}
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                zIndex: 4000,
+              }}
+            />
+
+            {/* Modal */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 4001,
+                pointerEvents: 'none',
+              }}
+            >
+              <div
+                style={{
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '24px',
+                  padding: '32px 24px',
+                  width: 'calc(100% - 48px)',
+                  maxWidth: '320px',
+                  textAlign: 'center',
+                  pointerEvents: 'auto',
+                }}
+              >
+                {/* Icon */}
+                <div
+                  style={{
+                    width: '64px',
+                    height: '64px',
+                    borderRadius: '50%',
+                    backgroundColor: '#F1F8E9',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    margin: '0 auto 20px',
+                  }}
+                >
+                  <ClockCounterClockwise size={32} weight="bold" color="#7CB342" />
+                </div>
+
+                {/* Title */}
+                <h2
+                  style={{
+                    fontFamily: 'var(--font-caveat), Caveat, cursive',
+                    fontSize: '1.75rem',
+                    fontWeight: 600,
+                    color: '#2D5016',
+                    margin: '0 0 12px 0',
+                  }}
+                >
+                  Segera Hadir!
+                </h2>
+
+                {/* Description */}
+                <p
+                  style={{
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: '14px',
+                    color: '#666666',
+                    margin: '0 0 24px 0',
+                    lineHeight: 1.5,
+                  }}
+                >
+                  Fitur riwayat chat akan tersedia di update selanjutnya. Tunggu ya!
+                </p>
+
+                {/* Button */}
+                <button
+                  onClick={() => setShowHistoryModal(false)}
+                  style={{
+                    width: '100%',
+                    padding: '14px 24px',
+                    fontSize: '1rem',
+                    fontFamily: "'Inter', sans-serif",
+                    fontWeight: 600,
+                    color: '#FFFFFF',
+                    backgroundColor: '#7CB342',
+                    border: 'none',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Oke, Mengerti
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

@@ -14,6 +14,7 @@ const Login = ({ onLogin }) => {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [inputFocused, setInputFocused] = useState(false);
 
   const handleEmailSubmit = async (e) => {
     e.preventDefault();
@@ -119,18 +120,14 @@ const Login = ({ onLogin }) => {
             fontSize: '1rem',
             fontFamily: "'Inter', sans-serif",
             color: '#2C2C2C',
-            backgroundColor: '#FAFAFA', // Gray 100
-            border: 'none',
+            backgroundColor: '#FAFAFA',
+            border: inputFocused || email ? '2px solid #7CB342' : '2px solid transparent',
             borderRadius: '12px',
             outline: 'none',
-            transition: 'background-color 200ms',
+            transition: 'border-color 200ms, background-color 200ms',
           }}
-          onFocus={(e) => {
-            e.target.style.backgroundColor = '#F5F5F5';
-          }}
-          onBlur={(e) => {
-            e.target.style.backgroundColor = '#FAFAFA';
-          }}
+          onFocus={() => setInputFocused(true)}
+          onBlur={() => setInputFocused(false)}
         />
 
         {/* Submit Button - Masuk atau Daftar */}

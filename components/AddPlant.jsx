@@ -15,10 +15,20 @@ const PLANT_SPECIES = [
   { id: 'tomat', name: 'Tomat', scientific: 'Solanum lycopersicum', emoji: '🍅' },
   { id: 'kubis', name: 'Kubis', scientific: 'Brassica oleracea', emoji: '🥬' },
   { id: 'terong', name: 'Terong', scientific: 'Solanum melongena', emoji: '🍆' },
+  { id: 'cabai', name: 'Cabai', scientific: 'Capsicum frutescens', emoji: '🌶️' },
+  { id: 'jagung', name: 'Jagung', scientific: 'Zea mays', emoji: '🌽' },
+  { id: 'selada', name: 'Selada', scientific: 'Lactuca sativa', emoji: '🥗' },
+  { id: 'mentimun', name: 'Mentimun', scientific: 'Cucumis sativus', emoji: '🥒' },
+  { id: 'bawang-putih', name: 'Bawang Putih', scientific: 'Allium sativum', emoji: '🧄' },
+  { id: 'labu-siam', name: 'Labu Siam', scientific: 'Sechium edule', emoji: '🥒' },
+  { id: 'kangkung', name: 'Kangkung', scientific: 'Ipomoea aquatica', emoji: '🥬' },
+  { id: 'sawi', name: 'Sawi', scientific: 'Brassica juncea', emoji: '🥬' },
+  { id: 'seledri', name: 'Seledri', scientific: 'Apium graveolens', emoji: '🥬' },
 ];
 
 const AddPlant = ({ onClose, onSelectSpecies }) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchFocused, setSearchFocused] = useState(false);
 
   const filteredPlants = PLANT_SPECIES.filter((plant) => {
     const query = searchQuery.toLowerCase();
@@ -41,10 +51,16 @@ const AddPlant = ({ onClose, onSelectSpecies }) => {
         bottom: 0,
         backgroundColor: '#FFFFFF',
         zIndex: 1000,
-        overflow: 'auto',
       }}
     >
-      {/* Header */}
+      {/* Sticky Header */}
+      <div
+        style={{
+          position: 'relative',
+          zIndex: 10,
+          backgroundColor: '#FFFFFF',
+        }}
+      >
       <div
         style={{
           display: 'flex',
@@ -97,7 +113,7 @@ const AddPlant = ({ onClose, onSelectSpecies }) => {
         <div style={{ width: '40px' }} /> {/* Spacer for centering */}
       </div>
 
-      {/* Search Bar */}
+      {/* Sticky Search Bar */}
       <div style={{ padding: '16px 24px' }}>
         <div
           style={{
@@ -109,16 +125,19 @@ const AddPlant = ({ onClose, onSelectSpecies }) => {
             placeholder="Cari tanaman"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            onFocus={() => setSearchFocused(true)}
+            onBlur={() => setSearchFocused(false)}
             style={{
               width: '100%',
               padding: '12px 50px 12px 16px',
               fontSize: '1rem',
               fontFamily: "'Inter', sans-serif",
               color: '#2C2C2C',
-              backgroundColor: '#FFFFFF',
-              border: '1px solid #E0E0E0',
+              backgroundColor: '#FAFAFA',
+              border: searchFocused || searchQuery ? '2px solid #7CB342' : '2px solid transparent',
               borderRadius: '12px',
               outline: 'none',
+              transition: 'border-color 200ms',
             }}
           />
           <svg
@@ -138,16 +157,29 @@ const AddPlant = ({ onClose, onSelectSpecies }) => {
           </svg>
         </div>
       </div>
+      </div>
 
-      {/* Plant Grid */}
+      {/* Scrollable Plant Grid */}
       <div
         style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: '16px',
+          position: 'absolute',
+          top: '175px',
+          left: 0,
+          right: 0,
+          bottom: 0,
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          WebkitOverflowScrolling: 'touch',
           padding: '0 24px 100px 24px',
         }}
       >
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: '16px',
+          }}
+        >
         {filteredPlants.length > 0 ? (
           filteredPlants.map((plant) => (
             <motion.div
@@ -218,6 +250,7 @@ const AddPlant = ({ onClose, onSelectSpecies }) => {
             Tidak ada hasil
           </div>
         )}
+        </div>
       </div>
     </motion.div>
   );

@@ -1,11 +1,12 @@
 import React, { useState, useRef } from 'react';
 import { ArrowLeft, UploadSimple } from '@phosphor-icons/react';
 
-const EditProfile = ({ onBack, userName, userEmail, userPhoto, onSave }) => {
+const EditProfile = ({ onBack, userName, userEmail, userPhoto, onSave, onProfileUpdated }) => {
   const [name, setName] = useState(userName || '');
   const [email, setEmail] = useState(userEmail || '');
   const [photoPreview, setPhotoPreview] = useState(userPhoto || null);
   const [photoFile, setPhotoFile] = useState(null);
+  const [focusedInput, setFocusedInput] = useState(null);
   const fileInputRef = useRef(null);
 
   const handlePhotoChange = (e) => {
@@ -45,6 +46,11 @@ const EditProfile = ({ onBack, userName, userEmail, userPhoto, onSave }) => {
     if (onSave) {
       console.log('Calling onSave with photo:', !!profileData.photo);
       onSave(profileData);
+    }
+
+    // Callback to show toast
+    if (onProfileUpdated) {
+      onProfileUpdated();
     }
 
     // Close after saving
@@ -219,6 +225,8 @@ const EditProfile = ({ onBack, userName, userEmail, userPhoto, onSave }) => {
             placeholder="emailkamu@email.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            onFocus={() => setFocusedInput('email')}
+            onBlur={() => setFocusedInput(null)}
             style={{
               width: '100%',
               padding: '16px',
@@ -226,9 +234,10 @@ const EditProfile = ({ onBack, userName, userEmail, userPhoto, onSave }) => {
               fontFamily: "'Inter', sans-serif",
               color: '#2C2C2C',
               backgroundColor: '#FAFAFA',
-              border: '1px solid #E0E0E0',
+              border: focusedInput === 'email' || email ? '2px solid #7CB342' : '2px solid transparent',
               borderRadius: '12px',
               outline: 'none',
+              transition: 'border-color 200ms',
             }}
           />
         </div>
@@ -252,6 +261,8 @@ const EditProfile = ({ onBack, userName, userEmail, userPhoto, onSave }) => {
             placeholder="Beri nama biar kece"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            onFocus={() => setFocusedInput('name')}
+            onBlur={() => setFocusedInput(null)}
             style={{
               width: '100%',
               padding: '16px',
@@ -259,9 +270,10 @@ const EditProfile = ({ onBack, userName, userEmail, userPhoto, onSave }) => {
               fontFamily: "'Inter', sans-serif",
               color: '#2C2C2C',
               backgroundColor: '#FAFAFA',
-              border: name.length >= 2 ? '2px solid #7CB342' : '1px solid #E0E0E0',
+              border: focusedInput === 'name' || name.length >= 2 ? '2px solid #7CB342' : '2px solid transparent',
               borderRadius: '12px',
               outline: 'none',
+              transition: 'border-color 200ms',
             }}
           />
         </div>

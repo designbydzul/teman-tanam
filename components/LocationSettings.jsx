@@ -123,7 +123,7 @@ const SortableLocationCard = ({ location, onDelete }) => {
   );
 };
 
-const LocationSettings = ({ onBack }) => {
+const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded }) => {
   const [locations, setLocations] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
@@ -131,6 +131,7 @@ const LocationSettings = ({ onBack }) => {
   const [newLocationName, setNewLocationName] = useState('');
   const [locationToDelete, setLocationToDelete] = useState(null);
   const [moveToLocation, setMoveToLocation] = useState('');
+  const [inputFocused, setInputFocused] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -182,9 +183,10 @@ const LocationSettings = ({ onBack }) => {
 
   const handleAddLocation = () => {
     if (newLocationName.trim().length >= 2) {
+      const locationName = newLocationName.trim();
       const newLocation = {
         id: Date.now().toString(),
-        name: newLocationName.trim(),
+        name: locationName,
         plantCount: 0,
       };
       const updatedLocations = [...locations, newLocation];
@@ -192,6 +194,10 @@ const LocationSettings = ({ onBack }) => {
       localStorage.setItem('temanTanamLocations', JSON.stringify(updatedLocations));
       setNewLocationName('');
       setShowAddModal(false);
+      // Callback to show toast
+      if (onLocationAdded) {
+        onLocationAdded(locationName);
+      }
     }
   };
 
@@ -206,16 +212,22 @@ const LocationSettings = ({ onBack }) => {
 
   const confirmDelete = () => {
     if (locationToDelete) {
+      const deletedLocationName = locationToDelete.name;
       const updatedLocations = locations.filter((loc) => loc.id !== locationToDelete.id);
       setLocations(updatedLocations);
       localStorage.setItem('temanTanamLocations', JSON.stringify(updatedLocations));
       setLocationToDelete(null);
       setShowDeleteConfirmModal(false);
+      // Callback to show toast
+      if (onLocationDeleted) {
+        onLocationDeleted(deletedLocationName);
+      }
     }
   };
 
   const handleMovePlants = () => {
     if (locationToDelete && moveToLocation) {
+      const deletedLocationName = locationToDelete.name;
       // Move plants to selected location
       const updatedLocations = locations.map((loc) => {
         if (loc.id === moveToLocation) {
@@ -236,6 +248,11 @@ const LocationSettings = ({ onBack }) => {
       setLocationToDelete(null);
       setMoveToLocation('');
       setShowMovePlantsModal(false);
+
+      // Callback to show toast
+      if (onLocationDeleted) {
+        onLocationDeleted(deletedLocationName);
+      }
     }
   };
 
@@ -430,6 +447,8 @@ const LocationSettings = ({ onBack }) => {
                 placeholder="Nama lokasi (min. 2 karakter)"
                 value={newLocationName}
                 onChange={(e) => setNewLocationName(e.target.value)}
+                onFocus={() => setInputFocused(true)}
+                onBlur={() => setInputFocused(false)}
                 style={{
                   width: '100%',
                   padding: '12px 16px',
@@ -437,10 +456,11 @@ const LocationSettings = ({ onBack }) => {
                   fontFamily: "'Inter', sans-serif",
                   color: '#2C2C2C',
                   backgroundColor: '#FAFAFA',
-                  border: newLocationName.length >= 2 ? '2px solid #7CB342' : 'none',
+                  border: inputFocused || newLocationName.length >= 2 ? '2px solid #7CB342' : '2px solid transparent',
                   borderRadius: '12px',
                   outline: 'none',
                   marginBottom: '16px',
+                  transition: 'border-color 200ms',
                 }}
               />
 

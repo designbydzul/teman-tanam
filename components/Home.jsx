@@ -1,5 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Drop,
+  Leaf,
+  FirstAidKit,
+  PencilSimple,
+  Trash,
+  Plant,
+} from '@phosphor-icons/react';
 import AddPlant from './AddPlant';
 import AddPlantForm from './AddPlantForm';
 import AddPlantSuccess from './AddPlantSuccess';
@@ -8,6 +16,8 @@ import ProfileModal from './ProfileModal';
 import LocationSettings from './LocationSettings';
 import EditProfile from './EditProfile';
 import AddLocationModal from './AddLocationModal';
+import EditPlant from './EditPlant';
+import DiagnosaHama from './DiagnosaHama';
 
 // Mock plant data
 const MOCK_PLANTS = [
@@ -27,6 +37,7 @@ const MOCK_PLANTS = [
 
 const Home = ({ userName }) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchFocused, setSearchFocused] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState('Semua');
   const [plants, setPlants] = useState(MOCK_PLANTS);
 
@@ -55,6 +66,34 @@ const Home = ({ userName }) => {
 
   // Add Location Modal state
   const [showAddLocationModal, setShowAddLocationModal] = useState(false);
+
+  // Long press menu state
+  const [showPlantMenu, setShowPlantMenu] = useState(false);
+  const [menuPlant, setMenuPlant] = useState(null);
+  const longPressTimer = useRef(null);
+
+  // Edit plant from menu
+  const [showEditPlantModal, setShowEditPlantModal] = useState(false);
+
+  // Diagnosa Hama from menu
+  const [showDiagnosaHamaModal, setShowDiagnosaHamaModal] = useState(false);
+
+  // Network status state
+  const [networkStatus, setNetworkStatus] = useState('online'); // 'online' | 'offline' | 'reconnecting'
+  const [showNetworkToast, setShowNetworkToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState({ title: '', message: '' });
+  const reconnectingTimer = useRef(null);
+
+  // Action toast state (for watering, fertilizing, plant actions, etc.)
+  const [showActionToast, setShowActionToast] = useState(false);
+  const [actionToastMessage, setActionToastMessage] = useState('');
+
+  // Helper function to show action toast
+  const showActionToastWithMessage = (message) => {
+    setActionToastMessage(message);
+    setShowActionToast(true);
+    setTimeout(() => setShowActionToast(false), 3000);
+  };
 
   // Load user profile from localStorage
   useEffect(() => {
@@ -87,6 +126,55 @@ const Home = ({ userName }) => {
     // Listen for storage changes (when LocationSettings updates)
     window.addEventListener('storage', loadLocations);
     return () => window.removeEventListener('storage', loadLocations);
+  }, []);
+
+  // Network status detection
+  useEffect(() => {
+    const showToast = (title, message) => {
+      setToastMessage({ title, message });
+      setShowNetworkToast(true);
+      setTimeout(() => setShowNetworkToast(false), 3000);
+    };
+
+    const handleOnline = () => {
+      // Clear any reconnecting timer
+      if (reconnectingTimer.current) {
+        clearTimeout(reconnectingTimer.current);
+        reconnectingTimer.current = null;
+      }
+      setNetworkStatus('online');
+      showToast('Kembali online', 'Yeay! Koneksi kamu udah balik~');
+    };
+
+    const handleOffline = () => {
+      // First show reconnecting state
+      setNetworkStatus('reconnecting');
+      showToast('Reconnecting......', 'Tunggu sebentar, data kamu lagi sync');
+
+      // After 5 seconds, if still offline, show offline state
+      reconnectingTimer.current = setTimeout(() => {
+        if (!navigator.onLine) {
+          setNetworkStatus('offline');
+          showToast('Koneksi hilang', 'Gak papa! Kamu tetep bisa care tanaman seperti biasa~');
+        }
+      }, 5000);
+    };
+
+    // Initial check
+    if (!navigator.onLine) {
+      setNetworkStatus('offline');
+    }
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+      if (reconnectingTimer.current) {
+        clearTimeout(reconnectingTimer.current);
+      }
+    };
   }, []);
 
   // Reload locations when returning from LocationSettings
@@ -127,8 +215,8 @@ const Home = ({ userName }) => {
 
   const handleSelectSpecies = (species) => {
     setSelectedSpecies(species);
-    setShowAddPlant(false);
     setShowAddPlantForm(true);
+    // Keep showAddPlant true so it stays visible behind the form modal
   };
 
   const handleFormSubmit = (plantData) => {
@@ -160,9 +248,27 @@ const Home = ({ userName }) => {
   };
 
   const handleViewDetails = () => {
-    // TODO: Navigate to plant detail page
-    console.log('View details for:', newPlantData);
+    // Find the newly created plant and show its details
+    if (newPlantData) {
+      // Create a plant object that matches what PlantDetail expects
+      const plantForDetail = {
+        id: newPlantData.id,
+        name: newPlantData.customName,
+        customName: newPlantData.customName,
+        species: newPlantData.species,
+        location: newPlantData.location,
+        plantedDate: newPlantData.plantedDate,
+        image: newPlantData.photoPreview || null,
+        photoUrl: newPlantData.photoPreview || null,
+        status: 'Baik Baik Saja',
+      };
+      setSelectedPlant(plantForDetail);
+      setShowPlantDetail(true);
+    }
     setShowSuccess(false);
+    setShowAddPlant(false);
+    setSelectedSpecies(null);
+    setNewPlantData(null);
   };
 
   const handleAddNew = () => {
@@ -174,14 +280,80 @@ const Home = ({ userName }) => {
 
   const handleBackHome = () => {
     setShowSuccess(false);
+    setShowAddPlant(false);
     setSelectedSpecies(null);
     setNewPlantData(null);
   };
 
+  // Long press handlers for plant cards
+  const handleLongPressStart = (plant, e) => {
+    e.preventDefault();
+    longPressTimer.current = setTimeout(() => {
+      setMenuPlant(plant);
+      setShowPlantMenu(true);
+    }, 500); // 500ms for long press
+  };
+
+  const handleLongPressEnd = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
+
+  const handlePlantMenuAction = (action) => {
+    setShowPlantMenu(false);
+    switch (action) {
+      case 'detail':
+        if (menuPlant) {
+          setSelectedPlant(menuPlant);
+          setShowPlantDetail(true);
+        }
+        break;
+      case 'water':
+        if (menuPlant) {
+          setActionToastMessage(`Penyiraman ${menuPlant.name} sudah dicatat`);
+          setShowActionToast(true);
+          setTimeout(() => setShowActionToast(false), 3000);
+        }
+        break;
+      case 'fertilize':
+        if (menuPlant) {
+          setActionToastMessage(`Pemupukan ${menuPlant.name} sudah dicatat`);
+          setShowActionToast(true);
+          setTimeout(() => setShowActionToast(false), 3000);
+        }
+        break;
+      case 'diagnose':
+        if (menuPlant) {
+          setShowDiagnosaHamaModal(true);
+        }
+        break;
+      case 'edit':
+        if (menuPlant) {
+          setShowEditPlantModal(true);
+        }
+        break;
+      case 'delete':
+        if (menuPlant && window.confirm('Apakah Anda yakin ingin menghapus tanaman ini?')) {
+          const plantName = menuPlant.name;
+          setPlants(plants.filter((p) => p.id !== menuPlant.id));
+          setMenuPlant(null);
+          showActionToastWithMessage(`${plantName} sudah dihapus`);
+        }
+        break;
+      default:
+        break;
+    }
+  };
+
   // Plant Detail handlers
   const handlePlantClick = (plant) => {
-    setSelectedPlant(plant);
-    setShowPlantDetail(true);
+    // Only navigate if not in long press
+    if (!longPressTimer.current) {
+      setSelectedPlant(plant);
+      setShowPlantDetail(true);
+    }
   };
 
   const handlePlantDetailBack = () => {
@@ -195,9 +367,12 @@ const Home = ({ userName }) => {
   };
 
   const handlePlantDelete = (plantId) => {
+    const plantToDelete = plants.find((p) => p.id === plantId);
+    const plantName = plantToDelete?.name || plantToDelete?.customName || 'Tanaman';
     setPlants(plants.filter((p) => p.id !== plantId));
     setShowPlantDetail(false);
     setSelectedPlant(null);
+    showActionToastWithMessage(`${plantName} sudah dihapus`);
   };
 
   // Handle navigation from ProfileModal
@@ -252,16 +427,20 @@ const Home = ({ userName }) => {
         )
       );
     }
+
+    // Show toast
+    showActionToastWithMessage(`Lokasi ${name} sudah ditambahkan`);
   };
 
   return (
     <div
       style={{
-        height: '100vh',
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
         backgroundColor: '#FAFAFA',
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
       }}
     >
       {/* Header - Sticky */}
@@ -269,7 +448,8 @@ const Home = ({ userName }) => {
         style={{
           padding: '20px 24px',
           backgroundColor: '#FFFFFF',
-          flexShrink: 0,
+          position: 'relative',
+          zIndex: 10,
         }}
       >
         {/* Top Bar with Greeting and Icons */}
@@ -288,39 +468,77 @@ const Home = ({ userName }) => {
               fontWeight: 600,
               color: '#2D5016',
               margin: 0,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              maxWidth: 'calc(100% - 140px)',
+              flex: 1,
+              minWidth: 0,
             }}
           >
             Halo {currentUserName}
           </h1>
 
           <div style={{ display: 'flex', gap: '12px' }}>
-            {/* WiFi Icon Button */}
+            {/* WiFi Icon Button - Dynamic based on network status */}
             <button
               style={{
                 width: '56px',
                 height: '56px',
                 borderRadius: '50%',
-                backgroundColor: '#F1F8E9',
+                backgroundColor: networkStatus === 'online' ? '#F1F8E9' : networkStatus === 'reconnecting' ? '#FEF3C7' : '#FEE2E2',
                 border: 'none',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: 'pointer',
+                position: 'relative',
               }}
             >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M5 12.55a11 11 0 0114.08 0M8.53 16.11a6 6 0 016.95 0M12 20h.01"
-                  stroke="#2D5016"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
+              {networkStatus === 'online' ? (
+                // Online - Green WiFi icon
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M5 12.55a11 11 0 0114.08 0M8.53 16.11a6 6 0 016.95 0M12 20h.01"
+                    stroke="#2D5016"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              ) : networkStatus === 'reconnecting' ? (
+                // Reconnecting - Orange sync/refresh icon
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M21 12a9 9 0 11-3-6.71"
+                    stroke="#F59E0B"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M21 3v6h-6"
+                    stroke="#F59E0B"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              ) : (
+                // Offline - Red WiFi off icon with slash
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M5 12.55a11 11 0 0114.08 0M8.53 16.11a6 6 0 016.95 0M12 20h.01"
+                    stroke="#EF4444"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M2 2l20 20"
+                    stroke="#EF4444"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              )}
             </button>
 
             {/* Grid Icon Button */}
@@ -360,6 +578,8 @@ const Home = ({ userName }) => {
             placeholder="Cari tanaman"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            onFocus={() => setSearchFocused(true)}
+            onBlur={() => setSearchFocused(false)}
             style={{
               width: '100%',
               padding: '16px 50px 16px 20px',
@@ -367,9 +587,10 @@ const Home = ({ userName }) => {
               fontFamily: "'Inter', sans-serif",
               color: '#666666',
               backgroundColor: '#FAFAFA',
-              border: 'none',
+              border: searchFocused || searchQuery ? '2px solid #7CB342' : '2px solid transparent',
               borderRadius: '12px',
               outline: 'none',
+              transition: 'border-color 200ms',
             }}
           />
           <svg
@@ -456,25 +677,33 @@ const Home = ({ userName }) => {
       {/* Plant Grid or Empty State - Scrollable */}
       <div
         style={{
-          display: 'flex',
-          padding: '16px 8px',
-          paddingBottom: '100px',
-          justifyContent: 'flex-start',
-          alignItems: 'flex-start',
-          alignContent: 'flex-start',
-          gap: '24px 0',
-          flexWrap: 'wrap',
-          flex: 1,
+          position: 'absolute',
+          top: '250px',
+          left: 0,
+          right: 0,
+          bottom: 0,
           overflowY: 'auto',
+          overflowX: 'hidden',
+          WebkitOverflowScrolling: 'touch',
           backgroundColor: '#FFFFFF',
         }}
       >
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: '24px 16px',
+            padding: '16px 24px',
+            paddingBottom: '100px',
+          }}
+        >
         {showEmptyState ? (
           /* Empty State */
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             style={{
+              gridColumn: '1 / -1',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
@@ -535,21 +764,31 @@ const Home = ({ userName }) => {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 onClick={() => handlePlantClick(plant)}
+                onTouchStart={(e) => handleLongPressStart(plant, e)}
+                onTouchEnd={handleLongPressEnd}
+                onTouchCancel={handleLongPressEnd}
+                onMouseDown={(e) => handleLongPressStart(plant, e)}
+                onMouseUp={handleLongPressEnd}
+                onMouseLeave={handleLongPressEnd}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  setMenuPlant(plant);
+                  setShowPlantMenu(true);
+                }}
                 style={{
                   display: 'flex',
-                  padding: '0 8px',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  flex: '1 0 0',
-                  maxWidth: '33.333%',
                   cursor: 'pointer',
+                  userSelect: 'none',
+                  WebkitTouchCallout: 'none',
                 }}
               >
                 {/* Plant Image */}
                 <div
                   style={{
-                    width: '104px',
-                    height: '104px',
+                    width: '100%',
+                    aspectRatio: '1',
                     borderRadius: '24px',
                     overflow: 'hidden',
                     marginBottom: '8px',
@@ -600,6 +839,7 @@ const Home = ({ userName }) => {
             ))}
           </>
         )}
+        </div>
       </div>
 
       {/* Floating Action Buttons */}
@@ -722,7 +962,15 @@ const Home = ({ userName }) => {
 
       {/* Location Settings */}
       {showLocationSettings && (
-        <LocationSettings onBack={handleLocationSettingsClose} />
+        <LocationSettings
+          onBack={handleLocationSettingsClose}
+          onLocationDeleted={(locationName) => {
+            showActionToastWithMessage(`Lokasi ${locationName} sudah dihapus`);
+          }}
+          onLocationAdded={(locationName) => {
+            showActionToastWithMessage(`Lokasi ${locationName} sudah ditambahkan`);
+          }}
+        />
       )}
 
       {/* Edit Profile */}
@@ -733,6 +981,9 @@ const Home = ({ userName }) => {
           userEmail={userEmail}
           userPhoto={userPhoto}
           onSave={handleProfileSave}
+          onProfileUpdated={() => {
+            showActionToastWithMessage('Profil sudah diperbarui');
+          }}
         />
       )}
 
@@ -743,6 +994,475 @@ const Home = ({ userName }) => {
         plants={plants}
         onSave={handleAddLocationSave}
       />
+
+      {/* Plant Long Press Menu Modal */}
+      <AnimatePresence>
+        {showPlantMenu && menuPlant && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowPlantMenu(false)}
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                zIndex: 3000,
+              }}
+            />
+
+            {/* Menu Sheet */}
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              style={{
+                position: 'fixed',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                backgroundColor: '#FFFFFF',
+                borderRadius: '12px 12px 0 0',
+                padding: '24px',
+                maxHeight: '70vh',
+                overflowY: 'auto',
+                zIndex: 3001,
+              }}
+            >
+              {/* Header */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: '24px',
+                }}
+              >
+                <h2
+                  style={{
+                    fontFamily: 'var(--font-caveat), Caveat, cursive',
+                    fontSize: '1.75rem',
+                    fontWeight: 600,
+                    color: '#2D5016',
+                    margin: 0,
+                  }}
+                >
+                  Pilihan
+                </h2>
+                <button
+                  onClick={() => setShowPlantMenu(false)}
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '50%',
+                    backgroundColor: '#F5F5F5',
+                    border: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M15 5L5 15M5 5l10 10"
+                      stroke="#666666"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Aksi Section */}
+              <p
+                style={{
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '12px',
+                  fontWeight: 500,
+                  color: '#666666',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  marginBottom: '12px',
+                }}
+              >
+                Aksi
+              </p>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
+                {/* Lihat Detail */}
+                <button
+                  onClick={() => handlePlantMenuAction('detail')}
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '16px',
+                    padding: '16px',
+                    border: '1px solid #F5F5F5',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.2s ease',
+                  }}
+                >
+                  <Plant size={24} weight="duotone" color="#2D5016" />
+                  <span
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: '1rem',
+                      fontWeight: 500,
+                      color: '#2C2C2C',
+                    }}
+                  >
+                    Lihat Detail
+                  </span>
+                </button>
+
+                {/* Lakukan Penyiraman */}
+                <button
+                  onClick={() => handlePlantMenuAction('water')}
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '16px',
+                    padding: '16px',
+                    border: '1px solid #F5F5F5',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.2s ease',
+                  }}
+                >
+                  <Drop size={24} weight="duotone" color="#3B82F6" />
+                  <span
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: '1rem',
+                      fontWeight: 500,
+                      color: '#2C2C2C',
+                    }}
+                  >
+                    Lakukan Penyiraman
+                  </span>
+                </button>
+
+                {/* Beri Pupuk */}
+                <button
+                  onClick={() => handlePlantMenuAction('fertilize')}
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '16px',
+                    padding: '16px',
+                    border: '1px solid #F5F5F5',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.2s ease',
+                  }}
+                >
+                  <Leaf size={24} weight="duotone" color="#16A34A" />
+                  <span
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: '1rem',
+                      fontWeight: 500,
+                      color: '#2C2C2C',
+                    }}
+                  >
+                    Beri Pupuk
+                  </span>
+                </button>
+
+                {/* Diagnosa Hama */}
+                <button
+                  onClick={() => handlePlantMenuAction('diagnose')}
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '16px',
+                    padding: '16px',
+                    border: '1px solid #F5F5F5',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.2s ease',
+                  }}
+                >
+                  <FirstAidKit size={24} weight="duotone" color="#EF4444" />
+                  <span
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: '1rem',
+                      fontWeight: 500,
+                      color: '#2C2C2C',
+                    }}
+                  >
+                    Diagnosa Hama
+                  </span>
+                </button>
+              </div>
+
+              {/* Konfigurasi Section */}
+              <p
+                style={{
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '12px',
+                  fontWeight: 500,
+                  color: '#666666',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  marginBottom: '12px',
+                }}
+              >
+                Konfigurasi
+              </p>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
+                <button
+                  onClick={() => handlePlantMenuAction('edit')}
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '16px',
+                    padding: '16px',
+                    border: '1px solid #F5F5F5',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.2s ease',
+                  }}
+                >
+                  <PencilSimple size={24} weight="bold" color="#4B5563" />
+                  <span
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: '1rem',
+                      fontWeight: 500,
+                      color: '#2C2C2C',
+                    }}
+                  >
+                    Edit Tanaman
+                  </span>
+                </button>
+              </div>
+
+              {/* Zona Berbahaya Section */}
+              <p
+                style={{
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '12px',
+                  fontWeight: 500,
+                  color: '#666666',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  marginBottom: '12px',
+                }}
+              >
+                Zona Berbahaya
+              </p>
+
+              <button
+                onClick={() => handlePlantMenuAction('delete')}
+                style={{
+                  backgroundColor: '#FEF2F2',
+                  borderRadius: '16px',
+                  padding: '16px',
+                  border: '1px solid #FEE2E2',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  cursor: 'pointer',
+                  width: '100%',
+                }}
+              >
+                <Trash size={24} weight="bold" color="#DC2626" />
+                <span
+                  style={{
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: '1rem',
+                    fontWeight: 500,
+                    color: '#DC2626',
+                  }}
+                >
+                  Hapus Tanaman
+                </span>
+              </button>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Edit Plant Modal from menu */}
+      {showEditPlantModal && menuPlant && (
+        <EditPlant
+          plant={menuPlant}
+          onClose={() => {
+            setShowEditPlantModal(false);
+            setMenuPlant(null);
+          }}
+          onSave={(updatedPlant) => {
+            setPlants(plants.map((p) => (p.id === updatedPlant.id ? { ...p, ...updatedPlant } : p)));
+            setShowEditPlantModal(false);
+            setMenuPlant(null);
+            showActionToastWithMessage(`${updatedPlant.name || updatedPlant.customName} sudah diperbarui`);
+          }}
+        />
+      )}
+
+      {/* Diagnosa Hama Modal from menu */}
+      {showDiagnosaHamaModal && menuPlant && (
+        <DiagnosaHama
+          plant={menuPlant}
+          onBack={() => {
+            setShowDiagnosaHamaModal(false);
+            setMenuPlant(null);
+          }}
+        />
+      )}
+
+      {/* Network Status Toast */}
+      <AnimatePresence>
+        {showNetworkToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            style={{
+              position: 'fixed',
+              bottom: '24px',
+              left: '24px',
+              right: '24px',
+              backgroundColor: '#FFFFFF',
+              borderRadius: '16px',
+              padding: '16px 20px',
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+              display: 'flex',
+              alignItems: 'flex-start',
+              justifyContent: 'space-between',
+              gap: '12px',
+              zIndex: 4000,
+            }}
+          >
+            <div style={{ flex: 1 }}>
+              <h4
+                style={{
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '1rem',
+                  fontWeight: 600,
+                  color: '#2C2C2C',
+                  margin: '0 0 4px 0',
+                }}
+              >
+                {toastMessage.title}
+              </h4>
+              <p
+                style={{
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '14px',
+                  fontWeight: 400,
+                  color: '#666666',
+                  margin: 0,
+                  lineHeight: 1.4,
+                }}
+              >
+                {toastMessage.message}
+              </p>
+            </div>
+            <button
+              onClick={() => setShowNetworkToast(false)}
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: '4px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path
+                  d="M15 5L5 15M5 5l10 10"
+                  stroke="#666666"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Action Toast (Watering, Fertilizing, etc.) */}
+      <AnimatePresence>
+        {showActionToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            style={{
+              position: 'fixed',
+              bottom: '24px',
+              left: '24px',
+              right: '24px',
+              backgroundColor: '#FFFFFF',
+              borderRadius: '16px',
+              padding: '16px 20px',
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '12px',
+              zIndex: 4000,
+            }}
+          >
+            <p
+              style={{
+                fontFamily: "'Inter', sans-serif",
+                fontSize: '1rem',
+                fontWeight: 600,
+                color: '#2C2C2C',
+                margin: 0,
+                flex: 1,
+              }}
+            >
+              {actionToastMessage}
+            </p>
+            <button
+              onClick={() => setShowActionToast(false)}
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: '4px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path
+                  d="M15 5L5 15M5 5l10 10"
+                  stroke="#666666"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

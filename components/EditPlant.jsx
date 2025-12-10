@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) => {
+const EditPlant = ({ plant, onClose, onSave }) => {
   const [formData, setFormData] = useState({
     customName: '',
     location: '',
     customLocation: '',
-    plantedDate: 'Hari ini',
+    plantedDate: '',
     customDate: '',
     notes: '',
     photo: null,
@@ -28,7 +28,33 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
     }
   }, []);
 
-  // Name is optional now, location is required
+  // Initialize form with plant data
+  useEffect(() => {
+    if (plant) {
+      const plantedDateStr = plant.plantedDate
+        ? new Date(plant.plantedDate).toISOString().split('T')[0]
+        : '';
+
+      // Check if location is in our options
+      const plantLocation = plant.location || '';
+      const isCustomLocation = plantLocation && !locationOptions.includes(plantLocation);
+
+      setFormData({
+        customName: plant.customName || plant.name || '',
+        location: isCustomLocation ? '' : plantLocation,
+        customLocation: isCustomLocation ? plantLocation : '',
+        plantedDate: plantedDateStr ? '' : 'Hari ini',
+        customDate: plantedDateStr,
+        notes: plant.notes || '',
+        photo: null,
+      });
+
+      setPhotoPreview(plant.photoUrl || plant.photoPreview || plant.image || null);
+      setShowLocationInput(isCustomLocation);
+      setShowDatePicker(!!plantedDateStr);
+    }
+  }, [plant, locationOptions]);
+
   const isValid = formData.location || formData.customLocation;
 
   const handlePhotoChange = (e) => {
@@ -66,17 +92,17 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
   const handleSubmit = (e) => {
     e.preventDefault();
     if (isValid) {
-      // Auto-generate name if empty
-      const finalName = formData.customName.trim() || `${species.name} ${existingPlantCount + 1}`;
       const finalLocation = formData.customLocation || formData.location;
 
-      onSubmit({
-        ...formData,
-        customName: finalName,
+      onSave({
+        ...plant,
+        customName: formData.customName.trim() || plant.customName || plant.name,
+        name: formData.customName.trim() || plant.customName || plant.name,
         location: finalLocation,
-        species,
-        id: Date.now().toString(),
-        createdAt: new Date(),
+        plantedDate: formData.customDate || (formData.plantedDate === 'Hari ini' ? new Date() : plant.plantedDate),
+        notes: formData.notes,
+        photoUrl: photoPreview,
+        photoPreview: photoPreview,
       });
     }
   };
@@ -95,7 +121,7 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
           right: 0,
           bottom: 0,
           backgroundColor: 'rgba(0, 0, 0, 0.5)',
-          zIndex: 1001,
+          zIndex: 3000,
           display: 'flex',
           alignItems: 'flex-end',
         }}
@@ -170,7 +196,7 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
                   margin: 0,
                 }}
               >
-                {species.name}
+                Edit Tanaman
               </h2>
               <p
                 style={{
@@ -180,7 +206,7 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
                   margin: '4px 0 0 0',
                 }}
               >
-                {species.scientific}
+                {plant?.species?.scientific || 'Tanaman'}
               </p>
             </div>
           </div>
@@ -189,8 +215,8 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
           <div style={{ flex: 1, overflowY: 'auto', padding: '24px', paddingBottom: '100px' }}>
 
             {/* Form */}
-            <form onSubmit={handleSubmit} id="add-plant-form">
-              {/* Name Input (Optional) */}
+            <form onSubmit={handleSubmit} id="edit-plant-form">
+              {/* Name Input */}
               <div style={{ marginBottom: '24px' }}>
                 <label
                   style={{
@@ -201,7 +227,7 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
                     marginBottom: '8px',
                   }}
                 >
-                  Siapa namanya?
+                  Nama Tanaman
                 </label>
                 <input
                   type="text"
@@ -236,7 +262,7 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
                     marginBottom: '12px',
                   }}
                 >
-                  Ditanam dimana?
+                  Lokasi
                 </label>
                 <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: showLocationInput ? '12px' : 0 }}>
                   {[...locationOptions, 'Tambah Tempat'].map((location) => (
@@ -303,7 +329,7 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
                     marginBottom: '12px',
                   }}
                 >
-                  Ditanam kapan?
+                  Tanggal Ditanam
                 </label>
                 <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: showDatePicker ? '12px' : 0 }}>
                   {['Hari ini', 'Pilih Tanggal'].map((date) => (
@@ -405,7 +431,7 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
                     marginBottom: '12px',
                   }}
                 >
-                  Kasih gambar biar kalcer
+                  Foto Tanaman
                 </label>
 
                 {photoPreview ? (
@@ -482,18 +508,6 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
                     />
                   </label>
                 )}
-
-                <p
-                  style={{
-                    fontFamily: "'Inter', sans-serif",
-                    fontSize: '12px',
-                    color: '#999999',
-                    textAlign: 'center',
-                    marginTop: '12px',
-                  }}
-                >
-                  atau skip dulu, nanti bisa ditambah nanti
-                </p>
               </div>
             </form>
           </div>
@@ -513,7 +527,7 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
           >
             <button
               type="submit"
-              form="add-plant-form"
+              form="edit-plant-form"
               disabled={!isValid}
               style={{
                 width: '100%',
@@ -528,7 +542,7 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
                 cursor: isValid ? 'pointer' : 'not-allowed',
               }}
             >
-              Simpan
+              Simpan Perubahan
             </button>
           </div>
         </motion.div>
@@ -537,4 +551,4 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
   );
 };
 
-export default AddPlantForm;
+export default EditPlant;

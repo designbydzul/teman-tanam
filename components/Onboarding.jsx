@@ -12,7 +12,7 @@ const Onboarding = ({ onComplete }) => {
   const [name, setName] = useState('');
   const [locations, setLocations] = useState([]);
 
-  const locationOptions = ['Balkon', 'Teras', 'Lainnya'];
+  const locationOptions = ['Balkon', 'Teras'];
 
   const toggleLocation = (location) => {
     setLocations((prev) =>
@@ -41,7 +41,7 @@ const Onboarding = ({ onComplete }) => {
     <div
       style={{
         minHeight: '100vh',
-        backgroundColor: '#F5F5DC', // Cream
+        backgroundColor: '#FFFFFF',
         padding: '32px 24px',
         display: 'flex',
         flexDirection: 'column',
@@ -105,7 +105,7 @@ const Onboarding = ({ onComplete }) => {
               autoFocus
               style={{
                 width: '100%',
-                backgroundColor: '#FFFFFF',
+                backgroundColor: '#F5F5F5',
                 borderRadius: '16px',
                 padding: '16px 24px',
                 fontSize: '1rem',
@@ -128,6 +128,22 @@ const Onboarding = ({ onComplete }) => {
                 }
               }}
             />
+            {/* Error validation under input */}
+            {name.trim().length > 0 && name.trim().length < 2 && (
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                style={{
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '0.875rem',
+                  color: '#F44336',
+                  marginTop: '8px',
+                  marginBottom: 0,
+                }}
+              >
+                Nama minimal 2 karakter ya!
+              </motion.p>
+            )}
           </div>
 
           {/* Location Selection */}
@@ -239,22 +255,6 @@ const Onboarding = ({ onComplete }) => {
         </motion.button>
       </div>
 
-      {/* Helper Text */}
-      {!isValid && name.trim().length > 0 && name.trim().length < 2 && (
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          style={{
-            fontFamily: "'Inter', sans-serif",
-            fontSize: '0.875rem',
-            color: '#F44336', // Error color
-            textAlign: 'center',
-            marginTop: '12px',
-          }}
-        >
-          Nama minimal 2 karakter ya!
-        </motion.p>
-      )}
     </div>
   );
 };

@@ -14,6 +14,7 @@ import {
   X
 } from '@phosphor-icons/react';
 import DiagnosaHama from './DiagnosaHama';
+import EditPlant from './EditPlant';
 
 const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
   const [activeTab, setActiveTab] = useState('perawatan');
@@ -21,22 +22,33 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
   const [quickTipsExpanded, setQuickTipsExpanded] = useState(false);
   const [showImagePreview, setShowImagePreview] = useState(false);
   const [showDiagnosaHama, setShowDiagnosaHama] = useState(false);
+  const [showEditPlant, setShowEditPlant] = useState(false);
+  const [currentPlantData, setCurrentPlantData] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // Toast state for actions
+  const [showActionToast, setShowActionToast] = useState(false);
+  const [actionToastMessage, setActionToastMessage] = useState('');
+
+  // Use currentPlantData if available (after edit), otherwise use plant prop
+  const sourcePlant = currentPlantData || plant;
 
   // Normalize plant data structure
-  const plantData = plant ? {
-    id: plant.id,
-    customName: plant.customName || plant.name,
-    species: plant.species || {
-      name: plant.name,
+  const plantData = sourcePlant ? {
+    id: sourcePlant.id,
+    customName: sourcePlant.customName || sourcePlant.name,
+    species: sourcePlant.species || {
+      name: sourcePlant.name,
       scientific: 'Cucumis sativus',
       emoji: '🌱',
     },
-    location: plant.location,
-    plantedDate: plant.plantedDate || plant.createdAt || new Date(Date.now() - 12 * 24 * 60 * 60 * 1000),
-    photoUrl: plant.photoUrl || plant.photoPreview || plant.image || 'https://images.unsplash.com/photo-1568584711271-6c0b7a1e0d64?w=600',
-    lastWatered: plant.lastWatered || new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
-    lastFertilized: plant.lastFertilized || new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
-    quickTips: plant.quickTips || 'Pilih lahan yang memiliki sinar matahari penuh dan tanah yang gembur, mudah menyerap air, serta kaya akan humus dengan pH sekitar 6–7. Bersihkan lahan dari gulma dan bebatuan, lalu gemburkan tanah dengan pencangkulan. Buat bedengan atau guludan dengan lebar sekitar 1 meter, tinggi 20–30 cm, dan jarak antar bedengan 30–50 cm.',
+    location: sourcePlant.location,
+    plantedDate: sourcePlant.plantedDate || sourcePlant.createdAt || new Date(Date.now() - 12 * 24 * 60 * 60 * 1000),
+    photoUrl: sourcePlant.photoUrl || sourcePlant.photoPreview || sourcePlant.image || 'https://images.unsplash.com/photo-1568584711271-6c0b7a1e0d64?w=600',
+    lastWatered: sourcePlant.lastWatered || new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
+    lastFertilized: sourcePlant.lastFertilized || new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
+    quickTips: sourcePlant.quickTips || 'Pilih lahan yang memiliki sinar matahari penuh dan tanah yang gembur, mudah menyerap air, serta kaya akan humus dengan pH sekitar 6–7. Bersihkan lahan dari gulma dan bebatuan, lalu gemburkan tanah dengan pencangkulan. Buat bedengan atau guludan dengan lebar sekitar 1 meter, tinggi 20–30 cm, dan jarak antar bedengan 30–50 cm.',
+    notes: sourcePlant.notes || '',
   } : {
     id: '1',
     customName: 'Timun Jelita',
@@ -108,8 +120,23 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
   };
 
   const handleActionLog = (actionType) => {
-    console.log('Log action:', actionType);
-    // TODO: Implement action logging
+    const plantName = plantData.customName;
+    let message = '';
+
+    switch (actionType) {
+      case 'water':
+        message = `Penyiraman ${plantName} sudah dicatat`;
+        break;
+      case 'fertilize':
+        message = `Pemupukan ${plantName} sudah dicatat`;
+        break;
+      default:
+        message = `Aksi ${actionType} sudah dicatat`;
+    }
+
+    setActionToastMessage(message);
+    setShowActionToast(true);
+    setTimeout(() => setShowActionToast(false), 3000);
   };
 
   const handleMenuAction = (action) => {
@@ -125,12 +152,10 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
         setShowDiagnosaHama(true);
         break;
       case 'edit':
-        if (onEdit) onEdit(plantData);
+        setShowEditPlant(true);
         break;
       case 'delete':
-        if (window.confirm('Apakah Anda yakin ingin menghapus tanaman ini?')) {
-          if (onDelete) onDelete(plantData.id);
-        }
+        setShowDeleteConfirm(true);
         break;
       default:
         break;
@@ -147,13 +172,10 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
         bottom: 0,
         backgroundColor: '#FFFFFF',
         zIndex: 2000,
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
       }}
     >
       {/* Sticky Header Section */}
-      <div style={{ flexShrink: 0 }}>
+      <div style={{ position: 'relative', zIndex: 10, backgroundColor: '#FFFFFF' }}>
         {/* Header with Navigation */}
         <div
           style={{
@@ -308,17 +330,17 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
       </div>
 
       {/* Scrollable Tab Content */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '0 24px' }}>
-        <AnimatePresence mode="wait">
-          {activeTab === 'perawatan' ? (
-            <motion.div
-              key="perawatan"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              transition={{ duration: 0.2 }}
-              style={{ marginTop: '24px' }}
-            >
+      <div style={{
+        position: 'absolute',
+        top: '330px',
+        left: 0,
+        right: 0,
+        bottom: 0,
+        overflowY: 'auto',
+        WebkitOverflowScrolling: 'touch',
+      }}>
+        {activeTab === 'perawatan' ? (
+          <div style={{ padding: '24px 24px 100px 24px' }}>
               {/* Section Header */}
               <p
                 style={{
@@ -335,6 +357,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {/* Penyiraman */}
                 <div
+                  onClick={() => handleActionLog('water')}
                   style={{
                     backgroundColor: '#FFFFFF',
                     borderRadius: '16px',
@@ -344,6 +367,8 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.2s ease',
                   }}
                 >
                   <div style={{ flex: 1 }}>
@@ -370,30 +395,25 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
                     </p>
                   </div>
 
-                  <button
-                    onClick={() => handleActionLog('water')}
+                  <div
                     style={{
                       width: '48px',
                       height: '48px',
                       borderRadius: '50%',
                       backgroundColor: '#EFF6FF',
-                      border: 'none',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      cursor: 'pointer',
                       flexShrink: 0,
-                      transition: 'background-color 0.2s ease',
                     }}
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#DBEAFE')}
-                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#EFF6FF')}
                   >
                     <Drop size={24} weight="duotone" color="#3B82F6" />
-                  </button>
+                  </div>
                 </div>
 
                 {/* Pemupukan */}
                 <div
+                  onClick={() => handleActionLog('fertilize')}
                   style={{
                     backgroundColor: '#FFFFFF',
                     borderRadius: '16px',
@@ -403,6 +423,8 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.2s ease',
                   }}
                 >
                   <div style={{ flex: 1 }}>
@@ -429,26 +451,20 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
                     </p>
                   </div>
 
-                  <button
-                    onClick={() => handleActionLog('fertilize')}
+                  <div
                     style={{
                       width: '48px',
                       height: '48px',
                       borderRadius: '50%',
                       backgroundColor: '#F0FDF4',
-                      border: 'none',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      cursor: 'pointer',
                       flexShrink: 0,
-                      transition: 'background-color 0.2s ease',
                     }}
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#DCFCE7')}
-                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#F0FDF4')}
                   >
                     <Leaf size={24} weight="duotone" color="#16A34A" />
-                  </button>
+                  </div>
                 </div>
               </div>
 
@@ -544,21 +560,6 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
                 }}
                 onClick={() => handleMenuAction('diagnose')}
               >
-                <div
-                  style={{
-                    width: '40px',
-                    height: '40px',
-                    borderRadius: '50%',
-                    backgroundColor: '#FEF2F2',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                  }}
-                >
-                  <FirstAidKit size={20} weight="duotone" color="#EF4444" />
-                </div>
-
                 <div style={{ flex: 1 }}>
                   <h3
                     style={{
@@ -593,16 +594,9 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
                   <Camera size={24} weight="bold" color="#4B5563" />
                 </button>
               </div>
-            </motion.div>
-          ) : (
-            <motion.div
-              key="riwayat"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.2 }}
-              style={{ marginTop: '24px', paddingBottom: '40px' }}
-            >
+          </div>
+        ) : (
+          <div style={{ padding: '24px 24px 100px 24px' }}>
               {timeline.map((group, groupIndex) => (
                 <div key={groupIndex}>
                   {/* Date Header */}
@@ -693,9 +687,8 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
                   ))}
                 </div>
               ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
+          </div>
+        )}
       </div>
 
       {/* Menu Modal */}
@@ -1047,6 +1040,220 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
           onBack={() => setShowDiagnosaHama(false)}
         />
       )}
+
+      {/* Edit Plant Modal */}
+      {showEditPlant && (
+        <EditPlant
+          plant={currentPlantData || plantData}
+          onClose={() => setShowEditPlant(false)}
+          onSave={(updatedPlant) => {
+            setCurrentPlantData(updatedPlant);
+            setShowEditPlant(false);
+            if (onEdit) onEdit(updatedPlant);
+          }}
+        />
+      )}
+
+      {/* Action Toast */}
+      <AnimatePresence>
+        {showActionToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            style={{
+              position: 'fixed',
+              bottom: '24px',
+              left: '24px',
+              right: '24px',
+              backgroundColor: '#FFFFFF',
+              borderRadius: '16px',
+              padding: '16px 20px',
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '12px',
+              zIndex: 4000,
+            }}
+          >
+            <p
+              style={{
+                fontFamily: "'Inter', sans-serif",
+                fontSize: '1rem',
+                fontWeight: 600,
+                color: '#2C2C2C',
+                margin: 0,
+                flex: 1,
+              }}
+            >
+              {actionToastMessage}
+            </p>
+            <button
+              onClick={() => setShowActionToast(false)}
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: '4px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path
+                  d="M15 5L5 15M5 5l10 10"
+                  stroke="#666666"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {showDeleteConfirm && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowDeleteConfirm(false)}
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                zIndex: 4000,
+              }}
+            />
+
+            {/* Modal */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 4001,
+                pointerEvents: 'none',
+              }}
+            >
+            <div
+              style={{
+                backgroundColor: '#FFFFFF',
+                borderRadius: '24px',
+                padding: '32px 24px',
+                width: 'calc(100% - 48px)',
+                maxWidth: '320px',
+                textAlign: 'center',
+                pointerEvents: 'auto',
+              }}
+            >
+              {/* Icon */}
+              <div
+                style={{
+                  width: '64px',
+                  height: '64px',
+                  borderRadius: '50%',
+                  backgroundColor: '#FEF2F2',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 20px',
+                }}
+              >
+                <Trash size={32} weight="bold" color="#DC2626" />
+              </div>
+
+              {/* Title */}
+              <h2
+                style={{
+                  fontFamily: 'var(--font-caveat), Caveat, cursive',
+                  fontSize: '1.75rem',
+                  fontWeight: 600,
+                  color: '#2D5016',
+                  margin: '0 0 12px 0',
+                }}
+              >
+                Hapus Tanaman?
+              </h2>
+
+              {/* Description */}
+              <p
+                style={{
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '14px',
+                  color: '#666666',
+                  margin: '0 0 24px 0',
+                  lineHeight: 1.5,
+                }}
+              >
+                Kamu yakin mau hapus <strong style={{ color: '#2C2C2C' }}>{plantData.customName}</strong>? Semua data dan riwayat perawatan akan hilang.
+              </p>
+
+              {/* Buttons */}
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  style={{
+                    flex: 1,
+                    padding: '14px 24px',
+                    fontSize: '1rem',
+                    fontFamily: "'Inter', sans-serif",
+                    fontWeight: 600,
+                    color: '#666666',
+                    backgroundColor: '#F5F5F5',
+                    border: 'none',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={() => {
+                    setShowDeleteConfirm(false);
+                    if (onDelete) onDelete(plantData.id);
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: '14px 24px',
+                    fontSize: '1rem',
+                    fontFamily: "'Inter', sans-serif",
+                    fontWeight: 600,
+                    color: '#FFFFFF',
+                    backgroundColor: '#DC2626',
+                    border: 'none',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Hapus
+                </button>
+              </div>
+            </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

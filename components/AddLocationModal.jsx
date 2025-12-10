@@ -5,6 +5,7 @@ import { X } from '@phosphor-icons/react';
 const AddLocationModal = ({ isOpen, onClose, plants, onSave }) => {
   const [locationName, setLocationName] = useState('');
   const [selectedPlantIds, setSelectedPlantIds] = useState([]);
+  const [inputFocused, setInputFocused] = useState(false);
 
   // Get plants that don't have a specific location (location is 'Semua' or empty)
   const uncategorizedPlants = plants.filter(
@@ -70,7 +71,7 @@ const AddLocationModal = ({ isOpen, onClose, plants, onSave }) => {
               right: 0,
               backgroundColor: '#FFFFFF',
               borderRadius: '12px 12px 0 0',
-              maxHeight: '85vh',
+              height: '95vh',
               zIndex: 2001,
               display: 'flex',
               flexDirection: 'column',
@@ -144,6 +145,8 @@ const AddLocationModal = ({ isOpen, onClose, plants, onSave }) => {
                   placeholder="Masukan nama lokasi"
                   value={locationName}
                   onChange={(e) => setLocationName(e.target.value)}
+                  onFocus={() => setInputFocused(true)}
+                  onBlur={() => setInputFocused(false)}
                   style={{
                     width: '100%',
                     padding: '16px',
@@ -151,9 +154,10 @@ const AddLocationModal = ({ isOpen, onClose, plants, onSave }) => {
                     fontFamily: "'Inter', sans-serif",
                     color: '#2C2C2C',
                     backgroundColor: '#FAFAFA',
-                    border: locationName.length >= 2 ? '2px solid #7CB342' : '1px solid #E0E0E0',
+                    border: inputFocused || locationName.length >= 2 ? '2px solid #7CB342' : '2px solid transparent',
                     borderRadius: '12px',
                     outline: 'none',
+                    transition: 'border-color 200ms',
                   }}
                 />
               </div>
