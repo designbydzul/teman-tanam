@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AddPlant from './AddPlant';
 import AddPlantForm from './AddPlantForm';
@@ -6,6 +6,8 @@ import AddPlantSuccess from './AddPlantSuccess';
 import PlantDetail from './PlantDetail';
 import ProfileModal from './ProfileModal';
 import LocationSettings from './LocationSettings';
+import EditProfile from './EditProfile';
+import AddLocationModal from './AddLocationModal';
 
 // Mock plant data
 const MOCK_PLANTS = [
@@ -45,7 +47,60 @@ const Home = ({ userName }) => {
   // Location Settings state
   const [showLocationSettings, setShowLocationSettings] = useState(false);
 
-  const locations = ['Semua', 'Teras', 'Balkon'];
+  // Edit Profile state
+  const [showEditProfile, setShowEditProfile] = useState(false);
+  const [userEmail, setUserEmail] = useState('designbydzul@gmail.com');
+  const [currentUserName, setCurrentUserName] = useState(userName || 'Dzul');
+
+  // Add Location Modal state
+  const [showAddLocationModal, setShowAddLocationModal] = useState(false);
+
+  // Load user profile from localStorage
+  useEffect(() => {
+    const savedName = localStorage.getItem('temanTanamUserName');
+    const savedEmail = localStorage.getItem('temanTanamUserEmail');
+    if (savedName) setCurrentUserName(savedName);
+    if (savedEmail) setUserEmail(savedEmail);
+  }, []);
+
+  // Dynamic locations from localStorage
+  const [locations, setLocations] = useState(['Semua']);
+
+  // Load locations from localStorage on mount
+  useEffect(() => {
+    const loadLocations = () => {
+      const savedLocations = localStorage.getItem('temanTanamLocations');
+      if (savedLocations) {
+        const parsed = JSON.parse(savedLocations);
+        const locationNames = parsed.map((loc) => loc.name);
+        setLocations(['Semua', ...locationNames]);
+      } else {
+        setLocations(['Semua', 'Teras', 'Balkon']);
+      }
+    };
+
+    loadLocations();
+
+    // Listen for storage changes (when LocationSettings updates)
+    window.addEventListener('storage', loadLocations);
+    return () => window.removeEventListener('storage', loadLocations);
+  }, []);
+
+  // Reload locations when returning from LocationSettings
+  const handleLocationSettingsClose = () => {
+    setShowLocationSettings(false);
+    // Reload locations from localStorage
+    const savedLocations = localStorage.getItem('temanTanamLocations');
+    if (savedLocations) {
+      const parsed = JSON.parse(savedLocations);
+      const locationNames = parsed.map((loc) => loc.name);
+      setLocations(['Semua', ...locationNames]);
+      // Reset to 'Semua' if current selection was deleted
+      if (!['Semua', ...locationNames].includes(selectedLocation)) {
+        setSelectedLocation('Semua');
+      }
+    }
+  };
 
   // Filter plants based on search and location
   const filteredPlants = plants.filter((plant) => {
@@ -146,23 +201,66 @@ const Home = ({ userName }) => {
   const handleProfileNavigation = (action) => {
     if (action === 'location-settings') {
       setShowLocationSettings(true);
+    } else if (action === 'edit-profile') {
+      setShowEditProfile(true);
     }
-    // TODO: Add other navigation actions (edit-profile, help-community, tutorial, logout)
+    // TODO: Add other navigation actions (help-community, tutorial, logout)
+  };
+
+  // Handle profile save
+  const handleProfileSave = (profileData) => {
+    setCurrentUserName(profileData.name);
+    setUserEmail(profileData.email);
+  };
+
+  // Handle add location save
+  const handleAddLocationSave = ({ name, selectedPlantIds }) => {
+    // Get existing locations from localStorage
+    const savedLocations = localStorage.getItem('temanTanamLocations');
+    const existingLocations = savedLocations ? JSON.parse(savedLocations) : [];
+
+    // Add new location
+    const newLocation = {
+      id: Date.now().toString(),
+      name,
+      emoji: '📍',
+    };
+    const updatedLocations = [...existingLocations, newLocation];
+
+    // Save to localStorage
+    localStorage.setItem('temanTanamLocations', JSON.stringify(updatedLocations));
+
+    // Update local state
+    setLocations(['Semua', ...updatedLocations.map((loc) => loc.name)]);
+
+    // Update selected plants' locations
+    if (selectedPlantIds.length > 0) {
+      setPlants((prevPlants) =>
+        prevPlants.map((plant) =>
+          selectedPlantIds.includes(plant.id)
+            ? { ...plant, location: name }
+            : plant
+        )
+      );
+    }
   };
 
   return (
     <div
       style={{
-        minHeight: '100vh',
+        height: '100vh',
         backgroundColor: '#FAFAFA',
-        paddingBottom: '100px',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
       }}
     >
-      {/* Header */}
+      {/* Header - Sticky */}
       <div
         style={{
           padding: '20px 24px',
           backgroundColor: '#FFFFFF',
+          flexShrink: 0,
         }}
       >
         {/* Top Bar with Greeting and Icons */}
@@ -175,9 +273,8 @@ const Home = ({ userName }) => {
           }}
         >
           <h1
-            className="font-accent"
             style={{
-              fontFamily: "'Caveat', cursive",
+              fontFamily: 'var(--font-caveat), Caveat, cursive',
               fontSize: '2rem',
               fontWeight: 600,
               color: '#2D5016',
@@ -188,7 +285,7 @@ const Home = ({ userName }) => {
               maxWidth: 'calc(100% - 140px)',
             }}
           >
-            Halo {userName || 'Dzul'}
+            Halo {currentUserName}
           </h1>
 
           <div style={{ display: 'flex', gap: '12px' }}>
@@ -326,6 +423,7 @@ const Home = ({ userName }) => {
 
           {/* Add Location Button */}
           <button
+            onClick={() => setShowAddLocationModal(true)}
             style={{
               width: '40px',
               height: '40px',
@@ -346,17 +444,20 @@ const Home = ({ userName }) => {
         </div>
       </div>
 
-      {/* Plant Grid or Empty State */}
+      {/* Plant Grid or Empty State - Scrollable */}
       <div
         style={{
           display: 'flex',
           padding: '16px 8px',
+          paddingBottom: '100px',
           justifyContent: 'flex-start',
           alignItems: 'flex-start',
           alignContent: 'flex-start',
           gap: '24px 0',
-          alignSelf: 'stretch',
           flexWrap: 'wrap',
+          flex: 1,
+          overflowY: 'auto',
+          backgroundColor: '#FFFFFF',
         }}
       >
         {showEmptyState ? (
@@ -604,15 +705,33 @@ const Home = ({ userName }) => {
       <ProfileModal
         isOpen={showProfileModal}
         onClose={() => setShowProfileModal(false)}
-        userName={userName || 'Dzul'}
-        userEmail="designbydzul@gmail.com"
+        userName={currentUserName}
+        userEmail={userEmail}
         onNavigate={handleProfileNavigation}
       />
 
       {/* Location Settings */}
       {showLocationSettings && (
-        <LocationSettings onBack={() => setShowLocationSettings(false)} />
+        <LocationSettings onBack={handleLocationSettingsClose} />
       )}
+
+      {/* Edit Profile */}
+      {showEditProfile && (
+        <EditProfile
+          onBack={() => setShowEditProfile(false)}
+          userName={currentUserName}
+          userEmail={userEmail}
+          onSave={handleProfileSave}
+        />
+      )}
+
+      {/* Add Location Modal */}
+      <AddLocationModal
+        isOpen={showAddLocationModal}
+        onClose={() => setShowAddLocationModal(false)}
+        plants={plants}
+        onSave={handleAddLocationSave}
+      />
     </div>
   );
 };

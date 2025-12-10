@@ -110,9 +110,8 @@ const ProfileModal = ({ isOpen, onClose, userName, userEmail, onNavigate }) => {
 
             {/* User Name */}
             <h2
-              className="font-accent"
               style={{
-                fontFamily: "'Caveat', cursive",
+                fontFamily: 'var(--font-caveat), Caveat, cursive',
                 fontSize: '1.75rem',
                 fontWeight: 600,
                 color: '#2D5016',

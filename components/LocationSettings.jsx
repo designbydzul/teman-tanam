@@ -54,9 +54,10 @@ const SortableLocationCard = ({ location, onDelete }) => {
           gap: '16px',
           padding: '16px',
           backgroundColor: '#FFFFFF',
-          border: location.plantCount > 0 ? '2px solid #7CB342' : '1px solid #E0E0E0',
+          border: 'none',
           borderRadius: '12px',
           marginBottom: '12px',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)',
         }}
       >
         {/* Drag Handle */}
@@ -246,7 +247,7 @@ const LocationSettings = ({ onBack }) => {
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: '#FFFBF5',
+        backgroundColor: '#FFFFFF',
         zIndex: 3000,
         overflowY: 'auto',
       }}
@@ -259,7 +260,7 @@ const LocationSettings = ({ onBack }) => {
           left: 0,
           right: 0,
           padding: '24px',
-          backgroundColor: '#FFFBF5',
+          backgroundColor: '#FFFFFF',
           borderBottom: '1px solid #F5F5F5',
           zIndex: 10,
         }}
@@ -287,9 +288,8 @@ const LocationSettings = ({ onBack }) => {
 
           {/* Title */}
           <h1
-            className="font-accent"
             style={{
-              fontFamily: "'Caveat', cursive",
+              fontFamily: 'var(--font-caveat), Caveat, cursive',
               fontSize: '1.75rem',
               fontWeight: 600,
               color: '#2D5016',
@@ -299,18 +299,6 @@ const LocationSettings = ({ onBack }) => {
             Atur Lokasi Tanam
           </h1>
         </div>
-
-        {/* Subtitle */}
-        <p
-          style={{
-            fontFamily: "'Inter', sans-serif",
-            fontSize: '14px',
-            color: '#666666',
-            margin: '12px 0 0 56px',
-          }}
-        >
-          Tahan & geser untuk ubah urutan
-        </p>
       </div>
 
       {/* Content */}

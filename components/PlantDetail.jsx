@@ -9,13 +9,16 @@ import {
   ArrowLeft,
   DotsThree,
   PencilSimple,
-  Trash
+  Trash,
+  Plant,
+  X
 } from '@phosphor-icons/react';
 
 const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
   const [activeTab, setActiveTab] = useState('perawatan');
   const [showMenu, setShowMenu] = useState(false);
   const [quickTipsExpanded, setQuickTipsExpanded] = useState(false);
+  const [showImagePreview, setShowImagePreview] = useState(false);
 
   // Normalize plant data structure
   const plantData = plant ? {
@@ -88,13 +91,18 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
   ];
 
   const getActionIcon = (type) => {
-    const icons = {
-      water: '💧',
-      fertilize: '🌿',
-      diagnose: '🏥',
-      add: '🌱',
-    };
-    return icons[type] || '📝';
+    switch (type) {
+      case 'water':
+        return <Drop size={20} weight="regular" color="#666666" />;
+      case 'fertilize':
+        return <Leaf size={20} weight="regular" color="#666666" />;
+      case 'diagnose':
+        return <FirstAidKit size={20} weight="regular" color="#666666" />;
+      case 'add':
+        return <Plant size={20} weight="regular" color="#666666" />;
+      default:
+        return <Drop size={20} weight="regular" color="#666666" />;
+    }
   };
 
   const handleActionLog = (actionType) => {
@@ -135,157 +143,170 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: '#FFF9F0',
+        backgroundColor: '#FFFFFF',
         zIndex: 2000,
-        overflowY: 'auto',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
       }}
     >
-      {/* Plant Photo with Header */}
-      <div style={{ position: 'relative' }}>
-        <img
-          src={plantData.photoUrl}
-          alt={plantData.customName}
-          style={{
-            width: '100%',
-            height: '240px',
-            objectFit: 'cover',
-            borderRadius: '0 0 24px 24px',
-          }}
-        />
-
-        {/* Navigation Buttons */}
-        <button
-          onClick={onBack}
-          style={{
-            position: 'absolute',
-            top: '20px',
-            left: '20px',
-            width: '48px',
-            height: '48px',
-            borderRadius: '50%',
-            backgroundColor: '#FFFFFF',
-            border: 'none',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-            transition: 'background-color 0.2s ease',
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F5F5F5')}
-          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#FFFFFF')}
-        >
-          <ArrowLeft size={24} weight="bold" color="#2D5016" />
-        </button>
-
-        <button
-          onClick={() => setShowMenu(true)}
-          style={{
-            position: 'absolute',
-            top: '20px',
-            right: '20px',
-            width: '48px',
-            height: '48px',
-            borderRadius: '50%',
-            backgroundColor: '#FFFFFF',
-            border: 'none',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-            transition: 'background-color 0.2s ease',
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F5F5F5')}
-          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#FFFFFF')}
-        >
-          <DotsThree size={24} weight="bold" color="#2D5016" />
-        </button>
-      </div>
-
-      {/* Plant Info */}
-      <div style={{ padding: '24px' }}>
-        <h1
-          className="font-accent"
-          style={{
-            fontFamily: "'Caveat', cursive",
-            fontSize: '2rem',
-            fontWeight: 600,
-            color: '#2D5016',
-            margin: 0,
-          }}
-        >
-          {plantData.customName}
-        </h1>
-        <p
-          style={{
-            fontFamily: "'Inter', sans-serif",
-            fontSize: '1rem',
-            color: '#666666',
-            margin: '4px 0 8px 0',
-          }}
-        >
-          {plantData.species.scientific}
-        </p>
-        <p
-          style={{
-            fontFamily: "'Inter', sans-serif",
-            fontSize: '14px',
-            color: '#666666',
-            margin: 0,
-          }}
-        >
-          {plantData.location} · {daysSincePlanted} hari sejak ditanam
-        </p>
-
-        {/* Tab Navigation */}
+      {/* Sticky Header Section */}
+      <div style={{ flexShrink: 0 }}>
+        {/* Header with Navigation */}
         <div
           style={{
-            display: 'inline-flex',
-            gap: '4px',
-            marginTop: '24px',
-            padding: '4px',
-            backgroundColor: '#F5F5F5',
-            borderRadius: '16px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '24px',
           }}
         >
           <button
-            onClick={() => setActiveTab('perawatan')}
+            onClick={onBack}
             style={{
-              padding: '12px 32px',
-              fontSize: '1rem',
-              fontFamily: "'Inter', sans-serif",
-              fontWeight: activeTab === 'perawatan' ? 500 : 400,
-              color: activeTab === 'perawatan' ? '#2D5016' : '#666666',
-              backgroundColor: activeTab === 'perawatan' ? '#FFF9E6' : 'transparent',
-              border: 'none',
-              borderRadius: '12px',
+              width: '48px',
+              height: '48px',
+              borderRadius: '50%',
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #E0E0E0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
               cursor: 'pointer',
-              transition: 'all 0.2s ease',
             }}
           >
-            Perawatan
+            <ArrowLeft size={24} weight="bold" color="#2D5016" />
           </button>
+
           <button
-            onClick={() => setActiveTab('riwayat')}
+            onClick={() => setShowMenu(true)}
             style={{
-              padding: '12px 32px',
-              fontSize: '1rem',
-              fontFamily: "'Inter', sans-serif",
-              fontWeight: activeTab === 'riwayat' ? 500 : 400,
-              color: activeTab === 'riwayat' ? '#2D5016' : '#666666',
-              backgroundColor: activeTab === 'riwayat' ? '#FFF9E6' : 'transparent',
-              border: 'none',
-              borderRadius: '12px',
+              width: '48px',
+              height: '48px',
+              borderRadius: '50%',
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #E0E0E0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
               cursor: 'pointer',
-              transition: 'all 0.2s ease',
             }}
           >
-            Riwayat
+            <DotsThree size={24} weight="bold" color="#2D5016" />
           </button>
         </div>
 
-        {/* Tab Content */}
+        {/* Plant Info with Thumbnail */}
+        <div style={{ padding: '0 24px' }}>
+          <div
+            style={{
+              display: 'flex',
+              gap: '16px',
+              alignItems: 'flex-start',
+            }}
+          >
+            {/* Plant Thumbnail - Clickable */}
+            <img
+              src={plantData.photoUrl}
+              alt={plantData.customName}
+              onClick={() => setShowImagePreview(true)}
+              style={{
+                width: '140px',
+                height: '140px',
+                objectFit: 'cover',
+                borderRadius: '24px',
+                flexShrink: 0,
+                cursor: 'pointer',
+              }}
+            />
+
+            {/* Plant Details */}
+            <div style={{ flex: 1 }}>
+              <h1
+                style={{
+                  fontFamily: 'var(--font-caveat), Caveat, cursive',
+                  fontSize: '1.75rem',
+                  fontWeight: 600,
+                  color: '#2D5016',
+                  margin: 0,
+                }}
+              >
+                {plantData.customName}
+              </h1>
+              <p
+                style={{
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '1rem',
+                  color: '#666666',
+                  margin: '4px 0 8px 0',
+                }}
+              >
+                {plantData.species.scientific}
+              </p>
+              <p
+                style={{
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '14px',
+                  color: '#666666',
+                  margin: 0,
+                }}
+              >
+                {plantData.location} • {daysSincePlanted} hari sejak ditanam
+              </p>
+            </div>
+          </div>
+
+          {/* Tab Navigation */}
+          <div
+            style={{
+              display: 'flex',
+              gap: '0',
+              marginTop: '24px',
+              marginBottom: '16px',
+            }}
+          >
+            <button
+              onClick={() => setActiveTab('perawatan')}
+              style={{
+                flex: 1,
+                padding: '12px 24px',
+                fontSize: '1rem',
+                fontFamily: "'Inter', sans-serif",
+                fontWeight: activeTab === 'perawatan' ? 500 : 400,
+                color: activeTab === 'perawatan' ? '#2D5016' : '#666666',
+                backgroundColor: activeTab === 'perawatan' ? '#FFF9E6' : 'transparent',
+                border: 'none',
+                borderRadius: '12px',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              Perawatan
+            </button>
+            <button
+              onClick={() => setActiveTab('riwayat')}
+              style={{
+                flex: 1,
+                padding: '12px 24px',
+                fontSize: '1rem',
+                fontFamily: "'Inter', sans-serif",
+                fontWeight: activeTab === 'riwayat' ? 500 : 400,
+                color: activeTab === 'riwayat' ? '#2D5016' : '#666666',
+                backgroundColor: activeTab === 'riwayat' ? '#FFF9E6' : 'transparent',
+                border: 'none',
+                borderRadius: '12px',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              Riwayat
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Scrollable Tab Content */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '0 24px' }}>
         <AnimatePresence mode="wait">
           {activeTab === 'perawatan' ? (
             <motion.div
@@ -432,7 +453,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
               {/* Quick Tips */}
               <div
                 style={{
-                  backgroundColor: '#F5F5F5',
+                  backgroundColor: '#FAFAFA',
                   borderRadius: '16px',
                   padding: '16px',
                   border: '1px solid #E0E0E0',
@@ -608,7 +629,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
                         boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
                         marginBottom: '12px',
                         display: 'flex',
-                        alignItems: 'start',
+                        alignItems: entry.hasDetails ? 'flex-start' : 'center',
                         gap: '12px',
                       }}
                     >
@@ -725,9 +746,8 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
                 }}
               >
                 <h2
-                  className="font-accent"
                   style={{
-                    fontFamily: "'Caveat', cursive",
+                    fontFamily: 'var(--font-caveat), Caveat, cursive',
                     fontSize: '1.75rem',
                     fontWeight: 600,
                     color: '#2D5016',
@@ -954,6 +974,67 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
               </button>
             </motion.div>
           </>
+        )}
+      </AnimatePresence>
+
+      {/* Image Preview Modal */}
+      <AnimatePresence>
+        {showImagePreview && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.95)',
+              zIndex: 3000,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            onClick={() => setShowImagePreview(false)}
+          >
+            {/* Close Button */}
+            <button
+              onClick={() => setShowImagePreview(false)}
+              style={{
+                position: 'absolute',
+                top: '24px',
+                right: '24px',
+                width: '48px',
+                height: '48px',
+                borderRadius: '50%',
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                border: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+              }}
+            >
+              <X size={28} weight="bold" color="#FFFFFF" />
+            </button>
+
+            {/* Full Image */}
+            <motion.img
+              initial={{ scale: 0.8 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.8 }}
+              src={plantData.photoUrl}
+              alt={plantData.customName}
+              style={{
+                maxWidth: '90%',
+                maxHeight: '90%',
+                objectFit: 'contain',
+                borderRadius: '12px',
+              }}
+              onClick={(e) => e.stopPropagation()}
+            />
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
