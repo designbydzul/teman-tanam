@@ -1,0 +1,963 @@
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Drop,
+  Leaf,
+  FirstAidKit,
+  Camera,
+  CaretDown,
+  ArrowLeft,
+  DotsThree,
+  PencilSimple,
+  Trash
+} from '@phosphor-icons/react';
+
+const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
+  const [activeTab, setActiveTab] = useState('perawatan');
+  const [showMenu, setShowMenu] = useState(false);
+  const [quickTipsExpanded, setQuickTipsExpanded] = useState(false);
+
+  // Normalize plant data structure
+  const plantData = plant ? {
+    id: plant.id,
+    customName: plant.customName || plant.name,
+    species: plant.species || {
+      name: plant.name,
+      scientific: 'Cucumis sativus',
+      emoji: '🌱',
+    },
+    location: plant.location,
+    plantedDate: plant.plantedDate || plant.createdAt || new Date(Date.now() - 12 * 24 * 60 * 60 * 1000),
+    photoUrl: plant.photoUrl || plant.photoPreview || plant.image || 'https://images.unsplash.com/photo-1568584711271-6c0b7a1e0d64?w=600',
+    lastWatered: plant.lastWatered || new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
+    lastFertilized: plant.lastFertilized || new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
+    quickTips: plant.quickTips || 'Pilih lahan yang memiliki sinar matahari penuh dan tanah yang gembur, mudah menyerap air, serta kaya akan humus dengan pH sekitar 6–7. Bersihkan lahan dari gulma dan bebatuan, lalu gemburkan tanah dengan pencangkulan. Buat bedengan atau guludan dengan lebar sekitar 1 meter, tinggi 20–30 cm, dan jarak antar bedengan 30–50 cm.',
+  } : {
+    id: '1',
+    customName: 'Timun Jelita',
+    species: {
+      name: 'Timun',
+      scientific: 'Cucumis sativus',
+      emoji: '🥒',
+    },
+    location: 'Teras',
+    plantedDate: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000),
+    photoUrl: 'https://images.unsplash.com/photo-1568584711271-6c0b7a1e0d64?w=600',
+    lastWatered: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
+    lastFertilized: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
+    quickTips: 'Pilih lahan yang memiliki sinar matahari penuh dan tanah yang gembur, mudah menyerap air, serta kaya akan humus dengan pH sekitar 6–7. Bersihkan lahan dari gulma dan bebatuan, lalu gemburkan tanah dengan pencangkulan. Buat bedengan atau guludan dengan lebar sekitar 1 meter, tinggi 20–30 cm, dan jarak antar bedengan 30–50 cm.',
+  };
+
+  // Calculate days since planted
+  const daysSincePlanted = Math.floor(
+    (new Date() - new Date(plantData.plantedDate)) / (1000 * 60 * 60 * 24)
+  );
+
+  // Calculate days since last action
+  const daysSinceWatered = plantData.lastWatered
+    ? Math.floor((new Date() - new Date(plantData.lastWatered)) / (1000 * 60 * 60 * 24))
+    : null;
+
+  const daysSinceFertilized = plantData.lastFertilized
+    ? Math.floor((new Date() - new Date(plantData.lastFertilized)) / (1000 * 60 * 60 * 24))
+    : null;
+
+  // Mock timeline data
+  const timeline = [
+    {
+      date: '18 Desember 2025',
+      entries: [
+        { type: 'water', label: 'Penyiraman', time: '7.45' },
+        { type: 'fertilize', label: 'Pemupukan', time: '6.30' },
+      ],
+    },
+    {
+      date: '16 Desember 2025',
+      entries: [
+        { type: 'water', label: 'Penyiraman', time: '7.45' },
+        { type: 'diagnose', label: 'Diagnosa penyakit', time: '6.30', hasDetails: true },
+      ],
+    },
+    {
+      date: '10 Desember 2025',
+      entries: [
+        { type: 'water', label: 'Penyiraman', time: '10.15' },
+        { type: 'add', label: 'Tanaman ditambahkan', time: '8.23' },
+      ],
+    },
+  ];
+
+  const getActionIcon = (type) => {
+    const icons = {
+      water: '💧',
+      fertilize: '🌿',
+      diagnose: '🏥',
+      add: '🌱',
+    };
+    return icons[type] || '📝';
+  };
+
+  const handleActionLog = (actionType) => {
+    console.log('Log action:', actionType);
+    // TODO: Implement action logging
+  };
+
+  const handleMenuAction = (action) => {
+    setShowMenu(false);
+    switch (action) {
+      case 'water':
+        handleActionLog('water');
+        break;
+      case 'fertilize':
+        handleActionLog('fertilize');
+        break;
+      case 'diagnose':
+        console.log('Navigate to diagnosis');
+        break;
+      case 'edit':
+        if (onEdit) onEdit(plantData);
+        break;
+      case 'delete':
+        if (window.confirm('Apakah Anda yakin ingin menghapus tanaman ini?')) {
+          if (onDelete) onDelete(plantData.id);
+        }
+        break;
+      default:
+        break;
+    }
+  };
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: '#FFF9F0',
+        zIndex: 2000,
+        overflowY: 'auto',
+      }}
+    >
+      {/* Plant Photo with Header */}
+      <div style={{ position: 'relative' }}>
+        <img
+          src={plantData.photoUrl}
+          alt={plantData.customName}
+          style={{
+            width: '100%',
+            height: '240px',
+            objectFit: 'cover',
+            borderRadius: '0 0 24px 24px',
+          }}
+        />
+
+        {/* Navigation Buttons */}
+        <button
+          onClick={onBack}
+          style={{
+            position: 'absolute',
+            top: '20px',
+            left: '20px',
+            width: '48px',
+            height: '48px',
+            borderRadius: '50%',
+            backgroundColor: '#FFFFFF',
+            border: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+            transition: 'background-color 0.2s ease',
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F5F5F5')}
+          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#FFFFFF')}
+        >
+          <ArrowLeft size={24} weight="bold" color="#2D5016" />
+        </button>
+
+        <button
+          onClick={() => setShowMenu(true)}
+          style={{
+            position: 'absolute',
+            top: '20px',
+            right: '20px',
+            width: '48px',
+            height: '48px',
+            borderRadius: '50%',
+            backgroundColor: '#FFFFFF',
+            border: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+            transition: 'background-color 0.2s ease',
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F5F5F5')}
+          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#FFFFFF')}
+        >
+          <DotsThree size={24} weight="bold" color="#2D5016" />
+        </button>
+      </div>
+
+      {/* Plant Info */}
+      <div style={{ padding: '24px' }}>
+        <h1
+          className="font-accent"
+          style={{
+            fontFamily: "'Caveat', cursive",
+            fontSize: '2rem',
+            fontWeight: 600,
+            color: '#2D5016',
+            margin: 0,
+          }}
+        >
+          {plantData.customName}
+        </h1>
+        <p
+          style={{
+            fontFamily: "'Inter', sans-serif",
+            fontSize: '1rem',
+            color: '#666666',
+            margin: '4px 0 8px 0',
+          }}
+        >
+          {plantData.species.scientific}
+        </p>
+        <p
+          style={{
+            fontFamily: "'Inter', sans-serif",
+            fontSize: '14px',
+            color: '#666666',
+            margin: 0,
+          }}
+        >
+          {plantData.location} · {daysSincePlanted} hari sejak ditanam
+        </p>
+
+        {/* Tab Navigation */}
+        <div
+          style={{
+            display: 'inline-flex',
+            gap: '4px',
+            marginTop: '24px',
+            padding: '4px',
+            backgroundColor: '#F5F5F5',
+            borderRadius: '16px',
+          }}
+        >
+          <button
+            onClick={() => setActiveTab('perawatan')}
+            style={{
+              padding: '12px 32px',
+              fontSize: '1rem',
+              fontFamily: "'Inter', sans-serif",
+              fontWeight: activeTab === 'perawatan' ? 500 : 400,
+              color: activeTab === 'perawatan' ? '#2D5016' : '#666666',
+              backgroundColor: activeTab === 'perawatan' ? '#FFF9E6' : 'transparent',
+              border: 'none',
+              borderRadius: '12px',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            Perawatan
+          </button>
+          <button
+            onClick={() => setActiveTab('riwayat')}
+            style={{
+              padding: '12px 32px',
+              fontSize: '1rem',
+              fontFamily: "'Inter', sans-serif",
+              fontWeight: activeTab === 'riwayat' ? 500 : 400,
+              color: activeTab === 'riwayat' ? '#2D5016' : '#666666',
+              backgroundColor: activeTab === 'riwayat' ? '#FFF9E6' : 'transparent',
+              border: 'none',
+              borderRadius: '12px',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            Riwayat
+          </button>
+        </div>
+
+        {/* Tab Content */}
+        <AnimatePresence mode="wait">
+          {activeTab === 'perawatan' ? (
+            <motion.div
+              key="perawatan"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ duration: 0.2 }}
+              style={{ marginTop: '24px' }}
+            >
+              {/* Section Header */}
+              <p
+                style={{
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '14px',
+                  color: '#666666',
+                  marginBottom: '16px',
+                }}
+              >
+                Yang perlu anda lakukan
+              </p>
+
+              {/* Action Cards */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {/* Penyiraman */}
+                <div
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '16px',
+                    padding: '16px',
+                    border: '1px solid #E0E0E0',
+                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <div style={{ flex: 1 }}>
+                    <h3
+                      style={{
+                        fontFamily: "'Inter', sans-serif",
+                        fontSize: '1rem',
+                        fontWeight: 500,
+                        color: '#2C2C2C',
+                        margin: 0,
+                      }}
+                    >
+                      Penyiraman
+                    </h3>
+                    <p
+                      style={{
+                        fontFamily: "'Inter', sans-serif",
+                        fontSize: '14px',
+                        color: '#666666',
+                        margin: '4px 0 0 0',
+                      }}
+                    >
+                      Terakhir disiram {daysSinceWatered} hari yang lalu
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => handleActionLog('water')}
+                    style={{
+                      width: '48px',
+                      height: '48px',
+                      borderRadius: '50%',
+                      backgroundColor: '#EFF6FF',
+                      border: 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      flexShrink: 0,
+                      transition: 'background-color 0.2s ease',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#DBEAFE')}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#EFF6FF')}
+                  >
+                    <Drop size={24} weight="duotone" color="#3B82F6" />
+                  </button>
+                </div>
+
+                {/* Pemupukan */}
+                <div
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '16px',
+                    padding: '16px',
+                    border: '1px solid #E0E0E0',
+                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <div style={{ flex: 1 }}>
+                    <h3
+                      style={{
+                        fontFamily: "'Inter', sans-serif",
+                        fontSize: '1rem',
+                        fontWeight: 500,
+                        color: '#2C2C2C',
+                        margin: 0,
+                      }}
+                    >
+                      Pemupukan
+                    </h3>
+                    <p
+                      style={{
+                        fontFamily: "'Inter', sans-serif",
+                        fontSize: '14px',
+                        color: '#666666',
+                        margin: '4px 0 0 0',
+                      }}
+                    >
+                      Terakhir diberi pupuk {daysSinceFertilized} hari yang lalu
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => handleActionLog('fertilize')}
+                    style={{
+                      width: '48px',
+                      height: '48px',
+                      borderRadius: '50%',
+                      backgroundColor: '#F0FDF4',
+                      border: 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      flexShrink: 0,
+                      transition: 'background-color 0.2s ease',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#DCFCE7')}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#F0FDF4')}
+                  >
+                    <Leaf size={24} weight="duotone" color="#16A34A" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Quick Tips */}
+              <div
+                style={{
+                  backgroundColor: '#F5F5F5',
+                  borderRadius: '16px',
+                  padding: '16px',
+                  border: '1px solid #E0E0E0',
+                  marginTop: '24px',
+                  cursor: 'pointer',
+                }}
+                onClick={() => setQuickTipsExpanded(!quickTipsExpanded)}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <h3
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: '1rem',
+                      fontWeight: 500,
+                      color: '#2C2C2C',
+                      margin: 0,
+                    }}
+                  >
+                    Quick Tips
+                  </h3>
+                  <div
+                    style={{
+                      transform: quickTipsExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                      transition: 'transform 0.2s ease',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <CaretDown size={20} weight="bold" color="#666666" />
+                  </div>
+                </div>
+
+                <AnimatePresence>
+                  {quickTipsExpanded && (
+                    <motion.p
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      style={{
+                        fontFamily: "'Inter', sans-serif",
+                        fontSize: '14px',
+                        color: '#4A4A4A',
+                        lineHeight: 1.6,
+                        marginTop: '12px',
+                        marginBottom: 0,
+                      }}
+                    >
+                      {plantData.quickTips}
+                    </motion.p>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Diagnosis Section */}
+              <p
+                style={{
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '14px',
+                  color: '#666666',
+                  marginTop: '24px',
+                  marginBottom: '12px',
+                }}
+              >
+                Ada yang aneh dengan {plantData.customName}?
+              </p>
+
+              <div
+                style={{
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '16px',
+                  padding: '16px',
+                  border: '1px solid #E0E0E0',
+                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  cursor: 'pointer',
+                }}
+                onClick={() => handleMenuAction('diagnose')}
+              >
+                <div
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '50%',
+                    backgroundColor: '#FEF2F2',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  <FirstAidKit size={20} weight="duotone" color="#EF4444" />
+                </div>
+
+                <div style={{ flex: 1 }}>
+                  <h3
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: '1rem',
+                      fontWeight: 500,
+                      color: '#2C2C2C',
+                      margin: 0,
+                    }}
+                  >
+                    Diagnosa Hama
+                  </h3>
+                </div>
+
+                <button
+                  style={{
+                    width: '48px',
+                    height: '48px',
+                    borderRadius: '50%',
+                    backgroundColor: '#F5F5F5',
+                    border: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    flexShrink: 0,
+                    transition: 'background-color 0.2s ease',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#E5E5E5')}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#F5F5F5')}
+                >
+                  <Camera size={24} weight="bold" color="#4B5563" />
+                </button>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="riwayat"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.2 }}
+              style={{ marginTop: '24px', paddingBottom: '40px' }}
+            >
+              {timeline.map((group, groupIndex) => (
+                <div key={groupIndex}>
+                  {/* Date Header */}
+                  <h3
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: '1rem',
+                      fontWeight: 700,
+                      color: '#2C2C2C',
+                      marginTop: groupIndex > 0 ? '32px' : '0',
+                      marginBottom: '12px',
+                    }}
+                  >
+                    {group.date}
+                  </h3>
+
+                  {/* Timeline Entries */}
+                  {group.entries.map((entry, entryIndex) => (
+                    <div
+                      key={entryIndex}
+                      style={{
+                        backgroundColor: '#FFFFFF',
+                        borderRadius: '16px',
+                        padding: '16px',
+                        border: '1px solid #F5F5F5',
+                        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
+                        marginBottom: '12px',
+                        display: 'flex',
+                        alignItems: 'start',
+                        gap: '12px',
+                      }}
+                    >
+                      {/* Icon */}
+                      <div
+                        style={{
+                          width: '40px',
+                          height: '40px',
+                          borderRadius: '50%',
+                          backgroundColor: '#F5F5F5',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '1.25rem',
+                          flexShrink: 0,
+                        }}
+                      >
+                        {getActionIcon(entry.type)}
+                      </div>
+
+                      {/* Content */}
+                      <div style={{ flex: 1 }}>
+                        <h4
+                          style={{
+                            fontFamily: "'Inter', sans-serif",
+                            fontSize: '1rem',
+                            fontWeight: 500,
+                            color: '#2C2C2C',
+                            margin: 0,
+                          }}
+                        >
+                          {entry.label}
+                        </h4>
+                        {entry.hasDetails && (
+                          <p
+                            style={{
+                              fontFamily: "'Inter', sans-serif",
+                              fontSize: '14px',
+                              color: '#666666',
+                              margin: '4px 0 0 0',
+                            }}
+                          >
+                            Lihat details
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Timestamp */}
+                      <span
+                        style={{
+                          fontFamily: "'Inter', sans-serif",
+                          fontSize: '14px',
+                          color: '#999999',
+                        }}
+                      >
+                        {entry.time}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Menu Modal */}
+      <AnimatePresence>
+        {showMenu && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowMenu(false)}
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                zIndex: 1000,
+              }}
+            />
+
+            {/* Menu Sheet */}
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              style={{
+                position: 'fixed',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                backgroundColor: '#FFFFFF',
+                borderRadius: '12px 12px 0 0',
+                padding: '24px',
+                maxHeight: '70vh',
+                overflowY: 'auto',
+                zIndex: 1001,
+              }}
+            >
+              {/* Header */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: '24px',
+                }}
+              >
+                <h2
+                  className="font-accent"
+                  style={{
+                    fontFamily: "'Caveat', cursive",
+                    fontSize: '1.75rem',
+                    fontWeight: 600,
+                    color: '#2D5016',
+                    margin: 0,
+                  }}
+                >
+                  Pilihan
+                </h2>
+                <button
+                  onClick={() => setShowMenu(false)}
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '50%',
+                    backgroundColor: '#F5F5F5',
+                    border: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M15 5L5 15M5 5l10 10"
+                      stroke="#666666"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Aksi Section */}
+              <p
+                style={{
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '12px',
+                  fontWeight: 500,
+                  color: '#666666',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  marginBottom: '12px',
+                }}
+              >
+                Aksi
+              </p>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
+                <button
+                  onClick={() => handleMenuAction('water')}
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '16px',
+                    padding: '16px',
+                    border: '1px solid #F5F5F5',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.2s ease',
+                  }}
+                  onMouseEnter={(e) => (e.target.style.backgroundColor = '#F5F5F5')}
+                  onMouseLeave={(e) => (e.target.style.backgroundColor = '#FFFFFF')}
+                >
+                  <Drop size={24} weight="duotone" color="#3B82F6" />
+                  <span
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: '1rem',
+                      fontWeight: 500,
+                      color: '#2C2C2C',
+                    }}
+                  >
+                    Siram Tanaman
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => handleMenuAction('fertilize')}
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '16px',
+                    padding: '16px',
+                    border: '1px solid #F5F5F5',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.2s ease',
+                  }}
+                  onMouseEnter={(e) => (e.target.style.backgroundColor = '#F5F5F5')}
+                  onMouseLeave={(e) => (e.target.style.backgroundColor = '#FFFFFF')}
+                >
+                  <Leaf size={24} weight="duotone" color="#16A34A" />
+                  <span
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: '1rem',
+                      fontWeight: 500,
+                      color: '#2C2C2C',
+                    }}
+                  >
+                    Beri Pupuk
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => handleMenuAction('diagnose')}
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '16px',
+                    padding: '16px',
+                    border: '1px solid #F5F5F5',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.2s ease',
+                  }}
+                  onMouseEnter={(e) => (e.target.style.backgroundColor = '#F5F5F5')}
+                  onMouseLeave={(e) => (e.target.style.backgroundColor = '#FFFFFF')}
+                >
+                  <FirstAidKit size={24} weight="duotone" color="#EF4444" />
+                  <span
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: '1rem',
+                      fontWeight: 500,
+                      color: '#2C2C2C',
+                    }}
+                  >
+                    Diagnosa Hama
+                  </span>
+                </button>
+              </div>
+
+              {/* Konfigurasi Section */}
+              <p
+                style={{
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '12px',
+                  fontWeight: 500,
+                  color: '#666666',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  marginBottom: '12px',
+                }}
+              >
+                Konfigurasi
+              </p>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
+                <button
+                  onClick={() => handleMenuAction('edit')}
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '16px',
+                    padding: '16px',
+                    border: '1px solid #F5F5F5',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.2s ease',
+                  }}
+                  onMouseEnter={(e) => (e.target.style.backgroundColor = '#F5F5F5')}
+                  onMouseLeave={(e) => (e.target.style.backgroundColor = '#FFFFFF')}
+                >
+                  <PencilSimple size={24} weight="bold" color="#4B5563" />
+                  <span
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: '1rem',
+                      fontWeight: 500,
+                      color: '#2C2C2C',
+                    }}
+                  >
+                    Edit Tanaman
+                  </span>
+                </button>
+              </div>
+
+              {/* Zona Berbahaya Section */}
+              <p
+                style={{
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '12px',
+                  fontWeight: 500,
+                  color: '#666666',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  marginBottom: '12px',
+                }}
+              >
+                Zona Berbahaya
+              </p>
+
+              <button
+                onClick={() => handleMenuAction('delete')}
+                style={{
+                  backgroundColor: '#FEF2F2',
+                  borderRadius: '16px',
+                  padding: '16px',
+                  border: '1px solid #FEE2E2',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  cursor: 'pointer',
+                  width: '100%',
+                }}
+              >
+                <Trash size={24} weight="bold" color="#DC2626" />
+                <span
+                  style={{
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: '1rem',
+                    fontWeight: 500,
+                    color: '#DC2626',
+                  }}
+                >
+                  Hapus Tanaman
+                </span>
+              </button>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+export default PlantDetail;

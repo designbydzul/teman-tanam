@@ -1,0 +1,226 @@
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
+
+// Plant species data
+const PLANT_SPECIES = [
+  { id: 'labuh', name: 'Labuh', scientific: 'Cucurbita pepo', emoji: '🎃' },
+  { id: 'kentang', name: 'Kentang', scientific: 'Solanum tuberosum', emoji: '🥔' },
+  { id: 'wortel', name: 'Wortel', scientific: 'Daucus carota', emoji: '🥕' },
+  { id: 'brokoli', name: 'Brokoli', scientific: 'Brassica oleracea', emoji: '🥦' },
+  { id: 'kacang-hijau', name: 'Kacang Hijau', scientific: 'Vigna radiata', emoji: '🫘' },
+  { id: 'paprika', name: 'Paprika', scientific: 'Capsicum annuum', emoji: '🫑' },
+  { id: 'bawang-merah', name: 'Bawang Merah', scientific: 'Allium cepa', emoji: '🧅' },
+  { id: 'bayam', name: 'Bayam', scientific: 'Spinacia oleracea', emoji: '🥬' },
+  { id: 'kembang-kol', name: 'Kembang Kol', scientific: 'Brassica oleracea', emoji: '🥬' },
+  { id: 'tomat', name: 'Tomat', scientific: 'Solanum lycopersicum', emoji: '🍅' },
+  { id: 'kubis', name: 'Kubis', scientific: 'Brassica oleracea', emoji: '🥬' },
+  { id: 'terong', name: 'Terong', scientific: 'Solanum melongena', emoji: '🍆' },
+];
+
+const AddPlant = ({ onClose, onSelectSpecies }) => {
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredPlants = PLANT_SPECIES.filter((plant) => {
+    const query = searchQuery.toLowerCase();
+    return (
+      plant.name.toLowerCase().includes(query) ||
+      plant.scientific.toLowerCase().includes(query)
+    );
+  });
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: '#FFFFFF',
+        zIndex: 1000,
+        overflow: 'auto',
+      }}
+    >
+      {/* Header */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '20px 24px',
+          borderBottom: '1px solid #F5F5F5',
+        }}
+      >
+        {/* Back Button */}
+        <button
+          onClick={onClose}
+          style={{
+            width: '40px',
+            height: '40px',
+            borderRadius: '50%',
+            backgroundColor: '#F5F5F5',
+            border: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+          }}
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path
+              d="M15 18l-6-6 6-6"
+              stroke="#2D5016"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
+
+        {/* Title */}
+        <h1
+          className="font-accent"
+          style={{
+            fontFamily: "'Caveat', cursive",
+            fontSize: '1.5rem',
+            fontWeight: 600,
+            color: '#2D5016',
+            margin: 0,
+          }}
+        >
+          Tambah Teman Baru
+        </h1>
+
+        <div style={{ width: '40px' }} /> {/* Spacer for centering */}
+      </div>
+
+      {/* Search Bar */}
+      <div style={{ padding: '16px 24px' }}>
+        <div
+          style={{
+            position: 'relative',
+          }}
+        >
+          <input
+            type="text"
+            placeholder="Cari tanaman"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '12px 50px 12px 16px',
+              fontSize: '1rem',
+              fontFamily: "'Inter', sans-serif",
+              color: '#2C2C2C',
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #E0E0E0',
+              borderRadius: '12px',
+              outline: 'none',
+            }}
+          />
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            style={{
+              position: 'absolute',
+              right: '16px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+            }}
+          >
+            <circle cx="11" cy="11" r="8" stroke="#666666" strokeWidth="2" />
+            <path d="M21 21l-4.35-4.35" stroke="#666666" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+        </div>
+      </div>
+
+      {/* Plant Grid */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: '16px',
+          padding: '0 24px 100px 24px',
+        }}
+      >
+        {filteredPlants.length > 0 ? (
+          filteredPlants.map((plant) => (
+            <motion.div
+              key={plant.id}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => onSelectSpecies(plant)}
+              style={{
+                cursor: 'pointer',
+              }}
+            >
+              {/* Plant Image/Emoji */}
+              <div
+                style={{
+                  width: '100%',
+                  aspectRatio: '1',
+                  borderRadius: '24px',
+                  backgroundColor: '#F1F8E9',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '3rem',
+                  marginBottom: '8px',
+                }}
+              >
+                {plant.emoji}
+              </div>
+
+              {/* Plant Name */}
+              <h3
+                style={{
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  color: '#2C2C2C',
+                  margin: '0 0 4px 0',
+                  textAlign: 'center',
+                }}
+              >
+                {plant.name}
+              </h3>
+
+              {/* Scientific Name */}
+              <p
+                style={{
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '12px',
+                  fontWeight: 400,
+                  color: '#666666',
+                  margin: 0,
+                  textAlign: 'center',
+                }}
+              >
+                {plant.scientific}
+              </p>
+            </motion.div>
+          ))
+        ) : (
+          <div
+            style={{
+              gridColumn: '1 / -1',
+              textAlign: 'center',
+              padding: '40px 20px',
+              color: '#666666',
+            }}
+          >
+            Tidak ada hasil
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
+};
+
+export default AddPlant;

@@ -1,0 +1,370 @@
+import React from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+
+const ProfileModal = ({ isOpen, onClose, userName, userEmail, onNavigate }) => {
+  const handleMenuAction = (action) => {
+    console.log('Menu action:', action);
+    onClose();
+    if (onNavigate) {
+      onNavigate(action);
+    }
+  };
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              zIndex: 1000,
+            }}
+          />
+
+          {/* Modal Sheet */}
+          <motion.div
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+            style={{
+              position: 'fixed',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              backgroundColor: '#FFFFFF',
+              borderRadius: '12px 12px 0 0',
+              padding: '24px',
+              maxHeight: '85vh',
+              overflowY: 'auto',
+              zIndex: 1001,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+            }}
+          >
+            {/* Close Button */}
+            <button
+              onClick={onClose}
+              style={{
+                position: 'absolute',
+                top: '20px',
+                right: '20px',
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                backgroundColor: 'transparent',
+                border: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+              }}
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M18 6L6 18M6 6l12 12"
+                  stroke="#2C2C2C"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+
+            {/* Profile Picture */}
+            <div
+              style={{
+                width: '96px',
+                height: '96px',
+                borderRadius: '24px',
+                backgroundColor: '#7CB342',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: '16px',
+                overflow: 'hidden',
+              }}
+            >
+              {/* Placeholder image - replace with actual user photo */}
+              <img
+                src="https://images.unsplash.com/photo-1560807707-8cc77767d783?w=300"
+                alt="Profile"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                }}
+              />
+            </div>
+
+            {/* User Name */}
+            <h2
+              className="font-accent"
+              style={{
+                fontFamily: "'Caveat', cursive",
+                fontSize: '1.75rem',
+                fontWeight: 600,
+                color: '#2D5016',
+                margin: '0 0 8px 0',
+              }}
+            >
+              {userName || 'User'}
+            </h2>
+
+            {/* User Email */}
+            <p
+              style={{
+                fontFamily: "'Inter', sans-serif",
+                fontSize: '14px',
+                color: '#666666',
+                margin: '0 0 32px 0',
+              }}
+            >
+              {userEmail || 'user@example.com'}
+            </p>
+
+            {/* Menu Items */}
+            <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {/* Edit Profile */}
+              <button
+                onClick={() => handleMenuAction('edit-profile')}
+                style={{
+                  width: '100%',
+                  padding: '16px',
+                  backgroundColor: '#FFFFFF',
+                  border: '1px solid #E0E0E0',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  cursor: 'pointer',
+                  transition: 'background-color 0.2s ease',
+                }}
+                onMouseEnter={(e) => (e.target.style.backgroundColor = '#F5F5F5')}
+                onMouseLeave={(e) => (e.target.style.backgroundColor = '#FFFFFF')}
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"
+                    stroke="#2C2C2C"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"
+                    stroke="#2C2C2C"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                <span
+                  style={{
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: '1rem',
+                    fontWeight: 500,
+                    color: '#2C2C2C',
+                  }}
+                >
+                  Edit Profil
+                </span>
+              </button>
+
+              {/* Pengaturan Lokasi Tanam */}
+              <button
+                onClick={() => handleMenuAction('location-settings')}
+                style={{
+                  width: '100%',
+                  padding: '16px',
+                  backgroundColor: '#FFFFFF',
+                  border: '1px solid #E0E0E0',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  cursor: 'pointer',
+                  transition: 'background-color 0.2s ease',
+                }}
+                onMouseEnter={(e) => (e.target.style.backgroundColor = '#F5F5F5')}
+                onMouseLeave={(e) => (e.target.style.backgroundColor = '#FFFFFF')}
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"
+                    stroke="#2C2C2C"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <circle
+                    cx="12"
+                    cy="10"
+                    r="3"
+                    stroke="#2C2C2C"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                <span
+                  style={{
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: '1rem',
+                    fontWeight: 500,
+                    color: '#2C2C2C',
+                  }}
+                >
+                  Pengaturan Lokasi Tanam
+                </span>
+              </button>
+
+              {/* Bantuan & Komunitas */}
+              <button
+                onClick={() => handleMenuAction('help-community')}
+                style={{
+                  width: '100%',
+                  padding: '16px',
+                  backgroundColor: '#FFFFFF',
+                  border: '1px solid #E0E0E0',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  cursor: 'pointer',
+                  transition: 'background-color 0.2s ease',
+                }}
+                onMouseEnter={(e) => (e.target.style.backgroundColor = '#F5F5F5')}
+                onMouseLeave={(e) => (e.target.style.backgroundColor = '#FFFFFF')}
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="#2C2C2C"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3M12 17h.01"
+                    stroke="#2C2C2C"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                <span
+                  style={{
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: '1rem',
+                    fontWeight: 500,
+                    color: '#2C2C2C',
+                  }}
+                >
+                  Bantuan & Komunitas
+                </span>
+              </button>
+
+              {/* Tutorial */}
+              <button
+                onClick={() => handleMenuAction('tutorial')}
+                style={{
+                  width: '100%',
+                  padding: '16px',
+                  backgroundColor: '#FFFFFF',
+                  border: '1px solid #E0E0E0',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  cursor: 'pointer',
+                  transition: 'background-color 0.2s ease',
+                }}
+                onMouseEnter={(e) => (e.target.style.backgroundColor = '#F5F5F5')}
+                onMouseLeave={(e) => (e.target.style.backgroundColor = '#FFFFFF')}
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="#2C2C2C"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <polygon
+                    points="10 8 16 12 10 16 10 8"
+                    fill="#2C2C2C"
+                  />
+                </svg>
+                <span
+                  style={{
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: '1rem',
+                    fontWeight: 500,
+                    color: '#2C2C2C',
+                  }}
+                >
+                  Tutorial
+                </span>
+              </button>
+
+              {/* Keluar (Logout) */}
+              <button
+                onClick={() => handleMenuAction('logout')}
+                style={{
+                  width: '100%',
+                  padding: '16px',
+                  backgroundColor: '#FEF2F2',
+                  border: '1px solid #FEE2E2',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  cursor: 'pointer',
+                  marginTop: '12px',
+                }}
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"
+                    stroke="#DC2626"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                <span
+                  style={{
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: '1rem',
+                    fontWeight: 500,
+                    color: '#DC2626',
+                  }}
+                >
+                  Keluar
+                </span>
+              </button>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+};
+
+export default ProfileModal;

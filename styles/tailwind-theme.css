@@ -1,0 +1,86 @@
+/**
+ * Teman Tanam - Tailwind v4 Theme Configuration
+ *
+ * This file extends Tailwind's theme with our custom design tokens.
+ * Import this in index.css after importing tailwindcss.
+ */
+
+@theme {
+  /* ==================== COLORS ==================== */
+  /* Primary Colors - Using correct Tailwind v4 syntax */
+  --color-green-fresh: #7CB342;
+  --color-green-forest: #2D5016;
+  --color-brown-earth: #8B4513;
+  --color-blue-sky: #87CEEB;
+  --color-yellow-sun: #FFD54F;
+
+  /* Neutral Colors */
+  --color-cream: #F5F5DC;
+  --color-gray-100: #FAFAFA;
+  --color-gray-200: #E0E0E0;
+  --color-gray-400: #BDBDBD;
+  --color-gray-600: #757575;
+  --color-gray-800: #2C2C2C;
+
+  /* Semantic Colors */
+  --color-success: #4CAF50;
+  --color-warning: #FF9800;
+  --color-error: #F44336;
+  --color-info: #2196F3;
+}
+
+/* ==================== CUSTOM UTILITY CLASSES ==================== */
+
+/* Background Color Utilities */
+@layer utilities {
+  .bg-green-fresh { background-color: var(--color-green-fresh); }
+  .bg-green-forest { background-color: var(--color-green-forest); }
+  .bg-brown-earth { background-color: var(--color-brown-earth); }
+  .bg-blue-sky { background-color: var(--color-blue-sky); }
+  .bg-yellow-sun { background-color: var(--color-yellow-sun); }
+  .bg-cream { background-color: var(--color-cream); }
+  .bg-success { background-color: var(--color-success); }
+  .bg-warning { background-color: var(--color-warning); }
+  .bg-error { background-color: var(--color-error); }
+  .bg-info { background-color: var(--color-info); }
+
+  /* Text Color Utilities */
+  .text-green-fresh { color: var(--color-green-fresh); }
+  .text-green-forest { color: var(--color-green-forest); }
+  .text-brown-earth { color: var(--color-brown-earth); }
+  .text-blue-sky { color: var(--color-blue-sky); }
+  .text-yellow-sun { color: var(--color-yellow-sun); }
+  .text-cream { color: var(--color-cream); }
+  .text-gray-100 { color: var(--color-gray-100); }
+  .text-gray-200 { color: var(--color-gray-200); }
+  .text-gray-400 { color: var(--color-gray-400); }
+  .text-gray-600 { color: var(--color-gray-600); }
+  .text-gray-800 { color: var(--color-gray-800); }
+  .text-success { color: var(--color-success); }
+  .text-warning { color: var(--color-warning); }
+  .text-error { color: var(--color-error); }
+  .text-info { color: var(--color-info); }
+
+  /* Border Color Utilities */
+  .border-green-fresh { border-color: var(--color-green-fresh); }
+  .border-green-forest { border-color: var(--color-green-forest); }
+  .border-brown-earth { border-color: var(--color-brown-earth); }
+  .border-blue-sky { border-color: var(--color-blue-sky); }
+  .border-yellow-sun { border-color: var(--color-yellow-sun); }
+  .border-cream { border-color: var(--color-cream); }
+  .border-gray-100 { border-color: var(--color-gray-100); }
+  .border-gray-200 { border-color: var(--color-gray-200); }
+  .border-gray-400 { border-color: var(--color-gray-400); }
+  .border-gray-600 { border-color: var(--color-gray-600); }
+  .border-gray-800 { border-color: var(--color-gray-800); }
+  .border-success { border-color: var(--color-success); }
+  .border-warning { border-color: var(--color-warning); }
+  .border-error { border-color: var(--color-error); }
+  .border-info { border-color: var(--color-info); }
+
+  /* Gradient Utilities */
+  .from-green-fresh { --gradient-from-color: var(--color-green-fresh); }
+  .from-green-forest { --gradient-from-color: var(--color-green-forest); }
+  .to-green-fresh { --gradient-to-color: var(--color-green-fresh); }
+  .to-green-forest { --gradient-to-color: var(--color-green-forest); }
+}
