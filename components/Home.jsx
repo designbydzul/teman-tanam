@@ -52,13 +52,16 @@ const styles = {
     margin: 0,
     flex: 1,
     minWidth: 0,
+    maxWidth: 'calc(100% - 140px)',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
+    marginRight: '16px',
   },
   iconButtonContainer: {
     display: 'flex',
     gap: '12px',
+    flexShrink: 0,
   },
   // Search input
   searchContainer: {
