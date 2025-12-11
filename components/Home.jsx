@@ -598,7 +598,15 @@ const Home = ({ userName }) => {
       <div style={styles.header}>
         {/* Top Bar with Greeting and Icons */}
         <div style={styles.headerTopBar}>
-          <h1 style={styles.greeting}>
+          <h1
+            style={{
+              ...styles.greeting,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              maxWidth: 'calc(100% - 140px)',
+            }}
+          >
             Halo {currentUserName}
           </h1>
 
