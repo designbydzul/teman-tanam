@@ -295,7 +295,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
             )}
 
             {/* Plant Details */}
-            <div style={{ flex: 1 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
               <h1
                 style={{
                   fontFamily: 'var(--font-caveat), Caveat, cursive',
@@ -303,6 +303,9 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
                   fontWeight: 600,
                   color: '#2D5016',
                   margin: 0,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
                 }}
               >
                 {plantData.customName}

@@ -52,6 +52,9 @@ const styles = {
     margin: 0,
     flex: 1,
     minWidth: 0,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
   },
   iconButtonContainer: {
     display: 'flex',
@@ -599,6 +602,15 @@ const Home = ({ userName }) => {
           <div style={styles.iconButtonContainer}>
             {/* WiFi Icon Button - Dynamic based on network status */}
             <button
+              onClick={() => {
+                if (networkStatus === 'online') {
+                  showActionToastWithMessage('Terkoneksi ✓');
+                } else if (networkStatus === 'reconnecting') {
+                  showActionToastWithMessage('Mencoba menyambungkan...');
+                } else {
+                  showActionToastWithMessage('Offline - data akan sync saat online');
+                }
+              }}
               style={{
                 width: '56px',
                 height: '56px',
