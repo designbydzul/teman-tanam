@@ -137,7 +137,7 @@ const DEFAULT_LOCATIONS = [
   { id: '3', name: 'Dapur', plantCount: 0 },
 ];
 
-const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded }) => {
+const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants = [], onPlantsUpdate }) => {
   // Use centralized localStorage hook - auto-syncs across components
   const [locations, setLocations] = useLocalStorage('temanTanamLocations', DEFAULT_LOCATIONS);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -147,6 +147,20 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded }) => {
   const [locationToDelete, setLocationToDelete] = useState(null);
   const [moveToLocation, setMoveToLocation] = useState('');
   const [inputFocused, setInputFocused] = useState(false);
+
+  // Compute plant counts dynamically from actual plants data
+  const locationsWithPlantCounts = React.useMemo(() => {
+    return locations.map((loc) => ({
+      ...loc,
+      plantCount: plants.filter((plant) => plant.location === loc.name).length,
+    }));
+  }, [locations, plants]);
+
+  // Get location with computed plant count for deletion logic
+  const getLocationWithPlantCount = useCallback((location) => {
+    const plantCount = plants.filter((plant) => plant.location === location.name).length;
+    return { ...location, plantCount };
+  }, [plants]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -199,13 +213,15 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded }) => {
 
   // Memoized to ensure SortableLocationCard doesn't re-render unnecessarily
   const handleDeleteLocation = useCallback((location) => {
-    setLocationToDelete(location);
-    if (location.plantCount > 0) {
+    // Get the location with actual plant count computed from plants data
+    const locationWithCount = getLocationWithPlantCount(location);
+    setLocationToDelete(locationWithCount);
+    if (locationWithCount.plantCount > 0) {
       setShowMovePlantsModal(true);
     } else {
       setShowDeleteConfirmModal(true);
     }
-  }, []);
+  }, [getLocationWithPlantCount]);
 
   // Confirm delete - hook automatically persists to localStorage
   const confirmDelete = () => {
@@ -225,16 +241,21 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded }) => {
   const handleMovePlants = () => {
     if (locationToDelete && moveToLocation) {
       const deletedLocationName = locationToDelete.name;
-      // Move plants to selected location and remove the deleted location
-      setLocations((prev) => {
-        const updatedLocations = prev.map((loc) => {
-          if (loc.id === moveToLocation) {
-            return { ...loc, plantCount: loc.plantCount + (locationToDelete.plantCount || 0) };
-          }
-          return loc;
-        });
-        return updatedLocations.filter((loc) => loc.id !== locationToDelete.id);
-      });
+      const targetLocation = locations.find((loc) => loc.id === moveToLocation);
+
+      // Actually update the plants' locations via callback
+      if (onPlantsUpdate && targetLocation) {
+        onPlantsUpdate((prevPlants) =>
+          prevPlants.map((plant) =>
+            plant.location === deletedLocationName
+              ? { ...plant, location: targetLocation.name }
+              : plant
+          )
+        );
+      }
+
+      // Remove the deleted location (plantCount will be computed dynamically)
+      setLocations((prev) => prev.filter((loc) => loc.id !== locationToDelete.id));
 
       // Reset state
       setLocationToDelete(null);
@@ -319,10 +340,10 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded }) => {
           onDragEnd={handleDragEnd}
         >
           <SortableContext
-            items={locations.map((loc) => loc.id)}
+            items={locationsWithPlantCounts.map((loc) => loc.id)}
             strategy={verticalListSortingStrategy}
           >
-            {locations.map((location) => (
+            {locationsWithPlantCounts.map((location) => (
               <SortableLocationCard
                 key={location.id}
                 location={location}
@@ -667,7 +688,7 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded }) => {
 
               {/* Location Options */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
-                {locations
+                {locationsWithPlantCounts
                   .filter((loc) => loc.id !== locationToDelete.id)
                   .map((location) => (
                     <button

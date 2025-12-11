@@ -232,6 +232,10 @@ const Home = ({ userName }) => {
   // Diagnosa Hama from menu
   const [showDiagnosaHamaModal, setShowDiagnosaHamaModal] = useState(false);
 
+  // Delete plant confirmation modal state
+  const [showDeletePlantModal, setShowDeletePlantModal] = useState(false);
+  const [plantToDelete, setPlantToDelete] = useState(null);
+
   // Network status state
   const [networkStatus, setNetworkStatus] = useState('online'); // 'online' | 'offline' | 'reconnecting'
   const [showNetworkToast, setShowNetworkToast] = useState(false);
@@ -474,17 +478,33 @@ const Home = ({ userName }) => {
         }
         break;
       case 'delete':
-        if (menuPlant && window.confirm('Apakah Anda yakin ingin menghapus tanaman ini?')) {
-          const plantName = menuPlant.name;
-          setPlants((prevPlants) => prevPlants.filter((p) => p.id !== menuPlant.id));
-          setMenuPlant(null);
-          showActionToastWithMessage(`${plantName} sudah dihapus`);
+        if (menuPlant) {
+          setPlantToDelete(menuPlant);
+          setShowDeletePlantModal(true);
         }
         break;
       default:
         break;
     }
   }, [menuPlant, showActionToastWithMessage]);
+
+  // Handle delete plant confirmation from modal
+  const handleConfirmDeletePlant = useCallback(() => {
+    if (plantToDelete) {
+      const plantName = plantToDelete.name || plantToDelete.customName;
+      setPlants((prevPlants) => prevPlants.filter((p) => p.id !== plantToDelete.id));
+      setShowDeletePlantModal(false);
+      setPlantToDelete(null);
+      setMenuPlant(null);
+      showActionToastWithMessage(`${plantName} sudah dihapus`);
+    }
+  }, [plantToDelete, showActionToastWithMessage]);
+
+  // Handle cancel delete plant
+  const handleCancelDeletePlant = useCallback(() => {
+    setShowDeletePlantModal(false);
+    setPlantToDelete(null);
+  }, []);
 
   // Plant Detail handlers - memoized to prevent unnecessary re-renders
   const handlePlantClick = useCallback((plant) => {
@@ -1003,6 +1023,8 @@ const Home = ({ userName }) => {
           onLocationAdded={(locationName) => {
             showActionToastWithMessage(`Lokasi ${locationName} sudah ditambahkan`);
           }}
+          plants={plants}
+          onPlantsUpdate={setPlants}
         />
       )}
 
@@ -1360,6 +1382,140 @@ const Home = ({ userName }) => {
           }}
         />
       )}
+
+      {/* Delete Plant Confirmation Modal */}
+      <AnimatePresence>
+        {showDeletePlantModal && plantToDelete && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={handleCancelDeletePlant}
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                zIndex: 4000,
+              }}
+            />
+
+            {/* Modal */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              style={{
+                position: 'fixed',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                backgroundColor: '#FFFFFF',
+                borderRadius: '24px',
+                padding: '32px',
+                width: 'calc(100% - 48px)',
+                maxWidth: '320px',
+                zIndex: 4001,
+                textAlign: 'center',
+              }}
+            >
+              {/* Warning Icon */}
+              <div
+                style={{
+                  width: '64px',
+                  height: '64px',
+                  borderRadius: '50%',
+                  backgroundColor: '#FEF2F2',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 20px',
+                }}
+              >
+                <Trash size={32} weight="bold" color="#DC2626" />
+              </div>
+
+              {/* Title */}
+              <h3
+                style={{
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '1.25rem',
+                  fontWeight: 600,
+                  color: '#2C2C2C',
+                  margin: '0 0 12px 0',
+                }}
+              >
+                Hapus {plantToDelete.name || plantToDelete.customName}?
+              </h3>
+
+              {/* Subtext */}
+              <p
+                style={{
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '0.875rem',
+                  fontWeight: 400,
+                  color: '#666666',
+                  margin: '0 0 24px 0',
+                  lineHeight: 1.5,
+                }}
+              >
+                Data tanaman ini akan dihapus permanen. Kamu yakin mau lanjut?
+              </p>
+
+              {/* Buttons */}
+              <div
+                style={{
+                  display: 'flex',
+                  gap: '12px',
+                }}
+              >
+                {/* Cancel Button */}
+                <button
+                  onClick={handleCancelDeletePlant}
+                  style={{
+                    flex: 1,
+                    padding: '14px 20px',
+                    fontSize: '1rem',
+                    fontFamily: "'Inter', sans-serif",
+                    fontWeight: 600,
+                    color: '#666666',
+                    backgroundColor: '#F5F5F5',
+                    border: 'none',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Batal
+                </button>
+
+                {/* Delete Button */}
+                <button
+                  onClick={handleConfirmDeletePlant}
+                  style={{
+                    flex: 1,
+                    padding: '14px 20px',
+                    fontSize: '1rem',
+                    fontFamily: "'Inter', sans-serif",
+                    fontWeight: 600,
+                    color: '#FFFFFF',
+                    backgroundColor: '#DC2626',
+                    border: 'none',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Hapus
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* Network Status Toast */}
       <AnimatePresence>
