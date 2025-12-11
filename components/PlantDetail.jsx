@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Drop,
@@ -29,6 +29,16 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
   // Toast state for actions
   const [showActionToast, setShowActionToast] = useState(false);
   const [actionToastMessage, setActionToastMessage] = useState('');
+  const toastTimerRef = useRef(null);
+
+  // Cleanup toast timer on unmount
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current);
+      }
+    };
+  }, []);
 
   // Use currentPlantData if available (after edit), otherwise use plant prop
   const sourcePlant = currentPlantData || plant;
@@ -119,7 +129,8 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
     }
   };
 
-  const handleActionLog = (actionType) => {
+  // Memoized action log handler with proper timeout cleanup
+  const handleActionLog = useCallback((actionType) => {
     const plantName = plantData.customName;
     let message = '';
 
@@ -134,10 +145,15 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
         message = `Aksi ${actionType} sudah dicatat`;
     }
 
+    // Clear any existing timeout to prevent memory leaks
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+    }
+
     setActionToastMessage(message);
     setShowActionToast(true);
-    setTimeout(() => setShowActionToast(false), 3000);
-  };
+    toastTimerRef.current = setTimeout(() => setShowActionToast(false), 3000);
+  }, [plantData.customName]);
 
   const handleMenuAction = (action) => {
     setShowMenu(false);

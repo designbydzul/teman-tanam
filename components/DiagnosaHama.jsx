@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft,
@@ -39,6 +39,16 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
   const chatAreaRef = useRef(null);
   const fileInputRef = useRef(null);
   const inputRef = useRef(null);
+  const aiResponseTimerRef = useRef(null);
+
+  // Cleanup AI response timer on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (aiResponseTimerRef.current) {
+        clearTimeout(aiResponseTimerRef.current);
+      }
+    };
+  }, []);
 
   // Normalize plant data
   const plantData = selectedPlant
@@ -64,8 +74,8 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
     }
   }, [messages, isLoading]);
 
-  // Handle suggestion click - auto send the message
-  const handleSuggestionClick = (question) => {
+  // Handle suggestion click - auto send the message (memoized with proper cleanup)
+  const handleSuggestionClick = useCallback((question) => {
     // Hide suggestions
     setShowSuggestions(false);
 
@@ -81,8 +91,13 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
     setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
 
+    // Clear any existing timer to prevent memory leaks
+    if (aiResponseTimerRef.current) {
+      clearTimeout(aiResponseTimerRef.current);
+    }
+
     // Simulate AI response
-    setTimeout(() => {
+    aiResponseTimerRef.current = setTimeout(() => {
       const aiMessage = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
@@ -92,7 +107,7 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
       setMessages((prev) => [...prev, aiMessage]);
       setIsLoading(false);
     }, 1500);
-  };
+  }, []);
 
   // Handle image attachment
   const handleAttachImage = (e) => {
@@ -118,8 +133,8 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
     setAttachedImages((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // Send message
-  const handleSendMessage = async () => {
+  // Send message (memoized with proper cleanup)
+  const handleSendMessage = useCallback(async () => {
     if (!inputText.trim() && attachedImages.length === 0) return;
 
     // Hide suggestions after first message
@@ -144,8 +159,13 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
       inputRef.current.style.height = 'auto';
     }
 
+    // Clear any existing timer to prevent memory leaks
+    if (aiResponseTimerRef.current) {
+      clearTimeout(aiResponseTimerRef.current);
+    }
+
     // Simulate AI response
-    setTimeout(() => {
+    aiResponseTimerRef.current = setTimeout(() => {
       const aiMessage = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
@@ -155,7 +175,7 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
       setMessages((prev) => [...prev, aiMessage]);
       setIsLoading(false);
     }, 1500);
-  };
+  }, [inputText, attachedImages]);
 
   // Handle key press
   const handleKeyPress = (e) => {

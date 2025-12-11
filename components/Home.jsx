@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Drop,
@@ -18,6 +18,148 @@ import EditProfile from './EditProfile';
 import AddLocationModal from './AddLocationModal';
 import EditPlant from './EditPlant';
 import DiagnosaHama from './DiagnosaHama';
+
+// Extracted styles to prevent new object creation on every render
+const styles = {
+  // Main container
+  container: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#FAFAFA',
+  },
+  // Header section
+  header: {
+    padding: '20px 24px',
+    backgroundColor: '#FFFFFF',
+    position: 'relative',
+    zIndex: 10,
+  },
+  headerTopBar: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '24px',
+  },
+  greeting: {
+    fontFamily: 'var(--font-caveat), Caveat, cursive',
+    fontSize: '2rem',
+    fontWeight: 600,
+    color: '#2D5016',
+    margin: 0,
+    flex: 1,
+    minWidth: 0,
+  },
+  iconButtonContainer: {
+    display: 'flex',
+    gap: '12px',
+  },
+  // Search input
+  searchContainer: {
+    position: 'relative',
+    marginBottom: '20px',
+  },
+  // Location filter
+  locationFilterContainer: {
+    display: 'flex',
+    gap: '12px',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  locationFilterScroll: {
+    display: 'flex',
+    gap: '12px',
+    alignItems: 'center',
+    flex: 1,
+    overflowX: 'auto',
+  },
+  // Plant grid
+  plantGridContainer: {
+    position: 'absolute',
+    top: '250px',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    overflowY: 'auto',
+    overflowX: 'hidden',
+    WebkitOverflowScrolling: 'touch',
+    backgroundColor: '#FFFFFF',
+  },
+  plantGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, 1fr)',
+    gap: '24px 16px',
+    padding: '16px 24px',
+    paddingBottom: '100px',
+  },
+  // Plant card
+  plantCard: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    cursor: 'pointer',
+    userSelect: 'none',
+    WebkitTouchCallout: 'none',
+  },
+  plantImage: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+    display: 'block',
+  },
+  plantImageContainer: {
+    width: '100%',
+    aspectRatio: '1',
+    borderRadius: '24px',
+    overflow: 'hidden',
+    marginBottom: '8px',
+  },
+  plantName: {
+    fontFamily: "'Inter', sans-serif",
+    fontSize: '16px',
+    fontWeight: 600,
+    lineHeight: '150%',
+    color: '#2C2C2C',
+    margin: '0 0 4px 0',
+    textAlign: 'center',
+  },
+  plantStatus: {
+    fontFamily: "'Inter', sans-serif",
+    fontSize: '14px',
+    fontWeight: 400,
+    lineHeight: '150%',
+    color: '#666666',
+    margin: 0,
+    textAlign: 'center',
+  },
+  // Floating action buttons
+  fabContainer: {
+    position: 'fixed',
+    bottom: '24px',
+    right: '24px',
+    display: 'flex',
+    gap: '16px',
+    alignItems: 'center',
+  },
+  // Toast styles
+  toast: {
+    position: 'fixed',
+    bottom: '24px',
+    left: '24px',
+    right: '24px',
+    backgroundColor: '#FFFFFF',
+    borderRadius: '16px',
+    padding: '16px 20px',
+    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '12px',
+    zIndex: 4000,
+  },
+};
 
 // Mock plant data
 const MOCK_PLANTS = [
@@ -87,13 +229,27 @@ const Home = ({ userName }) => {
   // Action toast state (for watering, fertilizing, plant actions, etc.)
   const [showActionToast, setShowActionToast] = useState(false);
   const [actionToastMessage, setActionToastMessage] = useState('');
+  const actionToastTimer = useRef(null);
 
-  // Helper function to show action toast
-  const showActionToastWithMessage = (message) => {
+  // Helper function to show action toast - memoized with proper cleanup
+  const showActionToastWithMessage = useCallback((message) => {
+    // Clear any existing timeout to prevent memory leaks
+    if (actionToastTimer.current) {
+      clearTimeout(actionToastTimer.current);
+    }
     setActionToastMessage(message);
     setShowActionToast(true);
-    setTimeout(() => setShowActionToast(false), 3000);
-  };
+    actionToastTimer.current = setTimeout(() => setShowActionToast(false), 3000);
+  }, []);
+
+  // Cleanup action toast timer on unmount
+  useEffect(() => {
+    return () => {
+      if (actionToastTimer.current) {
+        clearTimeout(actionToastTimer.current);
+      }
+    };
+  }, []);
 
   // Load user profile from localStorage
   useEffect(() => {
@@ -193,31 +349,33 @@ const Home = ({ userName }) => {
     }
   };
 
-  // Filter plants based on search and location
-  const filteredPlants = plants.filter((plant) => {
-    const matchesSearch = plant.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesLocation = selectedLocation === 'Semua' || plant.location === selectedLocation;
-    return matchesSearch && matchesLocation;
-  });
+  // Filter plants based on search and location - memoized to prevent recalculation on every render
+  const filteredPlants = useMemo(() => {
+    return plants.filter((plant) => {
+      const matchesSearch = plant.name.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesLocation = selectedLocation === 'Semua' || plant.location === selectedLocation;
+      return matchesSearch && matchesLocation;
+    });
+  }, [plants, searchQuery, selectedLocation]);
 
   const hasFilteredPlants = selectedLocation !== 'Semua';
   const showEmptyState = filteredPlants.length === 0;
 
-  const handleBulkWater = () => {
+  const handleBulkWater = useCallback(() => {
     console.log('Bulk watering plants in:', selectedLocation);
     // TODO: Implement bulk watering logic
-  };
+  }, [selectedLocation]);
 
-  // Add Plant flow handlers
-  const handleAddPlantClick = () => {
+  // Add Plant flow handlers - memoized to prevent child re-renders
+  const handleAddPlantClick = useCallback(() => {
     setShowAddPlant(true);
-  };
+  }, []);
 
-  const handleSelectSpecies = (species) => {
+  const handleSelectSpecies = useCallback((species) => {
     setSelectedSpecies(species);
     setShowAddPlantForm(true);
     // Keep showAddPlant true so it stays visible behind the form modal
-  };
+  }, []);
 
   const handleFormSubmit = (plantData) => {
     // Add photo preview to plant data
@@ -247,7 +405,7 @@ const Home = ({ userName }) => {
     }
   };
 
-  const handleViewDetails = () => {
+  const handleViewDetails = useCallback(() => {
     // Find the newly created plant and show its details
     if (newPlantData) {
       // Create a plant object that matches what PlantDetail expects
@@ -269,39 +427,39 @@ const Home = ({ userName }) => {
     setShowAddPlant(false);
     setSelectedSpecies(null);
     setNewPlantData(null);
-  };
+  }, [newPlantData]);
 
-  const handleAddNew = () => {
+  const handleAddNew = useCallback(() => {
     setShowSuccess(false);
     setShowAddPlant(true);
     setSelectedSpecies(null);
     setNewPlantData(null);
-  };
+  }, []);
 
-  const handleBackHome = () => {
+  const handleBackHome = useCallback(() => {
     setShowSuccess(false);
     setShowAddPlant(false);
     setSelectedSpecies(null);
     setNewPlantData(null);
-  };
+  }, []);
 
-  // Long press handlers for plant cards
-  const handleLongPressStart = (plant, e) => {
+  // Long press handlers for plant cards - memoized to prevent child re-renders
+  const handleLongPressStart = useCallback((plant, e) => {
     e.preventDefault();
     longPressTimer.current = setTimeout(() => {
       setMenuPlant(plant);
       setShowPlantMenu(true);
     }, 500); // 500ms for long press
-  };
+  }, []);
 
-  const handleLongPressEnd = () => {
+  const handleLongPressEnd = useCallback(() => {
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current);
       longPressTimer.current = null;
     }
-  };
+  }, []);
 
-  const handlePlantMenuAction = (action) => {
+  const handlePlantMenuAction = useCallback((action) => {
     setShowPlantMenu(false);
     switch (action) {
       case 'detail':
@@ -312,16 +470,12 @@ const Home = ({ userName }) => {
         break;
       case 'water':
         if (menuPlant) {
-          setActionToastMessage(`Penyiraman ${menuPlant.name} sudah dicatat`);
-          setShowActionToast(true);
-          setTimeout(() => setShowActionToast(false), 3000);
+          showActionToastWithMessage(`Penyiraman ${menuPlant.name} sudah dicatat`);
         }
         break;
       case 'fertilize':
         if (menuPlant) {
-          setActionToastMessage(`Pemupukan ${menuPlant.name} sudah dicatat`);
-          setShowActionToast(true);
-          setTimeout(() => setShowActionToast(false), 3000);
+          showActionToastWithMessage(`Pemupukan ${menuPlant.name} sudah dicatat`);
         }
         break;
       case 'diagnose':
@@ -337,7 +491,7 @@ const Home = ({ userName }) => {
       case 'delete':
         if (menuPlant && window.confirm('Apakah Anda yakin ingin menghapus tanaman ini?')) {
           const plantName = menuPlant.name;
-          setPlants(plants.filter((p) => p.id !== menuPlant.id));
+          setPlants((prevPlants) => prevPlants.filter((p) => p.id !== menuPlant.id));
           setMenuPlant(null);
           showActionToastWithMessage(`${plantName} sudah dihapus`);
         }
@@ -345,60 +499,61 @@ const Home = ({ userName }) => {
       default:
         break;
     }
-  };
+  }, [menuPlant, showActionToastWithMessage]);
 
-  // Plant Detail handlers
-  const handlePlantClick = (plant) => {
+  // Plant Detail handlers - memoized to prevent unnecessary re-renders
+  const handlePlantClick = useCallback((plant) => {
     // Only navigate if not in long press
     if (!longPressTimer.current) {
       setSelectedPlant(plant);
       setShowPlantDetail(true);
     }
-  };
+  }, []);
 
-  const handlePlantDetailBack = () => {
+  const handlePlantDetailBack = useCallback(() => {
     setShowPlantDetail(false);
     setSelectedPlant(null);
-  };
+  }, []);
 
-  const handlePlantEdit = (plant) => {
+  const handlePlantEdit = useCallback((plant) => {
     console.log('Edit plant:', plant);
     // TODO: Implement plant editing
-  };
+  }, []);
 
-  const handlePlantDelete = (plantId) => {
-    const plantToDelete = plants.find((p) => p.id === plantId);
-    const plantName = plantToDelete?.name || plantToDelete?.customName || 'Tanaman';
-    setPlants(plants.filter((p) => p.id !== plantId));
+  const handlePlantDelete = useCallback((plantId) => {
+    setPlants((prevPlants) => {
+      const plantToDelete = prevPlants.find((p) => p.id === plantId);
+      const plantName = plantToDelete?.name || plantToDelete?.customName || 'Tanaman';
+      // Show toast after state update
+      setTimeout(() => showActionToastWithMessage(`${plantName} sudah dihapus`), 0);
+      return prevPlants.filter((p) => p.id !== plantId);
+    });
     setShowPlantDetail(false);
     setSelectedPlant(null);
-    showActionToastWithMessage(`${plantName} sudah dihapus`);
-  };
+  }, [showActionToastWithMessage]);
 
-  // Handle navigation from ProfileModal
-  const handleProfileNavigation = (action) => {
+  // Handle navigation from ProfileModal - memoized
+  const handleProfileNavigation = useCallback((action) => {
     if (action === 'location-settings') {
       setShowLocationSettings(true);
     } else if (action === 'edit-profile') {
       setShowEditProfile(true);
     }
     // TODO: Add other navigation actions (help-community, tutorial, logout)
-  };
+  }, []);
 
-  // Handle profile save
-  const handleProfileSave = (profileData) => {
-    console.log('handleProfileSave received:', { name: profileData.name, email: profileData.email, hasPhoto: !!profileData.photo });
+  // Handle profile save - memoized
+  const handleProfileSave = useCallback((profileData) => {
     setCurrentUserName(profileData.name);
     setUserEmail(profileData.email);
     // Always update photo (can be null to clear, or base64 string)
     if (profileData.photo) {
-      console.log('Setting userPhoto');
       setUserPhoto(profileData.photo);
     }
-  };
+  }, []);
 
-  // Handle add location save
-  const handleAddLocationSave = ({ name, selectedPlantIds }) => {
+  // Handle add location save - memoized
+  const handleAddLocationSave = useCallback(({ name, selectedPlantIds }) => {
     // Get existing locations from localStorage
     const savedLocations = localStorage.getItem('temanTanamLocations');
     const existingLocations = savedLocations ? JSON.parse(savedLocations) : [];
@@ -430,52 +585,19 @@ const Home = ({ userName }) => {
 
     // Show toast
     showActionToastWithMessage(`Lokasi ${name} sudah ditambahkan`);
-  };
+  }, [showActionToastWithMessage]);
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: '#FAFAFA',
-      }}
-    >
+    <div style={styles.container}>
       {/* Header - Sticky */}
-      <div
-        style={{
-          padding: '20px 24px',
-          backgroundColor: '#FFFFFF',
-          position: 'relative',
-          zIndex: 10,
-        }}
-      >
+      <div style={styles.header}>
         {/* Top Bar with Greeting and Icons */}
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: '24px',
-          }}
-        >
-          <h1
-            style={{
-              fontFamily: 'var(--font-caveat), Caveat, cursive',
-              fontSize: '2rem',
-              fontWeight: 600,
-              color: '#2D5016',
-              margin: 0,
-              flex: 1,
-              minWidth: 0,
-            }}
-          >
+        <div style={styles.headerTopBar}>
+          <h1 style={styles.greeting}>
             Halo {currentUserName}
           </h1>
 
-          <div style={{ display: 'flex', gap: '12px' }}>
+          <div style={styles.iconButtonContainer}>
             {/* WiFi Icon Button - Dynamic based on network status */}
             <button
               style={{
@@ -675,28 +797,8 @@ const Home = ({ userName }) => {
       </div>
 
       {/* Plant Grid or Empty State - Scrollable */}
-      <div
-        style={{
-          position: 'absolute',
-          top: '250px',
-          left: 0,
-          right: 0,
-          bottom: 0,
-          overflowY: 'auto',
-          overflowX: 'hidden',
-          WebkitOverflowScrolling: 'touch',
-          backgroundColor: '#FFFFFF',
-        }}
-      >
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: '24px 16px',
-            padding: '16px 24px',
-            paddingBottom: '100px',
-          }}
-        >
+      <div style={styles.plantGridContainer}>
+        <div style={styles.plantGrid}>
         {showEmptyState ? (
           /* Empty State */
           <motion.div
@@ -775,64 +877,25 @@ const Home = ({ userName }) => {
                   setMenuPlant(plant);
                   setShowPlantMenu(true);
                 }}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  cursor: 'pointer',
-                  userSelect: 'none',
-                  WebkitTouchCallout: 'none',
-                }}
+                style={styles.plantCard}
               >
                 {/* Plant Image */}
-                <div
-                  style={{
-                    width: '100%',
-                    aspectRatio: '1',
-                    borderRadius: '24px',
-                    overflow: 'hidden',
-                    marginBottom: '8px',
-                  }}
-                >
+                <div style={styles.plantImageContainer}>
                   <img
                     src={plant.image}
                     alt={plant.name}
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover',
-                      display: 'block',
-                    }}
+                    loading="lazy"
+                    style={styles.plantImage}
                   />
                 </div>
 
                 {/* Plant Name */}
-                <h3
-                  style={{
-                    fontFamily: "'Inter', sans-serif",
-                    fontSize: '16px',
-                    fontWeight: 600,
-                    lineHeight: '150%',
-                    color: '#2C2C2C',
-                    margin: '0 0 4px 0',
-                    textAlign: 'center',
-                  }}
-                >
+                <h3 style={styles.plantName}>
                   {plant.name}
                 </h3>
 
                 {/* Plant Status */}
-                <p
-                  style={{
-                    fontFamily: "'Inter', sans-serif",
-                    fontSize: '14px',
-                    fontWeight: 400,
-                    lineHeight: '150%',
-                    color: '#666666',
-                    margin: 0,
-                    textAlign: 'center',
-                  }}
-                >
+                <p style={styles.plantStatus}>
                   {plant.status}
                 </p>
               </motion.div>
@@ -843,16 +906,7 @@ const Home = ({ userName }) => {
       </div>
 
       {/* Floating Action Buttons */}
-      <div
-        style={{
-          position: 'fixed',
-          bottom: '24px',
-          right: '24px',
-          display: 'flex',
-          gap: '16px',
-          alignItems: 'center',
-        }}
-      >
+      <div style={styles.fabContainer}>
         {/* Bulk Water Button (only show when filtered) */}
         <AnimatePresence>
           {hasFilteredPlants && selectedLocation !== 'Semua' && !showEmptyState && (

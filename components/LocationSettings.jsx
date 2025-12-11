@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   DndContext,
@@ -25,7 +25,8 @@ import {
   X,
 } from '@phosphor-icons/react';
 
-const SortableLocationCard = ({ location, onDelete }) => {
+// Memoized SortableLocationCard to prevent unnecessary re-renders
+const SortableLocationCard = memo(({ location, onDelete }) => {
   const {
     attributes,
     listeners,
@@ -40,6 +41,11 @@ const SortableLocationCard = ({ location, onDelete }) => {
     transition,
     opacity: isDragging ? 0.5 : 1,
   };
+
+  // Memoize the delete handler to prevent unnecessary re-renders
+  const handleDelete = useCallback(() => {
+    onDelete(location);
+  }, [onDelete, location]);
 
   return (
     <div
@@ -103,7 +109,7 @@ const SortableLocationCard = ({ location, onDelete }) => {
 
         {/* Delete Button */}
         <button
-          onClick={() => onDelete(location)}
+          onClick={handleDelete}
           style={{
             width: '40px',
             height: '40px',
@@ -121,7 +127,7 @@ const SortableLocationCard = ({ location, onDelete }) => {
       </div>
     </div>
   );
-};
+});
 
 const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded }) => {
   const [locations, setLocations] = useState([]);
@@ -201,14 +207,15 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded }) => {
     }
   };
 
-  const handleDeleteLocation = (location) => {
+  // Memoized to ensure SortableLocationCard doesn't re-render unnecessarily
+  const handleDeleteLocation = useCallback((location) => {
     setLocationToDelete(location);
     if (location.plantCount > 0) {
       setShowMovePlantsModal(true);
     } else {
       setShowDeleteConfirmModal(true);
     }
-  };
+  }, []);
 
   const confirmDelete = () => {
     if (locationToDelete) {
