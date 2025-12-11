@@ -99,7 +99,7 @@ const EditProfile = ({ onBack, userName, userEmail, userPhoto, onSave, onProfile
               cursor: 'pointer',
             }}
           >
-            <ArrowLeft size={24} weight="bold" color="#2D5016" />
+            <ArrowLeft size={16} weight="bold" color="#2D5016" />
           </button>
 
           {/* Title */}

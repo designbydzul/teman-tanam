@@ -77,15 +77,15 @@ const AddPlant = ({ onClose, onSelectSpecies }) => {
             width: '40px',
             height: '40px',
             borderRadius: '50%',
-            backgroundColor: '#F5F5F5',
-            border: 'none',
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #E0E0E0',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             cursor: 'pointer',
           }}
         >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
             <path
               d="M15 18l-6-6 6-6"
               stroke="#2D5016"

@@ -204,8 +204,8 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
             style={{
               position: 'absolute',
               left: 0,
-              width: '48px',
-              height: '48px',
+              width: '40px',
+              height: '40px',
               borderRadius: '50%',
               backgroundColor: '#FFFFFF',
               border: '1px solid #E0E0E0',
@@ -215,7 +215,7 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
               cursor: 'pointer',
             }}
           >
-            <ArrowLeft size={24} weight="bold" color="#2D5016" />
+            <ArrowLeft size={16} weight="bold" color="#2D5016" />
           </button>
 
           {/* Title */}
@@ -238,8 +238,8 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
             style={{
               position: 'absolute',
               right: 0,
-              width: '48px',
-              height: '48px',
+              width: '40px',
+              height: '40px',
               borderRadius: '50%',
               backgroundColor: '#FFFFFF',
               border: '1px solid #E0E0E0',
@@ -249,7 +249,7 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
               cursor: 'pointer',
             }}
           >
-            <ClockCounterClockwise size={24} weight="regular" color="#666666" />
+            <ClockCounterClockwise size={16} weight="regular" color="#666666" />
           </button>
         </div>
       </div>

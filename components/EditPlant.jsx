@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import LocationSettings from './LocationSettings';
 
 const EditPlant = ({ plant, onClose, onSave }) => {
   const [formData, setFormData] = useState({
@@ -17,15 +18,34 @@ const EditPlant = ({ plant, onClose, onSave }) => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [focusedInput, setFocusedInput] = useState(null);
   const [locationOptions, setLocationOptions] = useState(['Teras', 'Balkon']);
+  const [showLocationSettings, setShowLocationSettings] = useState(false);
 
   // Load user's saved locations from localStorage
-  useEffect(() => {
+  const loadLocations = () => {
     const savedLocations = localStorage.getItem('temanTanamLocations');
     if (savedLocations) {
-      const parsed = JSON.parse(savedLocations);
-      const locationNames = parsed.map((loc) => loc.name);
-      setLocationOptions(locationNames);
+      try {
+        const parsed = JSON.parse(savedLocations);
+        if (Array.isArray(parsed)) {
+          // Filter out invalid entries and ensure uniqueness
+          const locationNames = parsed
+            .filter((loc) => loc && typeof loc === 'object' && loc.name)
+            .map((loc) => loc.name)
+            .filter((name) => typeof name === 'string' && name.trim().length > 0);
+          // Remove duplicates
+          const uniqueNames = [...new Set(locationNames)];
+          if (uniqueNames.length > 0) {
+            setLocationOptions(uniqueNames);
+          }
+        }
+      } catch (e) {
+        console.error('Error parsing locations:', e);
+      }
     }
+  };
+
+  useEffect(() => {
+    loadLocations();
   }, []);
 
   // Initialize form with plant data
@@ -35,14 +55,13 @@ const EditPlant = ({ plant, onClose, onSave }) => {
         ? new Date(plant.plantedDate).toISOString().split('T')[0]
         : '';
 
-      // Check if location is in our options
+      // Get plant location
       const plantLocation = plant.location || '';
-      const isCustomLocation = plantLocation && !locationOptions.includes(plantLocation);
 
       setFormData({
         customName: plant.customName || plant.name || '',
-        location: isCustomLocation ? '' : plantLocation,
-        customLocation: isCustomLocation ? plantLocation : '',
+        location: plantLocation,
+        customLocation: '',
         plantedDate: plantedDateStr ? '' : 'Hari ini',
         customDate: plantedDateStr,
         notes: plant.notes || '',
@@ -50,12 +69,11 @@ const EditPlant = ({ plant, onClose, onSave }) => {
       });
 
       setPhotoPreview(plant.photoUrl || plant.photoPreview || plant.image || null);
-      setShowLocationInput(isCustomLocation);
       setShowDatePicker(!!plantedDateStr);
     }
-  }, [plant, locationOptions]);
+  }, [plant]);
 
-  const isValid = formData.location || formData.customLocation;
+  const isValid = formData.location;
 
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
@@ -71,12 +89,18 @@ const EditPlant = ({ plant, onClose, onSave }) => {
 
   const handleLocationSelect = (location) => {
     if (location === 'Tambah Tempat') {
-      setShowLocationInput(true);
-      setFormData({ ...formData, location: '', customLocation: '' });
+      // Open LocationSettings page instead of inline input
+      setShowLocationSettings(true);
     } else {
       setShowLocationInput(false);
       setFormData({ ...formData, location, customLocation: '' });
     }
+  };
+
+  // Handle back from LocationSettings - reload locations and return to form
+  const handleLocationSettingsBack = () => {
+    setShowLocationSettings(false);
+    loadLocations(); // Reload locations to get newly added ones
   };
 
   const handleDateSelect = (date) => {
@@ -92,7 +116,7 @@ const EditPlant = ({ plant, onClose, onSave }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (isValid) {
-      const finalLocation = formData.customLocation || formData.location;
+      const finalLocation = formData.location;
 
       onSave({
         ...plant,
@@ -110,6 +134,7 @@ const EditPlant = ({ plant, onClose, onSave }) => {
   return (
     <AnimatePresence>
       <motion.div
+        key="edit-plant-form-backdrop"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -264,10 +289,10 @@ const EditPlant = ({ plant, onClose, onSave }) => {
                 >
                   Lokasi
                 </label>
-                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: showLocationInput ? '12px' : 0 }}>
-                  {[...locationOptions, 'Tambah Tempat'].map((location) => (
+                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                  {[...locationOptions, 'Tambah Tempat'].map((location, index) => (
                     <button
-                      key={location}
+                      key={`location-${index}-${location}`}
                       type="button"
                       onClick={() => handleLocationSelect(location)}
                       style={{
@@ -275,9 +300,9 @@ const EditPlant = ({ plant, onClose, onSave }) => {
                         fontSize: '1rem',
                         fontFamily: "'Inter', sans-serif",
                         fontWeight: 500,
-                        color: formData.location === location || (location === 'Tambah Tempat' && showLocationInput) ? '#2D5016' : '#666666',
-                        backgroundColor: formData.location === location || (location === 'Tambah Tempat' && showLocationInput) ? '#F1F8E9' : 'transparent',
-                        border: formData.location === location || (location === 'Tambah Tempat' && showLocationInput) ? '2px solid #7CB342' : '2px solid #E0E0E0',
+                        color: formData.location === location ? '#2D5016' : '#666666',
+                        backgroundColor: formData.location === location ? '#F1F8E9' : 'transparent',
+                        border: formData.location === location ? '2px solid #7CB342' : '2px solid #E0E0E0',
                         borderRadius: '24px',
                         cursor: 'pointer',
                         transition: 'all 0.2s ease',
@@ -287,35 +312,6 @@ const EditPlant = ({ plant, onClose, onSave }) => {
                     </button>
                   ))}
                 </div>
-
-                {/* Custom Location Input */}
-                <AnimatePresence>
-                  {showLocationInput && (
-                    <motion.input
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      type="text"
-                      placeholder="Nama Tempat"
-                      value={formData.customLocation}
-                      onChange={(e) => setFormData({ ...formData, customLocation: e.target.value })}
-                      onFocus={() => setFocusedInput('customLocation')}
-                      onBlur={() => setFocusedInput(null)}
-                      style={{
-                        width: '100%',
-                        padding: '12px 16px',
-                        fontSize: '1rem',
-                        fontFamily: "'Inter', sans-serif",
-                        color: '#2C2C2C',
-                        backgroundColor: '#FAFAFA',
-                        border: focusedInput === 'customLocation' || formData.customLocation.length >= 2 ? '2px solid #7CB342' : '2px solid transparent',
-                        borderRadius: '12px',
-                        outline: 'none',
-                        transition: 'border-color 200ms',
-                      }}
-                    />
-                  )}
-                </AnimatePresence>
               </div>
 
               {/* Planted Date Pills */}
@@ -547,6 +543,17 @@ const EditPlant = ({ plant, onClose, onSave }) => {
           </div>
         </motion.div>
       </motion.div>
+
+      {/* LocationSettings Modal */}
+      {showLocationSettings && (
+        <LocationSettings
+          key="location-settings-modal"
+          onBack={handleLocationSettingsBack}
+          onLocationAdded={(locationName) => {
+            // Location added, will be loaded when going back
+          }}
+        />
+      )}
     </AnimatePresence>
   );
 };

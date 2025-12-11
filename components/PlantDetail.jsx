@@ -188,8 +188,8 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
           <button
             onClick={onBack}
             style={{
-              width: '48px',
-              height: '48px',
+              width: '40px',
+              height: '40px',
               borderRadius: '50%',
               backgroundColor: '#FFFFFF',
               border: '1px solid #E0E0E0',
@@ -199,14 +199,14 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
               cursor: 'pointer',
             }}
           >
-            <ArrowLeft size={24} weight="bold" color="#2D5016" />
+            <ArrowLeft size={16} weight="bold" color="#2D5016" />
           </button>
 
           <button
             onClick={() => setShowMenu(true)}
             style={{
-              width: '48px',
-              height: '48px',
+              width: '40px',
+              height: '40px',
               borderRadius: '50%',
               backgroundColor: '#FFFFFF',
               border: '1px solid #E0E0E0',
@@ -216,7 +216,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
               cursor: 'pointer',
             }}
           >
-            <DotsThree size={24} weight="bold" color="#2D5016" />
+            <DotsThree size={16} weight="bold" color="#2D5016" />
           </button>
         </div>
 
