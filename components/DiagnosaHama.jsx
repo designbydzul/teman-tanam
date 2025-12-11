@@ -34,6 +34,7 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
   const [showSuggestions, setShowSuggestions] = useState(true);
   const [inputFocused, setInputFocused] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   // Refs
   const chatAreaRef = useRef(null);
@@ -43,45 +44,51 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
 
   // Handle iOS keyboard and lock body scroll
   useEffect(() => {
-    // Add class to body to hide everything else via CSS
-    document.body.classList.add('diagnosa-hama-open');
-
     // Lock body scroll when DiagnosaHama opens
     const originalStyle = document.body.style.cssText;
-    const originalHtmlStyle = document.documentElement.style.cssText;
-
     document.body.style.overflow = 'hidden';
     document.body.style.position = 'fixed';
     document.body.style.width = '100%';
-    document.body.style.height = '100%';
     document.body.style.top = '0';
-    document.body.style.left = '0';
-    document.documentElement.style.overflow = 'hidden';
 
-    const handleResize = () => {
+    // Track keyboard using visualViewport
+    const handleViewportChange = () => {
       if (window.visualViewport && containerRef.current) {
         const viewportHeight = window.visualViewport.height;
-        // Only adjust height when keyboard is likely open (viewport significantly smaller)
-        if (viewportHeight < window.innerHeight * 0.8) {
-          containerRef.current.style.height = `${viewportHeight}px`;
-        } else {
-          containerRef.current.style.height = '100dvh';
+        const viewportOffsetTop = window.visualViewport.offsetTop;
+
+        // Set container height to match visual viewport
+        containerRef.current.style.height = `${viewportHeight}px`;
+        containerRef.current.style.top = `${viewportOffsetTop}px`;
+
+        // Calculate if keyboard is open
+        const windowHeight = window.innerHeight;
+        const newKeyboardHeight = windowHeight - viewportHeight - viewportOffsetTop;
+        setKeyboardHeight(newKeyboardHeight > 50 ? newKeyboardHeight : 0);
+
+        // Auto-scroll chat to bottom when keyboard opens
+        if (newKeyboardHeight > 50 && chatAreaRef.current) {
+          setTimeout(() => {
+            if (chatAreaRef.current) {
+              chatAreaRef.current.scrollTop = chatAreaRef.current.scrollHeight;
+            }
+          }, 50);
         }
       }
     };
 
     if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', handleResize);
-      window.visualViewport.addEventListener('scroll', handleResize);
+      window.visualViewport.addEventListener('resize', handleViewportChange);
+      window.visualViewport.addEventListener('scroll', handleViewportChange);
+      // Initial call
+      handleViewportChange();
     }
 
     return () => {
-      document.body.classList.remove('diagnosa-hama-open');
       document.body.style.cssText = originalStyle;
-      document.documentElement.style.cssText = originalHtmlStyle;
       if (window.visualViewport) {
-        window.visualViewport.removeEventListener('resize', handleResize);
-        window.visualViewport.removeEventListener('scroll', handleResize);
+        window.visualViewport.removeEventListener('resize', handleViewportChange);
+        window.visualViewport.removeEventListener('scroll', handleViewportChange);
       }
     };
   }, []);
@@ -215,55 +222,30 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
 
   return (
     <div
-      className="diagnosa-hama-container"
+      ref={containerRef}
       style={{
         position: 'fixed',
         top: 0,
         left: 0,
         right: 0,
         bottom: 0,
+        height: '100%',
+        width: '100%',
+        backgroundColor: '#FFFFFF',
         zIndex: 9999,
+        display: 'flex',
+        flexDirection: 'column',
         overflow: 'hidden',
-        overscrollBehavior: 'none',
-        touchAction: 'none',
       }}
     >
-      {/* Oversized white backdrop to cover iOS overscroll in all directions */}
+      {/* Header - Always visible */}
       <div
         style={{
-          position: 'fixed',
-          top: '-100vh',
-          left: '-50vw',
-          width: '200vw',
-          height: '300vh',
-          backgroundColor: '#FFFFFF',
-          zIndex: 1,
-        }}
-      />
-      {/* Main container */}
-      <div
-        ref={containerRef}
-        style={{
-          position: 'relative',
-          width: '100%',
-          height: '100dvh',
-          backgroundColor: '#FFFFFF',
-          zIndex: 2,
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-          overscrollBehavior: 'none',
-        }}
-      >
-        {/* Header */}
-      <div
-        style={{
-          paddingTop: 'max(24px, env(safe-area-inset-top))',
-          paddingLeft: '24px',
-          paddingRight: '24px',
-          paddingBottom: '16px',
+          padding: keyboardHeight > 0 ? '8px 16px' : '16px 24px',
           backgroundColor: '#FFFFFF',
           flexShrink: 0,
+          borderBottom: '1px solid #F5F5F5',
+          transition: 'padding 0.15s ease',
         }}
       >
         <div
@@ -281,8 +263,8 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
             style={{
               position: 'absolute',
               left: 0,
-              width: '40px',
-              height: '40px',
+              width: keyboardHeight > 0 ? '32px' : '40px',
+              height: keyboardHeight > 0 ? '32px' : '40px',
               borderRadius: '50%',
               backgroundColor: '#FFFFFF',
               border: '1px solid #E0E0E0',
@@ -290,6 +272,7 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
+              transition: 'all 0.15s ease',
             }}
           >
             <ArrowLeft size={16} weight="bold" color="#2D5016" />
@@ -299,10 +282,11 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
           <h1
             style={{
               fontFamily: 'var(--font-caveat), Caveat, cursive',
-              fontSize: '1.75rem',
+              fontSize: keyboardHeight > 0 ? '1.25rem' : '1.75rem',
               fontWeight: 600,
               color: '#2D5016',
               margin: 0,
+              transition: 'font-size 0.15s ease',
             }}
           >
             Diagnosa Hama
@@ -315,8 +299,8 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
             style={{
               position: 'absolute',
               right: 0,
-              width: '40px',
-              height: '40px',
+              width: keyboardHeight > 0 ? '32px' : '40px',
+              height: keyboardHeight > 0 ? '32px' : '40px',
               borderRadius: '50%',
               backgroundColor: '#FFFFFF',
               border: '1px solid #E0E0E0',
@@ -324,6 +308,7 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
+              transition: 'all 0.15s ease',
             }}
           >
             <ClockCounterClockwise size={16} weight="regular" color="#666666" />
@@ -338,13 +323,11 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
           flex: 1,
           overflowY: 'auto',
           overflowX: 'hidden',
-          padding: '0 24px',
+          padding: keyboardHeight > 0 ? '8px 16px' : '16px 24px',
           display: 'flex',
           flexDirection: 'column',
           WebkitOverflowScrolling: 'touch',
           minHeight: 0,
-          overscrollBehavior: 'none',
-          touchAction: 'pan-y',
         }}
       >
         {/* Plant Selector Card */}
@@ -630,8 +613,9 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
           flexShrink: 0,
           backgroundColor: '#FFFFFF',
           borderTop: '1px solid #F5F5F5',
-          padding: '16px 24px',
-          paddingBottom: 'max(16px, env(safe-area-inset-bottom))',
+          padding: keyboardHeight > 0 ? '8px 16px' : '16px 24px',
+          paddingBottom: keyboardHeight > 0 ? '8px' : 'max(16px, env(safe-area-inset-bottom))',
+          transition: 'padding 0.2s ease',
         }}
       >
         {/* Attached Images Preview */}
@@ -925,7 +909,6 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
           </>
         )}
       </AnimatePresence>
-      </div>
     </div>
   );
 };

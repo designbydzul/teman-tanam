@@ -105,27 +105,17 @@ const Onboarding = ({ onComplete }) => {
               autoFocus
               style={{
                 width: '100%',
-                backgroundColor: '#F5F5F5',
-                borderRadius: '16px',
-                padding: '16px 24px',
+                backgroundColor: '#FAFAFA',
+                borderRadius: '12px',
+                padding: '16px',
                 fontSize: '1rem',
                 fontFamily: "'Inter', sans-serif",
                 border: `2px solid ${
                   name.trim() ? '#7CB342' : 'transparent'
-                }`, // Green Fresh when filled
+                }`,
                 outline: 'none',
-                transition: 'border-color 200ms, box-shadow 200ms',
+                transition: 'border-color 200ms',
                 color: '#2C2C2C',
-              }}
-              onFocus={(e) => {
-                if (name.trim()) {
-                  e.target.style.borderColor = '#7CB342';
-                }
-              }}
-              onBlur={(e) => {
-                if (!name.trim()) {
-                  e.target.style.borderColor = 'transparent';
-                }
               }}
             />
             {/* Error validation under input */}

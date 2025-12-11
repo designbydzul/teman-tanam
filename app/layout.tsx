@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Caveat } from "next/font/google";
 import "./globals.css";
 
@@ -16,6 +16,14 @@ const caveat = Caveat({
 export const metadata: Metadata = {
   title: "Teman Tanam",
   description: "Your plant companion app",
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover',
 };
 
 export default function RootLayout({

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import LocationSettings from './LocationSettings';
 
@@ -15,10 +15,10 @@ const EditPlant = ({ plant, onClose, onSave }) => {
 
   const [photoPreview, setPhotoPreview] = useState(null);
   const [showLocationInput, setShowLocationInput] = useState(false);
-  const [showDatePicker, setShowDatePicker] = useState(false);
   const [focusedInput, setFocusedInput] = useState(null);
   const [locationOptions, setLocationOptions] = useState(['Teras', 'Balkon']);
   const [showLocationSettings, setShowLocationSettings] = useState(false);
+  const dateInputRef = useRef(null);
 
   // Load user's saved locations from localStorage
   const loadLocations = () => {
@@ -48,6 +48,14 @@ const EditPlant = ({ plant, onClose, onSave }) => {
     loadLocations();
   }, []);
 
+  // Format date for display
+  const formatDateForDisplay = (dateStr) => {
+    if (!dateStr) return '';
+    const dateObj = new Date(dateStr);
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    return `${dateObj.getDate()} ${months[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
+  };
+
   // Initialize form with plant data
   useEffect(() => {
     if (plant) {
@@ -58,18 +66,20 @@ const EditPlant = ({ plant, onClose, onSave }) => {
       // Get plant location
       const plantLocation = plant.location || '';
 
+      // Format the date for display if exists
+      const formattedDate = plantedDateStr ? formatDateForDisplay(plantedDateStr) : 'Hari ini';
+
       setFormData({
         customName: plant.customName || plant.name || '',
         location: plantLocation,
         customLocation: '',
-        plantedDate: plantedDateStr ? '' : 'Hari ini',
+        plantedDate: formattedDate,
         customDate: plantedDateStr,
         notes: plant.notes || '',
         photo: null,
       });
 
       setPhotoPreview(plant.photoUrl || plant.photoPreview || plant.image || null);
-      setShowDatePicker(!!plantedDateStr);
     }
   }, [plant]);
 
@@ -105,11 +115,20 @@ const EditPlant = ({ plant, onClose, onSave }) => {
 
   const handleDateSelect = (date) => {
     if (date === 'Pilih Tanggal') {
-      setShowDatePicker(true);
-      setFormData({ ...formData, plantedDate: '', customDate: '' });
+      // Trigger native date picker
+      dateInputRef.current?.showPicker?.();
+      dateInputRef.current?.click();
     } else {
-      setShowDatePicker(false);
       setFormData({ ...formData, plantedDate: date, customDate: '' });
+    }
+  };
+
+  const handleCustomDateChange = (e) => {
+    const selectedDate = e.target.value;
+    if (selectedDate) {
+      // Format the date for display (e.g., "11 Des 2025")
+      const formattedDate = formatDateForDisplay(selectedDate);
+      setFormData({ ...formData, plantedDate: formattedDate, customDate: selectedDate });
     }
   };
 
@@ -165,6 +184,7 @@ const EditPlant = ({ plant, onClose, onSave }) => {
             display: 'flex',
             flexDirection: 'column',
             position: 'relative',
+            overflowX: 'hidden',
           }}
         >
           {/* Sticky Header with Close Button */}
@@ -237,7 +257,7 @@ const EditPlant = ({ plant, onClose, onSave }) => {
           </div>
 
           {/* Scrollable Content */}
-          <div style={{ flex: 1, overflowY: 'auto', padding: '24px', paddingBottom: '100px' }}>
+          <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch', touchAction: 'pan-y', padding: '24px', paddingBottom: '100px' }}>
 
             {/* Form */}
             <form onSubmit={handleSubmit} id="edit-plant-form">
@@ -263,12 +283,13 @@ const EditPlant = ({ plant, onClose, onSave }) => {
                   onBlur={() => setFocusedInput(null)}
                   style={{
                     width: '100%',
-                    padding: '12px 16px',
+                    boxSizing: 'border-box',
+                    padding: '16px',
                     fontSize: '1rem',
                     fontFamily: "'Inter', sans-serif",
                     color: '#2C2C2C',
                     backgroundColor: '#FAFAFA',
-                    border: focusedInput === 'name' || formData.customName.length >= 2 ? '2px solid #7CB342' : '2px solid transparent',
+                    border: focusedInput === 'name' ? '2px solid #7CB342' : '2px solid transparent',
                     borderRadius: '12px',
                     outline: 'none',
                     transition: 'border-color 200ms',
@@ -327,57 +348,63 @@ const EditPlant = ({ plant, onClose, onSave }) => {
                 >
                   Tanggal Ditanam
                 </label>
-                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: showDatePicker ? '12px' : 0 }}>
-                  {['Hari ini', 'Pilih Tanggal'].map((date) => (
-                    <button
-                      key={date}
-                      type="button"
-                      onClick={() => handleDateSelect(date)}
-                      style={{
-                        padding: '12px 24px',
-                        fontSize: '1rem',
-                        fontFamily: "'Inter', sans-serif",
-                        fontWeight: 500,
-                        color: formData.plantedDate === date || (date === 'Pilih Tanggal' && showDatePicker) ? '#2D5016' : '#666666',
-                        backgroundColor: formData.plantedDate === date || (date === 'Pilih Tanggal' && showDatePicker) ? '#F1F8E9' : 'transparent',
-                        border: formData.plantedDate === date || (date === 'Pilih Tanggal' && showDatePicker) ? '2px solid #7CB342' : '2px solid #E0E0E0',
-                        borderRadius: '24px',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                      }}
-                    >
-                      {date}
-                    </button>
-                  ))}
+                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                  {/* Hari ini button */}
+                  <button
+                    type="button"
+                    onClick={() => handleDateSelect('Hari ini')}
+                    style={{
+                      padding: '12px 24px',
+                      fontSize: '1rem',
+                      fontFamily: "'Inter', sans-serif",
+                      fontWeight: 500,
+                      color: formData.plantedDate === 'Hari ini' ? '#2D5016' : '#666666',
+                      backgroundColor: formData.plantedDate === 'Hari ini' ? '#F1F8E9' : 'transparent',
+                      border: formData.plantedDate === 'Hari ini' ? '2px solid #7CB342' : '2px solid #E0E0E0',
+                      borderRadius: '24px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    Hari ini
+                  </button>
+
+                  {/* Pilih Tanggal / Selected Date button */}
+                  <button
+                    type="button"
+                    onClick={() => handleDateSelect('Pilih Tanggal')}
+                    style={{
+                      padding: '12px 24px',
+                      fontSize: '1rem',
+                      fontFamily: "'Inter', sans-serif",
+                      fontWeight: 500,
+                      color: formData.customDate ? '#2D5016' : '#666666',
+                      backgroundColor: formData.customDate ? '#F1F8E9' : 'transparent',
+                      border: formData.customDate ? '2px solid #7CB342' : '2px solid #E0E0E0',
+                      borderRadius: '24px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    {formData.customDate ? formData.plantedDate : 'Pilih Tanggal'}
+                  </button>
                 </div>
 
-                {/* Date Picker */}
-                <AnimatePresence>
-                  {showDatePicker && (
-                    <motion.input
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      type="date"
-                      value={formData.customDate}
-                      onChange={(e) => setFormData({ ...formData, customDate: e.target.value })}
-                      onFocus={() => setFocusedInput('customDate')}
-                      onBlur={() => setFocusedInput(null)}
-                      style={{
-                        width: '100%',
-                        padding: '12px 16px',
-                        fontSize: '1rem',
-                        fontFamily: "'Inter', sans-serif",
-                        color: '#2C2C2C',
-                        backgroundColor: '#FAFAFA',
-                        border: focusedInput === 'customDate' || formData.customDate ? '2px solid #7CB342' : '2px solid transparent',
-                        borderRadius: '12px',
-                        outline: 'none',
-                        transition: 'border-color 200ms',
-                      }}
-                    />
-                  )}
-                </AnimatePresence>
+                {/* Hidden Date Input */}
+                <input
+                  ref={dateInputRef}
+                  type="date"
+                  value={formData.customDate}
+                  max={new Date().toISOString().split('T')[0]}
+                  onChange={handleCustomDateChange}
+                  style={{
+                    position: 'absolute',
+                    opacity: 0,
+                    pointerEvents: 'none',
+                    width: 0,
+                    height: 0,
+                  }}
+                />
               </div>
 
               {/* Notes (Optional) */}
@@ -401,13 +428,14 @@ const EditPlant = ({ plant, onClose, onSave }) => {
                   onBlur={() => setFocusedInput(null)}
                   style={{
                     width: '100%',
+                    boxSizing: 'border-box',
                     minHeight: '96px',
-                    padding: '12px 16px',
+                    padding: '16px',
                     fontSize: '1rem',
                     fontFamily: "'Inter', sans-serif",
                     color: '#2C2C2C',
                     backgroundColor: '#FAFAFA',
-                    border: focusedInput === 'notes' || formData.notes ? '2px solid #7CB342' : '2px solid transparent',
+                    border: focusedInput === 'notes' ? '2px solid #7CB342' : '2px solid transparent',
                     borderRadius: '12px',
                     outline: 'none',
                     resize: 'vertical',

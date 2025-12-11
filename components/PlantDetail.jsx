@@ -32,8 +32,9 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
   const [showActionToast, setShowActionToast] = useState(false);
   const [actionToastMessage, setActionToastMessage] = useState('');
 
-  // Lock body scroll when PlantDetail mounts
+  // Lock body scroll and prevent iOS viewport shifting when modals are open
   useEffect(() => {
+    // Lock scroll when PlantDetail mounts
     const originalStyle = document.body.style.cssText;
     document.body.style.overflow = 'hidden';
     document.body.style.position = 'fixed';
@@ -188,8 +189,8 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
         bottom: 0,
         backgroundColor: '#FFFFFF',
         zIndex: 2000,
-        visibility: showDiagnosaHama ? 'hidden' : 'visible',
         overflow: 'hidden',
+        visibility: showDiagnosaHama ? 'hidden' : 'visible',
       }}
     >
       {/* Sticky Header Section */}
@@ -1051,7 +1052,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
         )}
       </AnimatePresence>
 
-      {/* Diagnosa Hama - rendered via Portal to avoid iOS issues */}
+      {/* Diagnosa Hama Screen - rendered via Portal to avoid iOS keyboard issues */}
       {showDiagnosaHama && typeof document !== 'undefined' && createPortal(
         <DiagnosaHama
           plant={plant}

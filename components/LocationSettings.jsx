@@ -132,6 +132,23 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
   const [locationToDelete, setLocationToDelete] = useState(null);
   const [moveToLocation, setMoveToLocation] = useState('');
   const [inputFocused, setInputFocused] = useState(false);
+  const [error, setError] = useState('');
+
+  // Calculate plant count for a location from actual plants data
+  const getPlantCountForLocation = (locationName) => {
+    return plants.filter((plant) => plant.location === locationName).length;
+  };
+
+  // Get plants for a specific location
+  const getPlantsForLocation = (locationName) => {
+    return plants.filter((plant) => plant.location === locationName);
+  };
+
+  // Check for duplicate location name
+  const checkDuplicate = (name) => {
+    const trimmedName = name.trim().toLowerCase();
+    return locations.some((loc) => loc.name.toLowerCase() === trimmedName);
+  };
 
   // Calculate plant count for a location from actual plants data
   const getPlantCountForLocation = (locationName) => {
@@ -191,25 +208,44 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
     }
   };
 
-  const handleAddLocation = () => {
-    if (newLocationName.trim().length >= 2) {
-      const locationName = newLocationName.trim();
-      const newLocation = {
-        id: Date.now().toString(),
-        name: locationName,
-        plantCount: 0,
-      };
-      const updatedLocations = [...locations, newLocation];
-      setLocations(updatedLocations);
-      localStorage.setItem('temanTanamLocations', JSON.stringify(updatedLocations));
-      setNewLocationName('');
-      setShowAddModal(false);
-      // Callback to show toast
-      if (onLocationAdded) {
-        onLocationAdded(locationName);
-      }
+  const handleNameChange = (value) => {
+    setNewLocationName(value);
+    // Clear error when typing
+    if (error) setError('');
+    // Check for duplicate
+    if (value.trim().length >= 2 && checkDuplicate(value)) {
+      setError('Nama lokasi sudah ada');
     }
   };
+
+  const handleAddLocation = () => {
+    if (newLocationName.trim().length < 2) return;
+
+    // Check for duplicate before saving
+    if (checkDuplicate(newLocationName)) {
+      setError('Nama lokasi sudah ada');
+      return;
+    }
+
+    const locationName = newLocationName.trim();
+    const newLocation = {
+      id: Date.now().toString(),
+      name: locationName,
+      plantCount: 0,
+    };
+    const updatedLocations = [...locations, newLocation];
+    setLocations(updatedLocations);
+    localStorage.setItem('temanTanamLocations', JSON.stringify(updatedLocations));
+    setNewLocationName('');
+    setError('');
+    setShowAddModal(false);
+    // Callback to show toast
+    if (onLocationAdded) {
+      onLocationAdded(locationName);
+    }
+  };
+
+  const isValidNewLocation = newLocationName.trim().length >= 2 && !checkDuplicate(newLocationName);
 
   const handleDeleteLocation = (location) => {
     setLocationToDelete(location);
@@ -466,28 +502,44 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
                 type="text"
                 placeholder="Nama lokasi (min. 2 karakter)"
                 value={newLocationName}
-                onChange={(e) => setNewLocationName(e.target.value)}
+                onChange={(e) => handleNameChange(e.target.value)}
                 onFocus={() => setInputFocused(true)}
                 onBlur={() => setInputFocused(false)}
                 style={{
                   width: '100%',
-                  padding: '12px 16px',
+                  padding: '16px',
                   fontSize: '1rem',
                   fontFamily: "'Inter', sans-serif",
                   color: '#2C2C2C',
                   backgroundColor: '#FAFAFA',
-                  border: inputFocused || newLocationName.length >= 2 ? '2px solid #7CB342' : '2px solid transparent',
+                  border: error
+                    ? '2px solid #EF4444'
+                    : inputFocused
+                      ? '2px solid #7CB342'
+                      : '2px solid transparent',
                   borderRadius: '12px',
                   outline: 'none',
-                  marginBottom: '16px',
+                  marginBottom: error ? '8px' : '16px',
                   transition: 'border-color 200ms',
                 }}
               />
+              {error && (
+                <p
+                  style={{
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: '12px',
+                    color: '#EF4444',
+                    margin: '0 0 16px 0',
+                  }}
+                >
+                  {error}
+                </p>
+              )}
 
               {/* Submit Button */}
               <button
                 onClick={handleAddLocation}
-                disabled={newLocationName.trim().length < 2}
+                disabled={!isValidNewLocation}
                 style={{
                   width: '100%',
                   padding: '14px',
@@ -495,11 +547,10 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
                   fontFamily: "'Inter', sans-serif",
                   fontWeight: 600,
                   color: '#FFFFFF',
-                  backgroundColor:
-                    newLocationName.trim().length >= 2 ? '#7CB342' : '#CCCCCC',
+                  backgroundColor: isValidNewLocation ? '#7CB342' : '#CCCCCC',
                   border: 'none',
                   borderRadius: '12px',
-                  cursor: newLocationName.trim().length >= 2 ? 'pointer' : 'not-allowed',
+                  cursor: isValidNewLocation ? 'pointer' : 'not-allowed',
                 }}
               >
                 Simpan

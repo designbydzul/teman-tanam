@@ -1686,7 +1686,7 @@ const Home = ({ userName }) => {
         />
       )}
 
-      {/* Diagnosa Hama Modal - rendered via portal to avoid z-index issues */}
+      {/* Diagnosa Hama Modal from menu - rendered via portal to avoid z-index issues */}
       {showDiagnosaHamaModal && menuPlant && typeof document !== 'undefined' && createPortal(
         <DiagnosaHama
           plant={menuPlant}
