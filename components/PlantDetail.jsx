@@ -16,6 +16,31 @@ import {
 import DiagnosaHama from './DiagnosaHama';
 import EditPlant from './EditPlant';
 
+// Static mock timeline data - moved outside component to prevent recreation on every render
+const MOCK_TIMELINE = [
+  {
+    date: '18 Desember 2025',
+    entries: [
+      { type: 'water', label: 'Penyiraman', time: '7.45' },
+      { type: 'fertilize', label: 'Pemupukan', time: '6.30' },
+    ],
+  },
+  {
+    date: '16 Desember 2025',
+    entries: [
+      { type: 'water', label: 'Penyiraman', time: '7.45' },
+      { type: 'diagnose', label: 'Diagnosa penyakit', time: '6.30', hasDetails: true },
+    ],
+  },
+  {
+    date: '10 Desember 2025',
+    entries: [
+      { type: 'water', label: 'Penyiraman', time: '10.15' },
+      { type: 'add', label: 'Tanaman ditambahkan', time: '8.23' },
+    ],
+  },
+];
+
 const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
   const [activeTab, setActiveTab] = useState('perawatan');
   const [showMenu, setShowMenu] = useState(false);
@@ -89,30 +114,8 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
     ? Math.floor((new Date() - new Date(plantData.lastFertilized)) / (1000 * 60 * 60 * 24))
     : null;
 
-  // Mock timeline data
-  const timeline = [
-    {
-      date: '18 Desember 2025',
-      entries: [
-        { type: 'water', label: 'Penyiraman', time: '7.45' },
-        { type: 'fertilize', label: 'Pemupukan', time: '6.30' },
-      ],
-    },
-    {
-      date: '16 Desember 2025',
-      entries: [
-        { type: 'water', label: 'Penyiraman', time: '7.45' },
-        { type: 'diagnose', label: 'Diagnosa penyakit', time: '6.30', hasDetails: true },
-      ],
-    },
-    {
-      date: '10 Desember 2025',
-      entries: [
-        { type: 'water', label: 'Penyiraman', time: '10.15' },
-        { type: 'add', label: 'Tanaman ditambahkan', time: '8.23' },
-      ],
-    },
-  ];
+  // Use static timeline data from outside component
+  const timeline = MOCK_TIMELINE;
 
   const getActionIcon = (type) => {
     switch (type) {

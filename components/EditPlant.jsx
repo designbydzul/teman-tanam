@@ -75,10 +75,11 @@ const EditPlant = ({ plant, onClose, onSave }) => {
 
   const isValid = formData.location;
 
+  // Use functional updates to avoid stale closure issues
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setFormData({ ...formData, photo: file });
+      setFormData((prev) => ({ ...prev, photo: file }));
       const reader = new FileReader();
       reader.onloadend = () => {
         setPhotoPreview(reader.result);
@@ -93,7 +94,7 @@ const EditPlant = ({ plant, onClose, onSave }) => {
       setShowLocationSettings(true);
     } else {
       setShowLocationInput(false);
-      setFormData({ ...formData, location, customLocation: '' });
+      setFormData((prev) => ({ ...prev, location, customLocation: '' }));
     }
   };
 
@@ -106,10 +107,10 @@ const EditPlant = ({ plant, onClose, onSave }) => {
   const handleDateSelect = (date) => {
     if (date === 'Pilih Tanggal') {
       setShowDatePicker(true);
-      setFormData({ ...formData, plantedDate: '', customDate: '' });
+      setFormData((prev) => ({ ...prev, plantedDate: '', customDate: '' }));
     } else {
       setShowDatePicker(false);
-      setFormData({ ...formData, plantedDate: date, customDate: '' });
+      setFormData((prev) => ({ ...prev, plantedDate: date, customDate: '' }));
     }
   };
 
@@ -258,7 +259,7 @@ const EditPlant = ({ plant, onClose, onSave }) => {
                   type="text"
                   placeholder="Beri nama biar kece"
                   value={formData.customName}
-                  onChange={(e) => setFormData({ ...formData, customName: e.target.value })}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, customName: e.target.value }))}
                   onFocus={() => setFocusedInput('name')}
                   onBlur={() => setFocusedInput(null)}
                   style={{
@@ -360,7 +361,7 @@ const EditPlant = ({ plant, onClose, onSave }) => {
                       exit={{ opacity: 0, height: 0 }}
                       type="date"
                       value={formData.customDate}
-                      onChange={(e) => setFormData({ ...formData, customDate: e.target.value })}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, customDate: e.target.value }))}
                       onFocus={() => setFocusedInput('customDate')}
                       onBlur={() => setFocusedInput(null)}
                       style={{
@@ -396,7 +397,7 @@ const EditPlant = ({ plant, onClose, onSave }) => {
                 <textarea
                   placeholder="Tulis apa aja: lokasi, asal benih, dll"
                   value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))}
                   onFocus={() => setFocusedInput('notes')}
                   onBlur={() => setFocusedInput(null)}
                   style={{
@@ -448,7 +449,7 @@ const EditPlant = ({ plant, onClose, onSave }) => {
                       type="button"
                       onClick={() => {
                         setPhotoPreview(null);
-                        setFormData({ ...formData, photo: null });
+                        setFormData((prev) => ({ ...prev, photo: null }));
                       }}
                       style={{
                         position: 'absolute',
