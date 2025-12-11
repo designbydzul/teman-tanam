@@ -150,16 +150,6 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
     return locations.some((loc) => loc.name.toLowerCase() === trimmedName);
   };
 
-  // Calculate plant count for a location from actual plants data
-  const getPlantCountForLocation = (locationName) => {
-    return plants.filter((plant) => plant.location === locationName).length;
-  };
-
-  // Get plants for a specific location
-  const getPlantsForLocation = (locationName) => {
-    return plants.filter((plant) => plant.location === locationName);
-  };
-
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
