@@ -39,6 +39,52 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
   const chatAreaRef = useRef(null);
   const fileInputRef = useRef(null);
   const inputRef = useRef(null);
+  const containerRef = useRef(null);
+
+  // Handle iOS keyboard and lock body scroll
+  useEffect(() => {
+    // Add class to body to hide everything else via CSS
+    document.body.classList.add('diagnosa-hama-open');
+
+    // Lock body scroll when DiagnosaHama opens
+    const originalStyle = document.body.style.cssText;
+    const originalHtmlStyle = document.documentElement.style.cssText;
+
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.width = '100%';
+    document.body.style.height = '100%';
+    document.body.style.top = '0';
+    document.body.style.left = '0';
+    document.documentElement.style.overflow = 'hidden';
+
+    const handleResize = () => {
+      if (window.visualViewport && containerRef.current) {
+        const viewportHeight = window.visualViewport.height;
+        // Only adjust height when keyboard is likely open (viewport significantly smaller)
+        if (viewportHeight < window.innerHeight * 0.8) {
+          containerRef.current.style.height = `${viewportHeight}px`;
+        } else {
+          containerRef.current.style.height = '100dvh';
+        }
+      }
+    };
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleResize);
+      window.visualViewport.addEventListener('scroll', handleResize);
+    }
+
+    return () => {
+      document.body.classList.remove('diagnosa-hama-open');
+      document.body.style.cssText = originalStyle;
+      document.documentElement.style.cssText = originalHtmlStyle;
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', handleResize);
+        window.visualViewport.removeEventListener('scroll', handleResize);
+      }
+    };
+  }, []);
 
   // Normalize plant data
   const plantData = selectedPlant
@@ -48,7 +94,7 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
         species: selectedPlant.species?.scientific || 'Cucumis sativus',
         location: selectedPlant.location || 'Teras',
         plantedDate: selectedPlant.plantedDate || new Date(Date.now() - 12 * 24 * 60 * 60 * 1000),
-        coverPhotoUrl: selectedPlant.photoUrl || selectedPlant.image || 'https://images.unsplash.com/photo-1568584711271-6c0b7a1e0d64?w=300',
+        coverPhotoUrl: selectedPlant.photoUrl || (selectedPlant.image !== null && selectedPlant.image) || null,
       }
     : null;
 
@@ -169,22 +215,53 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
 
   return (
     <div
+      className="diagnosa-hama-container"
       style={{
         position: 'fixed',
         top: 0,
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: '#FFFFFF',
-        zIndex: 2000,
-        display: 'flex',
-        flexDirection: 'column',
+        zIndex: 9999,
+        overflow: 'hidden',
+        overscrollBehavior: 'none',
+        touchAction: 'none',
       }}
     >
-      {/* Header */}
+      {/* Oversized white backdrop to cover iOS overscroll in all directions */}
       <div
         style={{
-          padding: '24px',
+          position: 'fixed',
+          top: '-100vh',
+          left: '-50vw',
+          width: '200vw',
+          height: '300vh',
+          backgroundColor: '#FFFFFF',
+          zIndex: 1,
+        }}
+      />
+      {/* Main container */}
+      <div
+        ref={containerRef}
+        style={{
+          position: 'relative',
+          width: '100%',
+          height: '100dvh',
+          backgroundColor: '#FFFFFF',
+          zIndex: 2,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          overscrollBehavior: 'none',
+        }}
+      >
+        {/* Header */}
+      <div
+        style={{
+          paddingTop: 'max(24px, env(safe-area-inset-top))',
+          paddingLeft: '24px',
+          paddingRight: '24px',
+          paddingBottom: '16px',
           backgroundColor: '#FFFFFF',
           flexShrink: 0,
         }}
@@ -260,9 +337,14 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
         style={{
           flex: 1,
           overflowY: 'auto',
+          overflowX: 'hidden',
           padding: '0 24px',
           display: 'flex',
           flexDirection: 'column',
+          WebkitOverflowScrolling: 'touch',
+          minHeight: 0,
+          overscrollBehavior: 'none',
+          touchAction: 'pan-y',
         }}
       >
         {/* Plant Selector Card */}
@@ -327,16 +409,43 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
                       alignItems: 'center',
                     }}
                   >
-                    <img
-                      src={plantData.coverPhotoUrl}
-                      alt={plantData.name}
-                      style={{
-                        width: '64px',
-                        height: '64px',
-                        borderRadius: '12px',
-                        objectFit: 'cover',
-                      }}
-                    />
+                    {plantData.coverPhotoUrl ? (
+                      <img
+                        src={plantData.coverPhotoUrl}
+                        alt={plantData.name}
+                        style={{
+                          width: '64px',
+                          height: '64px',
+                          borderRadius: '12px',
+                          objectFit: 'cover',
+                        }}
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          width: '64px',
+                          height: '64px',
+                          borderRadius: '12px',
+                          backgroundColor: '#F1F8E9',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <svg width="32" height="32" viewBox="0 0 60 60" fill="none">
+                          <path
+                            d="M30 52.5C30 52.5 12 42 12 27C12 20.3726 17.3726 15 24 15C26.8328 15 29.4134 15.9876 31.5 17.6459C33.5866 15.9876 36.1672 15 39 15C45.6274 15 51 20.3726 51 27C51 42 33 52.5 30 52.5Z"
+                            fill="#7CB342"
+                          />
+                          <path
+                            d="M30 17.6459V52.5"
+                            stroke="#2D5016"
+                            strokeWidth="3"
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                      </div>
+                    )}
                     <div>
                       <p
                         style={{
@@ -513,17 +622,12 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
           </AnimatePresence>
         </div>
 
-        {/* Spacer for input area */}
-        <div style={{ height: '120px', flexShrink: 0 }} />
       </div>
 
       {/* Input Area */}
       <div
         style={{
-          position: 'fixed',
-          bottom: 0,
-          left: 0,
-          right: 0,
+          flexShrink: 0,
           backgroundColor: '#FFFFFF',
           borderTop: '1px solid #F5F5F5',
           padding: '16px 24px',
@@ -612,7 +716,7 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
               gap: '12px',
               padding: '12px 16px',
               backgroundColor: '#FFFFFF',
-              border: inputFocused || inputText ? '2px solid #7CB342' : '2px solid #E0E0E0',
+              border: inputFocused || inputText ? '2px solid #7CB342' : '2px solid transparent',
               borderRadius: '24px',
               transition: 'border-color 200ms',
             }}
@@ -821,6 +925,7 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
           </>
         )}
       </AnimatePresence>
+      </div>
     </div>
   );
 };

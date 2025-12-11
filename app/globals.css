@@ -21,17 +21,58 @@
 
 html, body {
   height: 100%;
+  height: 100dvh;
   margin: 0;
   padding: 0;
+  overflow-x: hidden;
+  max-width: 100vw;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  overflow-x: hidden;
 }
 
 /* Enable touch scrolling on iOS */
 * {
   -webkit-overflow-scrolling: touch;
+  box-sizing: border-box;
+}
+
+/* Prevent horizontal overflow */
+#__next {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+/* Hide ALL app content when diagnosa-hama is open */
+body.diagnosa-hama-open > *:not(.diagnosa-hama-container) {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
+}
+
+/* Ensure DiagnosaHama container is always visible and on top */
+.diagnosa-hama-container {
+  display: block !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  opacity: 1 !important;
+}
+
+.diagnosa-hama-container * {
+  visibility: visible !important;
+}
+
+/* Prevent body scroll and overscroll when diagnosa-hama is open */
+body.diagnosa-hama-open {
+  overflow: hidden !important;
+  position: fixed !important;
+  width: 100% !important;
+  height: 100% !important;
+  overscroll-behavior: none !important;
+  background: #FFFFFF !important;
 }

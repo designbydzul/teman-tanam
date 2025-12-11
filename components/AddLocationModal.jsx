@@ -2,15 +2,22 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from '@phosphor-icons/react';
 
-const AddLocationModal = ({ isOpen, onClose, plants, onSave }) => {
+const AddLocationModal = ({ isOpen, onClose, plants, onSave, existingLocations = [] }) => {
   const [locationName, setLocationName] = useState('');
   const [selectedPlantIds, setSelectedPlantIds] = useState([]);
   const [inputFocused, setInputFocused] = useState(false);
+  const [error, setError] = useState('');
 
   // Get plants that don't have a specific location (location is 'Semua' or empty)
   const uncategorizedPlants = plants.filter(
     (plant) => !plant.location || plant.location === 'Semua'
   );
+
+  // Check for duplicate location name
+  const checkDuplicate = (name) => {
+    const trimmedName = name.trim().toLowerCase();
+    return existingLocations.some((loc) => loc.toLowerCase() === trimmedName);
+  };
 
   const handlePlantToggle = (plantId) => {
     setSelectedPlantIds((prev) =>
@@ -20,8 +27,27 @@ const AddLocationModal = ({ isOpen, onClose, plants, onSave }) => {
     );
   };
 
+  const handleNameChange = (e) => {
+    const value = e.target.value;
+    setLocationName(value);
+
+    // Clear error when typing
+    if (error) setError('');
+
+    // Check for duplicate
+    if (value.trim().length >= 2 && checkDuplicate(value)) {
+      setError('Nama lokasi sudah ada');
+    }
+  };
+
   const handleSave = () => {
     if (locationName.trim().length < 2) return;
+
+    // Check for duplicate before saving
+    if (checkDuplicate(locationName)) {
+      setError('Nama lokasi sudah ada');
+      return;
+    }
 
     // Save the new location
     onSave({
@@ -32,10 +58,11 @@ const AddLocationModal = ({ isOpen, onClose, plants, onSave }) => {
     // Reset form
     setLocationName('');
     setSelectedPlantIds([]);
+    setError('');
     onClose();
   };
 
-  const isValid = locationName.trim().length >= 2;
+  const isValid = locationName.trim().length >= 2 && !checkDuplicate(locationName);
 
   return (
     <AnimatePresence>
@@ -123,6 +150,8 @@ const AddLocationModal = ({ isOpen, onClose, plants, onSave }) => {
               style={{
                 flex: 1,
                 overflowY: 'auto',
+                WebkitOverflowScrolling: 'touch',
+                touchAction: 'pan-y',
                 padding: '24px',
               }}
             >
@@ -144,7 +173,7 @@ const AddLocationModal = ({ isOpen, onClose, plants, onSave }) => {
                   type="text"
                   placeholder="Masukan nama lokasi"
                   value={locationName}
-                  onChange={(e) => setLocationName(e.target.value)}
+                  onChange={handleNameChange}
                   onFocus={() => setInputFocused(true)}
                   onBlur={() => setInputFocused(false)}
                   style={{
@@ -154,16 +183,32 @@ const AddLocationModal = ({ isOpen, onClose, plants, onSave }) => {
                     fontFamily: "'Inter', sans-serif",
                     color: '#2C2C2C',
                     backgroundColor: '#FAFAFA',
-                    border: inputFocused || locationName.length >= 2 ? '2px solid #7CB342' : '2px solid transparent',
+                    border: error
+                      ? '2px solid #EF4444'
+                      : inputFocused
+                        ? '2px solid #7CB342'
+                        : '2px solid transparent',
                     borderRadius: '12px',
                     outline: 'none',
                     transition: 'border-color 200ms',
                   }}
                 />
+                {error && (
+                  <p
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: '12px',
+                      color: '#EF4444',
+                      margin: '8px 0 0 0',
+                    }}
+                  >
+                    {error}
+                  </p>
+                )}
               </div>
 
               {/* Plant Selection */}
-              {uncategorizedPlants.length > 0 && (
+              {uncategorizedPlants.length > 0 ? (
                 <div>
                   <label
                     style={{
@@ -183,7 +228,7 @@ const AddLocationModal = ({ isOpen, onClose, plants, onSave }) => {
                     style={{
                       display: 'grid',
                       gridTemplateColumns: 'repeat(3, 1fr)',
-                      gap: '16px',
+                      gap: '24px 16px',
                     }}
                   >
                     {uncategorizedPlants.map((plant) => {
@@ -197,14 +242,16 @@ const AddLocationModal = ({ isOpen, onClose, plants, onSave }) => {
                             flexDirection: 'column',
                             alignItems: 'center',
                             cursor: 'pointer',
+                            minWidth: 0,
+                            width: '100%',
                           }}
                         >
                           {/* Plant Image with Selection Ring */}
                           <div
                             style={{
-                              width: '80px',
-                              height: '80px',
-                              borderRadius: '20px',
+                              width: '100%',
+                              aspectRatio: '1',
+                              borderRadius: '24px',
                               overflow: 'hidden',
                               marginBottom: '8px',
                               border: isSelected ? '3px solid #7CB342' : '3px solid transparent',
@@ -218,6 +265,7 @@ const AddLocationModal = ({ isOpen, onClose, plants, onSave }) => {
                                 width: '100%',
                                 height: '100%',
                                 objectFit: 'cover',
+                                display: 'block',
                               }}
                             />
                           </div>
@@ -234,7 +282,7 @@ const AddLocationModal = ({ isOpen, onClose, plants, onSave }) => {
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
                               whiteSpace: 'nowrap',
-                              maxWidth: '100%',
+                              width: '100%',
                             }}
                           >
                             {plant.name}
@@ -249,6 +297,10 @@ const AddLocationModal = ({ isOpen, onClose, plants, onSave }) => {
                               color: '#666666',
                               margin: 0,
                               textAlign: 'center',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                              width: '100%',
                             }}
                           >
                             {plant.status}
@@ -257,6 +309,61 @@ const AddLocationModal = ({ isOpen, onClose, plants, onSave }) => {
                       );
                     })}
                   </div>
+                </div>
+              ) : (
+                /* Empty State - All plants are assigned */
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    minHeight: 'calc(100vh - 400px)',
+                    textAlign: 'center',
+                  }}
+                >
+                  {/* Icon */}
+                  <div
+                    style={{
+                      width: '120px',
+                      height: '120px',
+                      borderRadius: '50%',
+                      backgroundColor: '#F1F8E9',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginBottom: '24px',
+                    }}
+                  >
+                    <svg width="60" height="60" viewBox="0 0 60 60" fill="none">
+                      <path
+                        d="M30 52.5C30 52.5 12 42 12 27C12 20.3726 17.3726 15 24 15C26.8328 15 29.4134 15.9876 31.5 17.6459C33.5866 15.9876 36.1672 15 39 15C45.6274 15 51 20.3726 51 27C51 42 33 52.5 30 52.5Z"
+                        fill="#7CB342"
+                      />
+                      <path
+                        d="M30 17.6459V52.5"
+                        stroke="#2D5016"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  </div>
+
+                  {/* Text */}
+                  <p
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: '1.125rem',
+                      fontWeight: 500,
+                      color: '#666666',
+                      margin: 0,
+                      lineHeight: 1.6,
+                    }}
+                  >
+                    Semua tanaman sudah
+                    <br />
+                    punya lokasi
+                  </p>
                 </div>
               )}
             </div>
@@ -286,7 +393,7 @@ const AddLocationModal = ({ isOpen, onClose, plants, onSave }) => {
                   cursor: isValid ? 'pointer' : 'not-allowed',
                 }}
               >
-                Simpan
+                Simpan{selectedPlantIds.length > 0 ? ` (${selectedPlantIds.length} tanaman)` : ''}
               </button>
             </div>
           </motion.div>

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Drop,
@@ -25,10 +26,24 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
   const [showEditPlant, setShowEditPlant] = useState(false);
   const [currentPlantData, setCurrentPlantData] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const containerRef = useRef(null);
 
   // Toast state for actions
   const [showActionToast, setShowActionToast] = useState(false);
   const [actionToastMessage, setActionToastMessage] = useState('');
+
+  // Lock body scroll when PlantDetail mounts
+  useEffect(() => {
+    const originalStyle = document.body.style.cssText;
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.width = '100%';
+    document.body.style.top = '0';
+
+    return () => {
+      document.body.style.cssText = originalStyle;
+    };
+  }, []);
 
   // Use currentPlantData if available (after edit), otherwise use plant prop
   const sourcePlant = currentPlantData || plant;
@@ -164,6 +179,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
 
   return (
     <div
+      ref={containerRef}
       style={{
         position: 'fixed',
         top: 0,
@@ -172,6 +188,8 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
         bottom: 0,
         backgroundColor: '#FFFFFF',
         zIndex: 2000,
+        visibility: showDiagnosaHama ? 'hidden' : 'visible',
+        overflow: 'hidden',
       }}
     >
       {/* Sticky Header Section */}
@@ -286,7 +304,6 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
               display: 'flex',
               gap: '0',
               marginTop: '24px',
-              marginBottom: '16px',
             }}
           >
             <button
@@ -298,9 +315,9 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
                 fontFamily: "'Inter', sans-serif",
                 fontWeight: activeTab === 'perawatan' ? 500 : 400,
                 color: activeTab === 'perawatan' ? '#2D5016' : '#666666',
-                backgroundColor: activeTab === 'perawatan' ? '#FFF9E6' : 'transparent',
+                backgroundColor: activeTab === 'perawatan' ? '#F1F8E9' : 'transparent',
                 border: 'none',
-                borderRadius: '12px',
+                borderRadius: '24px',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
               }}
@@ -316,9 +333,9 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
                 fontFamily: "'Inter', sans-serif",
                 fontWeight: activeTab === 'riwayat' ? 500 : 400,
                 color: activeTab === 'riwayat' ? '#2D5016' : '#666666',
-                backgroundColor: activeTab === 'riwayat' ? '#FFF9E6' : 'transparent',
+                backgroundColor: activeTab === 'riwayat' ? '#F1F8E9' : 'transparent',
                 border: 'none',
-                borderRadius: '12px',
+                borderRadius: '24px',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
               }}
@@ -332,15 +349,16 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
       {/* Scrollable Tab Content */}
       <div style={{
         position: 'absolute',
-        top: '330px',
+        top: '323px',
         left: 0,
         right: 0,
         bottom: 0,
         overflowY: 'auto',
         WebkitOverflowScrolling: 'touch',
+        touchAction: 'pan-y',
       }}>
         {activeTab === 'perawatan' ? (
-          <div style={{ padding: '24px 24px 100px 24px' }}>
+          <div style={{ padding: '0 24px 100px 24px' }}>
               {/* Section Header */}
               <p
                 style={{
@@ -596,7 +614,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
               </div>
           </div>
         ) : (
-          <div style={{ padding: '24px 24px 100px 24px' }}>
+          <div style={{ padding: '0 24px 100px 24px' }}>
               {timeline.map((group, groupIndex) => (
                 <div key={groupIndex}>
                   {/* Date Header */}
@@ -1033,12 +1051,13 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
         )}
       </AnimatePresence>
 
-      {/* Diagnosa Hama Screen */}
-      {showDiagnosaHama && (
+      {/* Diagnosa Hama - rendered via Portal to avoid iOS issues */}
+      {showDiagnosaHama && typeof document !== 'undefined' && createPortal(
         <DiagnosaHama
           plant={plant}
           onBack={() => setShowDiagnosaHama(false)}
-        />
+        />,
+        document.body
       )}
 
       {/* Edit Plant Modal */}

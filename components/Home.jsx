@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Drop,
@@ -19,20 +20,231 @@ import AddLocationModal from './AddLocationModal';
 import EditPlant from './EditPlant';
 import DiagnosaHama from './DiagnosaHama';
 
-// Mock plant data
+// Comprehensive mock plant data with all edge cases
 const MOCK_PLANTS = [
-  { id: 1, name: 'Labuh', status: 'Perlu disiram', location: 'Semua', image: 'https://images.unsplash.com/photo-1605027990121-cbae9d3c0a39?w=300' },
-  { id: 2, name: 'Kentang', status: 'Siap dipanen', location: 'Semua', image: 'https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=300' },
-  { id: 3, name: 'Labuh 01', status: 'Perlu disiram', location: 'Semua', image: 'https://images.unsplash.com/photo-1605027990121-cbae9d3c0a39?w=300' },
-  { id: 4, name: 'Kentang Ubi', status: 'Perlu disiram', location: 'Teras', image: 'https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=300' },
-  { id: 5, name: 'Kentang Sakit', status: 'Perlu disiram', location: 'Semua', image: 'https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=300' },
-  { id: 6, name: 'Kentang Hama', status: 'Baik Baik Saja', location: 'Semua', image: 'https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=300' },
-  { id: 7, name: 'Bawang Merah', status: 'Perlu disiram', location: 'Teras', image: 'https://images.unsplash.com/photo-1587411768078-af8b0b9c8f78?w=300' },
-  { id: 8, name: 'Bayam', status: 'Baik Baik Saja', location: 'Teras', image: 'https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=300' },
-  { id: 9, name: 'Kembang Kol', status: 'Baik Baik Saja', location: 'Balkon', image: 'https://images.unsplash.com/photo-1568584711271-e57ccf2f3679?w=300' },
-  { id: 10, name: 'Bayam Awal', status: 'Baik Baik Saja', location: 'Semua', image: 'https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=300' },
-  { id: 11, name: 'Bayam Jokowi', status: 'Perlu disiram', location: 'Semua', image: 'https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=300' },
-  { id: 12, name: 'Bayam Akhir', status: 'Baik Baik Saja', location: 'Semua', image: 'https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=300' },
+  // Edge case 1: Very long name (truncation test)
+  {
+    id: 1,
+    name: 'Tomat Cherry Merah Manis Kesayangan',
+    customName: 'Tomat Cherry Merah Manis Kesayangan',
+    status: 'Perlu disiram',
+    location: 'Teras',
+    image: 'https://images.unsplash.com/photo-1592841200221-a6898f307baa?w=300',
+    species: { id: 'tomat', name: 'Tomat', scientific: 'Solanum lycopersicum', emoji: '🍅' },
+    plantedDate: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000), // 45 days ago
+    lastWatered: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
+    lastFertilized: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000), // 14 days ago
+    notes: 'Tanaman pertama yang ditanam di kebun baru. Perlu perhatian ekstra karena cuaca sedang tidak menentu.',
+  },
+  // Edge case 2: Short name (1-2 chars)
+  {
+    id: 2,
+    name: 'CB',
+    customName: 'CB',
+    status: 'Baik Baik Saja',
+    location: 'Balkon',
+    image: 'https://images.unsplash.com/photo-1583119022894-919a68a3d0e3?w=300',
+    species: { id: 'cabai', name: 'Cabai', scientific: 'Capsicum frutescens', emoji: '🌶️' },
+    plantedDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+    lastWatered: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+    lastFertilized: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+    notes: '',
+  },
+  // Edge case 3: Siap dipanen status
+  {
+    id: 3,
+    name: 'Kentang Manis',
+    customName: 'Kentang Manis',
+    status: 'Siap dipanen',
+    location: 'Teras',
+    image: 'https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=300',
+    species: { id: 'kentang', name: 'Kentang', scientific: 'Solanum tuberosum', emoji: '🥔' },
+    plantedDate: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000), // 90 days - ready to harvest
+    lastWatered: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+    lastFertilized: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000),
+    notes: 'Sudah 3 bulan, waktunya panen!',
+  },
+  // Edge case 4: Plant without specific location (Semua)
+  {
+    id: 4,
+    name: 'Bayam Hijau',
+    customName: 'Bayam Hijau',
+    status: 'Baik Baik Saja',
+    location: 'Semua',
+    image: 'https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=300',
+    species: { id: 'bayam', name: 'Bayam', scientific: 'Spinacia oleracea', emoji: '🥬' },
+    plantedDate: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000),
+    lastWatered: new Date(),
+    lastFertilized: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
+    notes: '',
+  },
+  // Edge case 5: Plant just planted today
+  {
+    id: 5,
+    name: 'Wortel Baru',
+    customName: 'Wortel Baru',
+    status: 'Baik Baik Saja',
+    location: 'Balkon',
+    image: 'https://images.unsplash.com/photo-1598170845058-32b9d6a5da37?w=300',
+    species: { id: 'wortel', name: 'Wortel', scientific: 'Daucus carota', emoji: '🥕' },
+    plantedDate: new Date(), // Today
+    lastWatered: new Date(),
+    lastFertilized: null, // Never fertilized
+    notes: 'Baru tanam hari ini, semoga tumbuh subur!',
+  },
+  // Edge case 6: Very long notes
+  {
+    id: 6,
+    name: 'Brokoli Super',
+    customName: 'Brokoli Super',
+    status: 'Perlu disiram',
+    location: 'Teras',
+    image: 'https://images.unsplash.com/photo-1459411552884-841db9b3cc2a?w=300',
+    species: { id: 'brokoli', name: 'Brokoli', scientific: 'Brassica oleracea', emoji: '🥦' },
+    plantedDate: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000),
+    lastWatered: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+    lastFertilized: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+    notes: 'Catatan panjang untuk testing: Brokoli ini ditanam dari benih organik yang dibeli dari toko pertanian lokal. Perlu disiram setiap 2 hari sekali dan dipupuk setiap 2 minggu. Hindari sinar matahari langsung yang terlalu terik. Tanaman ini sangat sensitif terhadap hama ulat, jadi perlu dicek setiap hari. Pastikan drainase tanah baik untuk menghindari akar busuk. Panen bisa dilakukan setelah 60-90 hari sejak tanam.',
+  },
+  // Edge case 7: Plant that needs urgent watering (7+ days)
+  {
+    id: 7,
+    name: 'Terong Ungu',
+    customName: 'Terong Ungu',
+    status: 'Perlu disiram',
+    location: 'Teras',
+    image: 'https://images.unsplash.com/photo-1615484477778-ca3b77940c25?w=300',
+    species: { id: 'terong', name: 'Terong', scientific: 'Solanum melongena', emoji: '🍆' },
+    plantedDate: new Date(Date.now() - 75 * 24 * 60 * 60 * 1000),
+    lastWatered: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000), // 8 days - urgent!
+    lastFertilized: new Date(Date.now() - 28 * 24 * 60 * 60 * 1000),
+    notes: 'Perlu disiram segera!',
+  },
+  // Edge case 8: Plant with special characters in name
+  {
+    id: 8,
+    name: 'Cabai "Rawit" #1',
+    customName: 'Cabai "Rawit" #1',
+    status: 'Baik Baik Saja',
+    location: 'Balkon',
+    image: 'https://images.unsplash.com/photo-1583119022894-919a68a3d0e3?w=300',
+    species: { id: 'cabai', name: 'Cabai', scientific: 'Capsicum frutescens', emoji: '🌶️' },
+    plantedDate: new Date(Date.now() - 40 * 24 * 60 * 60 * 1000),
+    lastWatered: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+    lastFertilized: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
+    notes: '',
+  },
+  // Edge case 9: Plant with emoji in name
+  {
+    id: 9,
+    name: 'Jagung Manis 🌽',
+    customName: 'Jagung Manis 🌽',
+    status: 'Baik Baik Saja',
+    location: 'Teras',
+    image: 'https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=300',
+    species: { id: 'jagung', name: 'Jagung', scientific: 'Zea mays', emoji: '🌽' },
+    plantedDate: new Date(Date.now() - 55 * 24 * 60 * 60 * 1000),
+    lastWatered: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+    lastFertilized: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000),
+    notes: '',
+  },
+  // Edge case 10: Plant with custom location (not default)
+  {
+    id: 10,
+    name: 'Selada Keriting',
+    customName: 'Selada Keriting',
+    status: 'Baik Baik Saja',
+    location: 'Dapur',
+    image: 'https://images.unsplash.com/photo-1556801712-76c8eb07bbc9?w=300',
+    species: { id: 'selada', name: 'Selada', scientific: 'Lactuca sativa', emoji: '🥗' },
+    plantedDate: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000),
+    lastWatered: new Date(),
+    lastFertilized: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+    notes: 'Ditanam di pot kecil di dekat jendela dapur',
+  },
+  // Edge case 11: Plant without image (should show fallback)
+  {
+    id: 11,
+    name: 'Kangkung',
+    customName: 'Kangkung',
+    status: 'Perlu disiram',
+    location: 'Semua',
+    image: null,
+    species: { id: 'kangkung', name: 'Kangkung', scientific: 'Ipomoea aquatica', emoji: '🥬' },
+    plantedDate: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000),
+    lastWatered: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
+    lastFertilized: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
+    notes: '',
+  },
+  // Edge case 12: Plant with number-only name
+  {
+    id: 12,
+    name: '001',
+    customName: '001',
+    status: 'Baik Baik Saja',
+    location: 'Teras',
+    image: 'https://images.unsplash.com/photo-1587411768078-af8b0b9c8f78?w=300',
+    species: { id: 'bawang-merah', name: 'Bawang Merah', scientific: 'Allium cepa', emoji: '🧅' },
+    plantedDate: new Date(Date.now() - 35 * 24 * 60 * 60 * 1000),
+    lastWatered: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+    lastFertilized: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
+    notes: '',
+  },
+  // Edge case 13: Multiple plants same species
+  {
+    id: 13,
+    name: 'Tomat 1',
+    customName: 'Tomat 1',
+    status: 'Baik Baik Saja',
+    location: 'Balkon',
+    image: 'https://images.unsplash.com/photo-1592841200221-a6898f307baa?w=300',
+    species: { id: 'tomat', name: 'Tomat', scientific: 'Solanum lycopersicum', emoji: '🍅' },
+    plantedDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+    lastWatered: new Date(),
+    lastFertilized: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
+    notes: '',
+  },
+  {
+    id: 14,
+    name: 'Tomat 2',
+    customName: 'Tomat 2',
+    status: 'Perlu disiram',
+    location: 'Balkon',
+    image: 'https://images.unsplash.com/photo-1592841200221-a6898f307baa?w=300',
+    species: { id: 'tomat', name: 'Tomat', scientific: 'Solanum lycopersicum', emoji: '🍅' },
+    plantedDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+    lastWatered: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+    lastFertilized: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
+    notes: '',
+  },
+  // Edge case 14: Very old plant (1 year+)
+  {
+    id: 15,
+    name: 'Paprika Tua',
+    customName: 'Paprika Tua',
+    status: 'Siap dipanen',
+    location: 'Teras',
+    image: 'https://images.unsplash.com/photo-1563565375-f3fdfdbefa83?w=300',
+    species: { id: 'paprika', name: 'Paprika', scientific: 'Capsicum annuum', emoji: '🫑' },
+    plantedDate: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year ago
+    lastWatered: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+    lastFertilized: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+    notes: 'Tanaman veteran, masih produktif!',
+  },
+  // Edge case 15: Plant with all null optional fields
+  {
+    id: 16,
+    name: 'Sawi Baru',
+    customName: 'Sawi Baru',
+    status: 'Baik Baik Saja',
+    location: 'Semua',
+    image: 'https://images.unsplash.com/photo-1594282486756-576b93e0e912?w=300',
+    species: { id: 'sawi', name: 'Sawi', scientific: 'Brassica juncea', emoji: '🥬' },
+    plantedDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+    lastWatered: null,
+    lastFertilized: null,
+    notes: null,
+  },
 ];
 
 const Home = ({ userName }) => {
@@ -78,6 +290,10 @@ const Home = ({ userName }) => {
   // Diagnosa Hama from menu
   const [showDiagnosaHamaModal, setShowDiagnosaHamaModal] = useState(false);
 
+  // Delete confirmation modal state
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [plantToDelete, setPlantToDelete] = useState(null);
+
   // Network status state
   const [networkStatus, setNetworkStatus] = useState('online'); // 'online' | 'offline' | 'reconnecting'
   const [showNetworkToast, setShowNetworkToast] = useState(false);
@@ -115,7 +331,9 @@ const Home = ({ userName }) => {
       if (savedLocations) {
         const parsed = JSON.parse(savedLocations);
         const locationNames = parsed.map((loc) => loc.name);
-        setLocations(['Semua', ...locationNames]);
+        // Remove duplicates using Set
+        const uniqueLocations = [...new Set(locationNames)];
+        setLocations(['Semua', ...uniqueLocations]);
       } else {
         setLocations(['Semua', 'Teras', 'Balkon']);
       }
@@ -185,9 +403,11 @@ const Home = ({ userName }) => {
     if (savedLocations) {
       const parsed = JSON.parse(savedLocations);
       const locationNames = parsed.map((loc) => loc.name);
-      setLocations(['Semua', ...locationNames]);
+      // Remove duplicates using Set
+      const uniqueLocations = [...new Set(locationNames)];
+      setLocations(['Semua', ...uniqueLocations]);
       // Reset to 'Semua' if current selection was deleted
-      if (!['Semua', ...locationNames].includes(selectedLocation)) {
+      if (!['Semua', ...uniqueLocations].includes(selectedLocation)) {
         setSelectedLocation('Semua');
       }
     }
@@ -202,6 +422,9 @@ const Home = ({ userName }) => {
 
   const hasFilteredPlants = selectedLocation !== 'Semua';
   const showEmptyState = filteredPlants.length === 0;
+  const hasNoPlants = plants.length === 0;
+  const isSearching = searchQuery.trim().length > 0;
+  const isFilteringLocation = selectedLocation !== 'Semua';
 
   const handleBulkWater = () => {
     console.log('Bulk watering plants in:', selectedLocation);
@@ -286,12 +509,42 @@ const Home = ({ userName }) => {
   };
 
   // Long press handlers for plant cards
+  const touchStartPos = useRef({ x: 0, y: 0 });
+  const isLongPressValid = useRef(true);
+
   const handleLongPressStart = (plant, e) => {
-    e.preventDefault();
+    // Store initial touch position
+    if (e.touches) {
+      touchStartPos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    } else {
+      touchStartPos.current = { x: e.clientX, y: e.clientY };
+    }
+    isLongPressValid.current = true;
+
     longPressTimer.current = setTimeout(() => {
-      setMenuPlant(plant);
-      setShowPlantMenu(true);
+      if (isLongPressValid.current) {
+        setMenuPlant(plant);
+        setShowPlantMenu(true);
+      }
     }, 500); // 500ms for long press
+  };
+
+  const handleTouchMove = (e) => {
+    if (!longPressTimer.current) return;
+
+    // Check if user moved more than 10px (scrolling)
+    const touch = e.touches[0];
+    const deltaX = Math.abs(touch.clientX - touchStartPos.current.x);
+    const deltaY = Math.abs(touch.clientY - touchStartPos.current.y);
+
+    if (deltaX > 10 || deltaY > 10) {
+      // User is scrolling, cancel long press
+      isLongPressValid.current = false;
+      if (longPressTimer.current) {
+        clearTimeout(longPressTimer.current);
+        longPressTimer.current = null;
+      }
+    }
   };
 
   const handleLongPressEnd = () => {
@@ -299,6 +552,7 @@ const Home = ({ userName }) => {
       clearTimeout(longPressTimer.current);
       longPressTimer.current = null;
     }
+    isLongPressValid.current = false;
   };
 
   const handlePlantMenuAction = (action) => {
@@ -335,15 +589,25 @@ const Home = ({ userName }) => {
         }
         break;
       case 'delete':
-        if (menuPlant && window.confirm('Apakah Anda yakin ingin menghapus tanaman ini?')) {
-          const plantName = menuPlant.name;
-          setPlants(plants.filter((p) => p.id !== menuPlant.id));
-          setMenuPlant(null);
-          showActionToastWithMessage(`${plantName} sudah dihapus`);
+        if (menuPlant) {
+          setPlantToDelete(menuPlant);
+          setShowDeleteConfirmModal(true);
         }
         break;
       default:
         break;
+    }
+  };
+
+  // Handle confirmed delete from modal
+  const handleConfirmDelete = () => {
+    if (plantToDelete) {
+      const plantName = plantToDelete.name;
+      setPlants(plants.filter((p) => p.id !== plantToDelete.id));
+      setShowDeleteConfirmModal(false);
+      setPlantToDelete(null);
+      setMenuPlant(null);
+      showActionToastWithMessage(`${plantName} sudah dihapus`);
     }
   };
 
@@ -414,8 +678,9 @@ const Home = ({ userName }) => {
     // Save to localStorage
     localStorage.setItem('temanTanamLocations', JSON.stringify(updatedLocations));
 
-    // Update local state
-    setLocations(['Semua', ...updatedLocations.map((loc) => loc.name)]);
+    // Update local state - remove duplicates using Set
+    const uniqueLocations = [...new Set(updatedLocations.map((loc) => loc.name))];
+    setLocations(['Semua', ...uniqueLocations]);
 
     // Update selected plants' locations
     if (selectedPlantIds.length > 0) {
@@ -428,8 +693,9 @@ const Home = ({ userName }) => {
       );
     }
 
-    // Show toast
-    showActionToastWithMessage(`Lokasi ${name} sudah ditambahkan`);
+    // Show toast with plant count
+    const plantCountText = selectedPlantIds.length > 0 ? ` dengan ${selectedPlantIds.length} tanaman` : '';
+    showActionToastWithMessage(`Lokasi ${name} sudah ditambahkan${plantCountText}`);
   };
 
   return (
@@ -441,6 +707,7 @@ const Home = ({ userName }) => {
         right: 0,
         bottom: 0,
         backgroundColor: '#FAFAFA',
+        visibility: showDiagnosaHamaModal ? 'hidden' : 'visible',
       }}
     >
       {/* Header - Sticky */}
@@ -463,21 +730,34 @@ const Home = ({ userName }) => {
         >
           <h1
             style={{
-              fontFamily: 'var(--font-caveat), Caveat, cursive',
-              fontSize: '2rem',
-              fontWeight: 600,
+              fontFamily: "'Caveat', cursive",
+              fontSize: '28px',
               color: '#2D5016',
               margin: 0,
               flex: 1,
               minWidth: 0,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
             }}
           >
             Halo {currentUserName}
           </h1>
 
-          <div style={{ display: 'flex', gap: '12px' }}>
+          <div style={{ display: 'flex', gap: '12px', flexShrink: 0 }}>
             {/* WiFi Icon Button - Dynamic based on network status */}
             <button
+              onClick={() => {
+                const statusMessages = {
+                  online: { title: 'Online', message: 'Koneksi internet kamu stabil' },
+                  reconnecting: { title: 'Reconnecting...', message: 'Sedang mencoba menghubungkan kembali' },
+                  offline: { title: 'Offline', message: 'Tidak ada koneksi internet' },
+                };
+                const status = statusMessages[networkStatus];
+                setToastMessage(status);
+                setShowNetworkToast(true);
+                setTimeout(() => setShowNetworkToast(false), 3000);
+              }}
               style={{
                 width: '56px',
                 height: '56px',
@@ -593,21 +873,46 @@ const Home = ({ userName }) => {
               transition: 'border-color 200ms',
             }}
           />
-          <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            style={{
-              position: 'absolute',
-              right: '20px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-            }}
-          >
-            <circle cx="11" cy="11" r="8" stroke="#666666" strokeWidth="2" />
-            <path d="M21 21l-4.35-4.35" stroke="#666666" strokeWidth="2" strokeLinecap="round" />
-          </svg>
+          {searchQuery ? (
+            <button
+              onClick={() => setSearchQuery('')}
+              style={{
+                position: 'absolute',
+                right: '12px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                backgroundColor: '#E0E0E0',
+                border: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M12 4L4 12M4 4l8 8" stroke="#666666" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </button>
+          ) : (
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              style={{
+                position: 'absolute',
+                right: '20px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+              }}
+            >
+              <circle cx="11" cy="11" r="8" stroke="#666666" strokeWidth="2" />
+              <path d="M21 21l-4.35-4.35" stroke="#666666" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          )}
         </div>
 
         {/* Location Filter Pills */}
@@ -628,9 +933,9 @@ const Home = ({ userName }) => {
               overflowX: 'auto',
             }}
           >
-            {locations.map((location) => (
+            {locations.map((location, index) => (
               <button
-                key={location}
+                key={`location-${index}-${location}`}
                 onClick={() => setSelectedLocation(location)}
                 style={{
                   padding: '12px 24px',
@@ -685,6 +990,7 @@ const Home = ({ userName }) => {
           overflowY: 'auto',
           overflowX: 'hidden',
           WebkitOverflowScrolling: 'touch',
+          touchAction: 'pan-y',
           backgroundColor: '#FFFFFF',
         }}
       >
@@ -708,12 +1014,12 @@ const Home = ({ userName }) => {
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              minHeight: '400px',
+              minHeight: 'calc(100vh - 400px)',
               textAlign: 'center',
               width: '100%',
             }}
           >
-            {/* Plant Icon */}
+            {/* Icon */}
             <div
               style={{
                 width: '120px',
@@ -726,18 +1032,28 @@ const Home = ({ userName }) => {
                 marginBottom: '24px',
               }}
             >
-              <svg width="60" height="60" viewBox="0 0 60 60" fill="none">
-                <path
-                  d="M30 52.5C30 52.5 12 42 12 27C12 20.3726 17.3726 15 24 15C26.8328 15 29.4134 15.9876 31.5 17.6459C33.5866 15.9876 36.1672 15 39 15C45.6274 15 51 20.3726 51 27C51 42 33 52.5 30 52.5Z"
-                  fill="#7CB342"
-                />
-                <path
-                  d="M30 17.6459V52.5"
-                  stroke="#2D5016"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                />
-              </svg>
+              {isSearching || isFilteringLocation ? (
+                // Search/Filter icon for no results
+                <svg width="60" height="60" viewBox="0 0 60 60" fill="none">
+                  <circle cx="26" cy="26" r="14" stroke="#7CB342" strokeWidth="4" />
+                  <path d="M36 36L48 48" stroke="#7CB342" strokeWidth="4" strokeLinecap="round" />
+                  <path d="M20 26H32" stroke="#7CB342" strokeWidth="3" strokeLinecap="round" />
+                </svg>
+              ) : (
+                // Plant icon for no plants added
+                <svg width="60" height="60" viewBox="0 0 60 60" fill="none">
+                  <path
+                    d="M30 52.5C30 52.5 12 42 12 27C12 20.3726 17.3726 15 24 15C26.8328 15 29.4134 15.9876 31.5 17.6459C33.5866 15.9876 36.1672 15 39 15C45.6274 15 51 20.3726 51 27C51 42 33 52.5 30 52.5Z"
+                    fill="#7CB342"
+                  />
+                  <path
+                    d="M30 17.6459V52.5"
+                    stroke="#2D5016"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              )}
             </div>
 
             <p
@@ -750,9 +1066,25 @@ const Home = ({ userName }) => {
                 lineHeight: 1.6,
               }}
             >
-              Belum ada tanaman
-              <br />
-              ditambahkan
+              {isSearching ? (
+                <>
+                  Tidak ada hasil untuk
+                  <br />
+                  "{searchQuery}"
+                </>
+              ) : isFilteringLocation ? (
+                <>
+                  Belum ada tanaman
+                  <br />
+                  di {selectedLocation}
+                </>
+              ) : (
+                <>
+                  Belum ada tanaman
+                  <br />
+                  ditambahkan
+                </>
+              )}
             </p>
           </motion.div>
         ) : (
@@ -765,6 +1097,7 @@ const Home = ({ userName }) => {
                 animate={{ opacity: 1, scale: 1 }}
                 onClick={() => handlePlantClick(plant)}
                 onTouchStart={(e) => handleLongPressStart(plant, e)}
+                onTouchMove={handleTouchMove}
                 onTouchEnd={handleLongPressEnd}
                 onTouchCancel={handleLongPressEnd}
                 onMouseDown={(e) => handleLongPressStart(plant, e)}
@@ -782,6 +1115,8 @@ const Home = ({ userName }) => {
                   cursor: 'pointer',
                   userSelect: 'none',
                   WebkitTouchCallout: 'none',
+                  minWidth: 0,
+                  width: '100%',
                 }}
               >
                 {/* Plant Image */}
@@ -792,18 +1127,38 @@ const Home = ({ userName }) => {
                     borderRadius: '24px',
                     overflow: 'hidden',
                     marginBottom: '8px',
+                    backgroundColor: '#F1F8E9',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                   }}
                 >
-                  <img
-                    src={plant.image}
-                    alt={plant.name}
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover',
-                      display: 'block',
-                    }}
-                  />
+                  {plant.image ? (
+                    <img
+                      src={plant.image}
+                      alt={plant.name}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        display: 'block',
+                      }}
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.parentElement.innerHTML = `
+                          <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                            <path d="M24 42C24 42 10 34 10 22C10 17 14 12 19 12C21.5 12 23.8 13 25.5 14.5C27.2 13 29.5 12 32 12C37 12 41 17 41 22C41 34 27 42 24 42Z" fill="#7CB342"/>
+                            <path d="M24 14.5V42" stroke="#2D5016" strokeWidth="2.5" strokeLinecap="round"/>
+                          </svg>
+                        `;
+                      }}
+                    />
+                  ) : (
+                    <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                      <path d="M24 42C24 42 10 34 10 22C10 17 14 12 19 12C21.5 12 23.8 13 25.5 14.5C27.2 13 29.5 12 32 12C37 12 41 17 41 22C41 34 27 42 24 42Z" fill="#7CB342"/>
+                      <path d="M24 14.5V42" stroke="#2D5016" strokeWidth="2.5" strokeLinecap="round"/>
+                    </svg>
+                  )}
                 </div>
 
                 {/* Plant Name */}
@@ -816,6 +1171,11 @@ const Home = ({ userName }) => {
                     color: '#2C2C2C',
                     margin: '0 0 4px 0',
                     textAlign: 'center',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    width: '100%',
+                    boxSizing: 'border-box',
                   }}
                 >
                   {plant.name}
@@ -831,6 +1191,11 @@ const Home = ({ userName }) => {
                     color: '#666666',
                     margin: 0,
                     textAlign: 'center',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    width: '100%',
+                    boxSizing: 'border-box',
                   }}
                 >
                   {plant.status}
@@ -970,6 +1335,10 @@ const Home = ({ userName }) => {
           onLocationAdded={(locationName) => {
             showActionToastWithMessage(`Lokasi ${locationName} sudah ditambahkan`);
           }}
+          plants={plants}
+          onPlantsUpdated={(updatedPlants) => {
+            setPlants(updatedPlants);
+          }}
         />
       )}
 
@@ -993,6 +1362,7 @@ const Home = ({ userName }) => {
         onClose={() => setShowAddLocationModal(false)}
         plants={plants}
         onSave={handleAddLocationSave}
+        existingLocations={locations}
       />
 
       {/* Plant Long Press Menu Modal */}
@@ -1316,16 +1686,145 @@ const Home = ({ userName }) => {
         />
       )}
 
-      {/* Diagnosa Hama Modal from menu */}
-      {showDiagnosaHamaModal && menuPlant && (
+      {/* Diagnosa Hama Modal - rendered via portal to avoid z-index issues */}
+      {showDiagnosaHamaModal && menuPlant && typeof document !== 'undefined' && createPortal(
         <DiagnosaHama
           plant={menuPlant}
           onBack={() => {
             setShowDiagnosaHamaModal(false);
             setMenuPlant(null);
           }}
-        />
+        />,
+        document.body
       )}
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {showDeleteConfirmModal && plantToDelete && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => {
+                setShowDeleteConfirmModal(false);
+                setPlantToDelete(null);
+              }}
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                zIndex: 4000,
+              }}
+            />
+
+            {/* Modal */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              style={{
+                position: 'fixed',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                backgroundColor: '#FFFFFF',
+                borderRadius: '24px',
+                padding: '24px',
+                width: 'calc(100% - 48px)',
+                maxWidth: '320px',
+                zIndex: 4001,
+                textAlign: 'center',
+              }}
+            >
+              {/* Icon */}
+              <div
+                style={{
+                  width: '64px',
+                  height: '64px',
+                  borderRadius: '50%',
+                  backgroundColor: '#FEE2E2',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 16px',
+                }}
+              >
+                <Trash size={32} weight="bold" color="#DC2626" />
+              </div>
+
+              <h3
+                style={{
+                  fontFamily: 'var(--font-caveat), Caveat, cursive',
+                  fontSize: '1.5rem',
+                  fontWeight: 600,
+                  color: '#2D5016',
+                  margin: '0 0 8px 0',
+                }}
+              >
+                Hapus Tanaman?
+              </h3>
+
+              <p
+                style={{
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '14px',
+                  color: '#666666',
+                  margin: '0 0 24px 0',
+                  lineHeight: 1.5,
+                }}
+              >
+                Kamu yakin mau hapus <strong>{plantToDelete.name}</strong>? Aksi ini tidak bisa dibatalkan.
+              </p>
+
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button
+                  onClick={() => {
+                    setShowDeleteConfirmModal(false);
+                    setPlantToDelete(null);
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: '14px',
+                    fontSize: '1rem',
+                    fontFamily: "'Inter', sans-serif",
+                    fontWeight: 600,
+                    color: '#666666',
+                    backgroundColor: '#F5F5F5',
+                    border: 'none',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={handleConfirmDelete}
+                  style={{
+                    flex: 1,
+                    padding: '14px',
+                    fontSize: '1rem',
+                    fontFamily: "'Inter', sans-serif",
+                    fontWeight: 600,
+                    color: '#FFFFFF',
+                    backgroundColor: '#DC2626',
+                    border: 'none',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Hapus
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* Network Status Toast */}
       <AnimatePresence>

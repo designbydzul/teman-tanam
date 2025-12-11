@@ -25,7 +25,7 @@ import {
   X,
 } from '@phosphor-icons/react';
 
-const SortableLocationCard = ({ location, onDelete }) => {
+const SortableLocationCard = ({ location, plantCount, onDelete }) => {
   const {
     attributes,
     listeners,
@@ -87,7 +87,7 @@ const SortableLocationCard = ({ location, onDelete }) => {
           >
             {location.name}
           </h3>
-          {location.plantCount > 0 && (
+          {plantCount > 0 && (
             <p
               style={{
                 fontFamily: "'Inter', sans-serif",
@@ -96,7 +96,7 @@ const SortableLocationCard = ({ location, onDelete }) => {
                 margin: '4px 0 0 0',
               }}
             >
-              {location.plantCount} tanaman
+              {plantCount} tanaman
             </p>
           )}
         </div>
@@ -123,7 +123,7 @@ const SortableLocationCard = ({ location, onDelete }) => {
   );
 };
 
-const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded }) => {
+const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants = [], onPlantsUpdated }) => {
   const [locations, setLocations] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
@@ -132,6 +132,16 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded }) => {
   const [locationToDelete, setLocationToDelete] = useState(null);
   const [moveToLocation, setMoveToLocation] = useState('');
   const [inputFocused, setInputFocused] = useState(false);
+
+  // Calculate plant count for a location from actual plants data
+  const getPlantCountForLocation = (locationName) => {
+    return plants.filter((plant) => plant.location === locationName).length;
+  };
+
+  // Get plants for a specific location
+  const getPlantsForLocation = (locationName) => {
+    return plants.filter((plant) => plant.location === locationName);
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -203,7 +213,8 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded }) => {
 
   const handleDeleteLocation = (location) => {
     setLocationToDelete(location);
-    if (location.plantCount > 0) {
+    const plantCount = getPlantCountForLocation(location.name);
+    if (plantCount > 0) {
       setShowMovePlantsModal(true);
     } else {
       setShowDeleteConfirmModal(true);
@@ -228,19 +239,25 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded }) => {
   const handleMovePlants = () => {
     if (locationToDelete && moveToLocation) {
       const deletedLocationName = locationToDelete.name;
-      // Move plants to selected location
-      const updatedLocations = locations.map((loc) => {
-        if (loc.id === moveToLocation) {
-          return { ...loc, plantCount: loc.plantCount + (locationToDelete.plantCount || 0) };
-        }
-        if (loc.id === locationToDelete.id) {
-          return { ...loc, plantCount: 0 };
-        }
-        return loc;
-      });
+      const targetLocation = locations.find((loc) => loc.id === moveToLocation);
 
-      // Remove the location after moving plants
-      const finalLocations = updatedLocations.filter((loc) => loc.id !== locationToDelete.id);
+      if (targetLocation) {
+        // Update plants to new location
+        const updatedPlants = plants.map((plant) => {
+          if (plant.location === deletedLocationName) {
+            return { ...plant, location: targetLocation.name };
+          }
+          return plant;
+        });
+
+        // Call callback to update plants in parent component
+        if (onPlantsUpdated) {
+          onPlantsUpdated(updatedPlants);
+        }
+      }
+
+      // Remove the location
+      const finalLocations = locations.filter((loc) => loc.id !== locationToDelete.id);
       setLocations(finalLocations);
       localStorage.setItem('temanTanamLocations', JSON.stringify(finalLocations));
 
@@ -267,6 +284,8 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded }) => {
         backgroundColor: '#FFFFFF',
         zIndex: 3000,
         overflowY: 'auto',
+        WebkitOverflowScrolling: 'touch',
+        touchAction: 'pan-y',
       }}
     >
       {/* Header */}
@@ -334,6 +353,7 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded }) => {
               <SortableLocationCard
                 key={location.id}
                 location={location}
+                plantCount={getPlantCountForLocation(location.name)}
                 onDelete={handleDeleteLocation}
               />
             ))}
@@ -669,7 +689,7 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded }) => {
                   margin: '0 0 24px 0',
                 }}
               >
-                Ada {locationToDelete.plantCount} tanaman di "{locationToDelete.name}".
+                Ada {getPlantCountForLocation(locationToDelete.name)} tanaman di "{locationToDelete.name}".
                 Mau dipindahkan kemana?
               </p>
 
@@ -699,9 +719,9 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded }) => {
                       }}
                     >
                       {location.name}
-                      {location.plantCount > 0 && (
+                      {getPlantCountForLocation(location.name) > 0 && (
                         <span style={{ color: '#666666', fontSize: '14px', marginLeft: '8px' }}>
-                          ({location.plantCount} tanaman)
+                          ({getPlantCountForLocation(location.name)} tanaman)
                         </span>
                       )}
                     </button>
@@ -743,7 +763,7 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded }) => {
                     cursor: moveToLocation ? 'pointer' : 'not-allowed',
                   }}
                 >
-                  Pindahkan & Hapus
+                  Konfirmasi
                 </button>
               </div>
             </motion.div>

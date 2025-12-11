@@ -129,7 +129,7 @@ const AddPlant = ({ onClose, onSelectSpecies }) => {
             onBlur={() => setSearchFocused(false)}
             style={{
               width: '100%',
-              padding: '12px 50px 12px 16px',
+              padding: '16px 50px 16px 20px',
               fontSize: '1rem',
               fontFamily: "'Inter', sans-serif",
               color: '#2C2C2C',
@@ -140,21 +140,46 @@ const AddPlant = ({ onClose, onSelectSpecies }) => {
               transition: 'border-color 200ms',
             }}
           />
-          <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            style={{
-              position: 'absolute',
-              right: '16px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-            }}
-          >
-            <circle cx="11" cy="11" r="8" stroke="#666666" strokeWidth="2" />
-            <path d="M21 21l-4.35-4.35" stroke="#666666" strokeWidth="2" strokeLinecap="round" />
-          </svg>
+          {searchQuery ? (
+            <button
+              onClick={() => setSearchQuery('')}
+              style={{
+                position: 'absolute',
+                right: '12px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                backgroundColor: '#E0E0E0',
+                border: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M12 4L4 12M4 4l8 8" stroke="#666666" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </button>
+          ) : (
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              style={{
+                position: 'absolute',
+                right: '20px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+              }}
+            >
+              <circle cx="11" cy="11" r="8" stroke="#666666" strokeWidth="2" />
+              <path d="M21 21l-4.35-4.35" stroke="#666666" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          )}
         </div>
       </div>
       </div>
@@ -170,6 +195,7 @@ const AddPlant = ({ onClose, onSelectSpecies }) => {
           overflowY: 'auto',
           overflowX: 'hidden',
           WebkitOverflowScrolling: 'touch',
+          touchAction: 'pan-y',
           padding: '0 24px 100px 24px',
         }}
       >
@@ -177,7 +203,7 @@ const AddPlant = ({ onClose, onSelectSpecies }) => {
           style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: '16px',
+            gap: '24px 16px',
           }}
         >
         {filteredPlants.length > 0 ? (
@@ -190,6 +216,8 @@ const AddPlant = ({ onClose, onSelectSpecies }) => {
               onClick={() => onSelectSpecies(plant)}
               style={{
                 cursor: 'pointer',
+                minWidth: 0,
+                width: '100%',
               }}
             >
               {/* Plant Image/Emoji */}
@@ -218,6 +246,10 @@ const AddPlant = ({ onClose, onSelectSpecies }) => {
                   color: '#2C2C2C',
                   margin: '0 0 4px 0',
                   textAlign: 'center',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  width: '100%',
                 }}
               >
                 {plant.name}
@@ -232,6 +264,10 @@ const AddPlant = ({ onClose, onSelectSpecies }) => {
                   color: '#666666',
                   margin: 0,
                   textAlign: 'center',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  width: '100%',
                 }}
               >
                 {plant.scientific}
@@ -239,16 +275,56 @@ const AddPlant = ({ onClose, onSelectSpecies }) => {
             </motion.div>
           ))
         ) : (
-          <div
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
             style={{
               gridColumn: '1 / -1',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minHeight: 'calc(100vh - 350px)',
               textAlign: 'center',
-              padding: '40px 20px',
-              color: '#666666',
+              width: '100%',
             }}
           >
-            Tidak ada hasil
-          </div>
+            {/* Illustration */}
+            <div
+              style={{
+                width: '120px',
+                height: '120px',
+                borderRadius: '50%',
+                backgroundColor: '#F1F8E9',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: '24px',
+              }}
+            >
+              <svg width="60" height="60" viewBox="0 0 60 60" fill="none">
+                <circle cx="26" cy="26" r="14" stroke="#7CB342" strokeWidth="4" />
+                <path d="M36 36L48 48" stroke="#7CB342" strokeWidth="4" strokeLinecap="round" />
+                <path d="M20 26H32" stroke="#7CB342" strokeWidth="3" strokeLinecap="round" />
+              </svg>
+            </div>
+
+            {/* Description */}
+            <p
+              style={{
+                fontFamily: "'Inter', sans-serif",
+                fontSize: '1.125rem',
+                fontWeight: 500,
+                color: '#666666',
+                margin: 0,
+                lineHeight: 1.6,
+              }}
+            >
+              Tidak ada hasil untuk
+              <br />
+              "{searchQuery}"
+            </p>
+          </motion.div>
         )}
         </div>
       </div>
