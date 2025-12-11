@@ -349,6 +349,9 @@ const Home = ({ userName }) => {
 
   const hasFilteredPlants = selectedLocation !== 'Semua';
   const showEmptyState = filteredPlants.length === 0;
+  // Differentiate between "no plants at all" vs "no search results"
+  const hasNoPlants = plants.length === 0;
+  const hasNoSearchResults = searchQuery.trim() !== '' && filteredPlants.length === 0 && plants.length > 0;
 
   const handleBulkWater = useCallback(() => {
     console.log('Bulk watering plants in:', selectedLocation);
@@ -796,7 +799,7 @@ const Home = ({ userName }) => {
       <div style={styles.plantGridContainer}>
         <div style={styles.plantGrid}>
         {showEmptyState ? (
-          /* Empty State */
+          /* Empty State - Different states for different scenarios */
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -811,47 +814,188 @@ const Home = ({ userName }) => {
               width: '100%',
             }}
           >
-            {/* Plant Icon */}
-            <div
-              style={{
-                width: '120px',
-                height: '120px',
-                borderRadius: '50%',
-                backgroundColor: '#F1F8E9',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginBottom: '24px',
-              }}
-            >
-              <svg width="60" height="60" viewBox="0 0 60 60" fill="none">
-                <path
-                  d="M30 52.5C30 52.5 12 42 12 27C12 20.3726 17.3726 15 24 15C26.8328 15 29.4134 15.9876 31.5 17.6459C33.5866 15.9876 36.1672 15 39 15C45.6274 15 51 20.3726 51 27C51 42 33 52.5 30 52.5Z"
-                  fill="#7CB342"
-                />
-                <path
-                  d="M30 17.6459V52.5"
-                  stroke="#2D5016"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </div>
+            {hasNoSearchResults ? (
+              /* No Search Results State */
+              <>
+                {/* Magnifying Glass with X Icon */}
+                <div
+                  style={{
+                    width: '120px',
+                    height: '120px',
+                    borderRadius: '50%',
+                    backgroundColor: '#F5F5F5',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: '24px',
+                  }}
+                >
+                  <svg width="60" height="60" viewBox="0 0 60 60" fill="none">
+                    {/* Magnifying Glass */}
+                    <circle cx="26" cy="26" r="12" stroke="#9CA3AF" strokeWidth="3" fill="none" />
+                    <path d="M35 35L45 45" stroke="#9CA3AF" strokeWidth="3" strokeLinecap="round" />
+                    {/* X inside */}
+                    <path d="M22 22L30 30M30 22L22 30" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" />
+                  </svg>
+                </div>
 
-            <p
-              style={{
-                fontFamily: "'Inter', sans-serif",
-                fontSize: '1.125rem',
-                fontWeight: 500,
-                color: '#666666',
-                margin: 0,
-                lineHeight: 1.6,
-              }}
-            >
-              Belum ada tanaman
-              <br />
-              ditambahkan
-            </p>
+                <h3
+                  style={{
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: '1.25rem',
+                    fontWeight: 600,
+                    color: '#2C2C2C',
+                    margin: '0 0 8px 0',
+                  }}
+                >
+                  Gak ketemu nih
+                </h3>
+
+                <p
+                  style={{
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: '1rem',
+                    fontWeight: 400,
+                    color: '#666666',
+                    margin: 0,
+                  }}
+                >
+                  Coba kata kunci lain
+                </p>
+              </>
+            ) : hasNoPlants ? (
+              /* No Plants Yet State (New User) */
+              <>
+                {/* Friendly Plant/Seedling Icon */}
+                <div
+                  style={{
+                    width: '120px',
+                    height: '120px',
+                    borderRadius: '50%',
+                    backgroundColor: '#F1F8E9',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: '24px',
+                  }}
+                >
+                  <svg width="60" height="60" viewBox="0 0 60 60" fill="none">
+                    {/* Pot */}
+                    <path d="M20 40L22 52H38L40 40H20Z" fill="#D4A574" />
+                    <path d="M18 36H42V40H18V36Z" fill="#8B6914" />
+                    {/* Seedling */}
+                    <path
+                      d="M30 36V28"
+                      stroke="#2D5016"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                    />
+                    <path
+                      d="M30 28C30 28 22 26 22 20C22 14 30 12 30 12C30 12 38 14 38 20C38 26 30 28 30 28Z"
+                      fill="#7CB342"
+                    />
+                    <path
+                      d="M30 20V12"
+                      stroke="#2D5016"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </div>
+
+                <h3
+                  style={{
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: '1.25rem',
+                    fontWeight: 600,
+                    color: '#2C2C2C',
+                    margin: '0 0 8px 0',
+                  }}
+                >
+                  Belum ada tanaman nih!
+                </h3>
+
+                <p
+                  style={{
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: '1rem',
+                    fontWeight: 400,
+                    color: '#666666',
+                    margin: '0 0 24px 0',
+                  }}
+                >
+                  Yuk tambah tanaman pertama kamu
+                </p>
+
+                {/* Add Plant Button */}
+                <button
+                  onClick={handleAddPlantClick}
+                  style={{
+                    padding: '14px 32px',
+                    fontSize: '1rem',
+                    fontFamily: "'Inter', sans-serif",
+                    fontWeight: 600,
+                    color: '#FFFFFF',
+                    backgroundColor: '#7CB342',
+                    border: 'none',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                  }}
+                >
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path d="M10 4V16M4 10H16" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" />
+                  </svg>
+                  Tambah Tanaman
+                </button>
+              </>
+            ) : (
+              /* Filtered by location but no plants in that location */
+              <>
+                <div
+                  style={{
+                    width: '120px',
+                    height: '120px',
+                    borderRadius: '50%',
+                    backgroundColor: '#F1F8E9',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: '24px',
+                  }}
+                >
+                  <svg width="60" height="60" viewBox="0 0 60 60" fill="none">
+                    <path
+                      d="M30 52.5C30 52.5 12 42 12 27C12 20.3726 17.3726 15 24 15C26.8328 15 29.4134 15.9876 31.5 17.6459C33.5866 15.9876 36.1672 15 39 15C45.6274 15 51 20.3726 51 27C51 42 33 52.5 30 52.5Z"
+                      fill="#7CB342"
+                    />
+                    <path
+                      d="M30 17.6459V52.5"
+                      stroke="#2D5016"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </div>
+
+                <p
+                  style={{
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: '1.125rem',
+                    fontWeight: 500,
+                    color: '#666666',
+                    margin: 0,
+                    lineHeight: 1.6,
+                  }}
+                >
+                  Belum ada tanaman
+                  <br />
+                  di lokasi ini
+                </p>
+              </>
+            )}
           </motion.div>
         ) : (
           /* Plant Grid */
@@ -879,13 +1023,40 @@ const Home = ({ userName }) => {
               >
                 {/* Plant Image */}
                 <div style={styles.plantImageContainer}>
-                  <img
-                    src={plant.image}
-                    alt={plant.name}
-                    loading="lazy"
-                    decoding="async"
-                    style={styles.plantImage}
-                  />
+                  {plant.image ? (
+                    <img
+                      src={plant.image}
+                      alt={plant.name}
+                      loading="lazy"
+                      decoding="async"
+                      style={styles.plantImage}
+                    />
+                  ) : (
+                    /* No Image Placeholder */
+                    <div
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        backgroundColor: '#F3F4F6',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                        <path
+                          d="M24 40C24 40 10 32 10 20C10 14.4772 14.4772 10 20 10C22.2662 10 24.3307 10.7901 25.9967 12.1167C27.6627 10.7901 29.7272 10 31.9934 10C37.5162 10 42 14.4772 42 20C42 32 28 40 24 40Z"
+                          fill="#D1D5DB"
+                        />
+                        <path
+                          d="M24 12V40"
+                          stroke="#9CA3AF"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                        />
+                      </svg>
+                    </div>
+                  )}
                 </div>
 
                 {/* Plant Name */}

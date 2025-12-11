@@ -79,7 +79,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
     },
     location: sourcePlant.location,
     plantedDate: sourcePlant.plantedDate || sourcePlant.createdAt || new Date(Date.now() - 12 * 24 * 60 * 60 * 1000),
-    photoUrl: sourcePlant.photoUrl || sourcePlant.photoPreview || sourcePlant.image || 'https://images.unsplash.com/photo-1568584711271-6c0b7a1e0d64?w=600',
+    photoUrl: sourcePlant.photoUrl || sourcePlant.photoPreview || sourcePlant.image || null,
     lastWatered: sourcePlant.lastWatered || new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
     lastFertilized: sourcePlant.lastFertilized || new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
     quickTips: sourcePlant.quickTips || 'Pilih lahan yang memiliki sinar matahari penuh dan tanah yang gembur, mudah menyerap air, serta kaya akan humus dengan pH sekitar 6–7. Bersihkan lahan dari gulma dan bebatuan, lalu gemburkan tanah dengan pencangkulan. Buat bedengan atau guludan dengan lebar sekitar 1 meter, tinggi 20–30 cm, dan jarak antar bedengan 30–50 cm.',
@@ -249,21 +249,50 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
             }}
           >
             {/* Plant Thumbnail - Clickable */}
-            <img
-              src={plantData.photoUrl}
-              alt={plantData.customName}
-              loading="lazy"
-              decoding="async"
-              onClick={() => setShowImagePreview(true)}
-              style={{
-                width: '140px',
-                height: '140px',
-                objectFit: 'cover',
-                borderRadius: '24px',
-                flexShrink: 0,
-                cursor: 'pointer',
-              }}
-            />
+            {plantData.photoUrl ? (
+              <img
+                src={plantData.photoUrl}
+                alt={plantData.customName}
+                loading="lazy"
+                decoding="async"
+                onClick={() => setShowImagePreview(true)}
+                style={{
+                  width: '140px',
+                  height: '140px',
+                  objectFit: 'cover',
+                  borderRadius: '24px',
+                  flexShrink: 0,
+                  cursor: 'pointer',
+                }}
+              />
+            ) : (
+              /* No Image Placeholder */
+              <div
+                style={{
+                  width: '140px',
+                  height: '140px',
+                  borderRadius: '24px',
+                  backgroundColor: '#F3F4F6',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <svg width="56" height="56" viewBox="0 0 48 48" fill="none">
+                  <path
+                    d="M24 40C24 40 10 32 10 20C10 14.4772 14.4772 10 20 10C22.2662 10 24.3307 10.7901 25.9967 12.1167C27.6627 10.7901 29.7272 10 31.9934 10C37.5162 10 42 14.4772 42 20C42 32 28 40 24 40Z"
+                    fill="#D1D5DB"
+                  />
+                  <path
+                    d="M24 12V40"
+                    stroke="#9CA3AF"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </div>
+            )}
 
             {/* Plant Details */}
             <div style={{ flex: 1 }}>
@@ -993,9 +1022,9 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
         )}
       </AnimatePresence>
 
-      {/* Image Preview Modal */}
+      {/* Image Preview Modal - Only show if there's an image */}
       <AnimatePresence>
-        {showImagePreview && (
+        {showImagePreview && plantData.photoUrl && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
