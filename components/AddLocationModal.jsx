@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from '@phosphor-icons/react';
 
-const AddLocationModal = ({ isOpen, onClose, plants, onSave }) => {
+const AddLocationModal = ({ isOpen, onClose, plants, onSave, existingLocations = [] }) => {
   const [locationName, setLocationName] = useState('');
   const [selectedPlantIds, setSelectedPlantIds] = useState([]);
   const [inputFocused, setInputFocused] = useState(false);
@@ -11,6 +11,15 @@ const AddLocationModal = ({ isOpen, onClose, plants, onSave }) => {
   const uncategorizedPlants = plants.filter(
     (plant) => !plant.location || plant.location === 'Semua'
   );
+
+  // Check if location name already exists (case-insensitive)
+  const isDuplicateName = useMemo(() => {
+    const trimmedName = locationName.trim().toLowerCase();
+    if (trimmedName.length < 2) return false;
+    return existingLocations.some(
+      (loc) => loc.name.toLowerCase() === trimmedName
+    );
+  }, [locationName, existingLocations]);
 
   const handlePlantToggle = (plantId) => {
     setSelectedPlantIds((prev) =>
@@ -21,7 +30,7 @@ const AddLocationModal = ({ isOpen, onClose, plants, onSave }) => {
   };
 
   const handleSave = () => {
-    if (locationName.trim().length < 2) return;
+    if (locationName.trim().length < 2 || isDuplicateName) return;
 
     // Save the new location
     onSave({
@@ -35,7 +44,7 @@ const AddLocationModal = ({ isOpen, onClose, plants, onSave }) => {
     onClose();
   };
 
-  const isValid = locationName.trim().length >= 2;
+  const isValid = locationName.trim().length >= 2 && !isDuplicateName;
 
   return (
     <AnimatePresence>
@@ -154,12 +163,29 @@ const AddLocationModal = ({ isOpen, onClose, plants, onSave }) => {
                     fontFamily: "'Inter', sans-serif",
                     color: '#2C2C2C',
                     backgroundColor: '#FAFAFA',
-                    border: inputFocused || locationName.length >= 2 ? '2px solid #7CB342' : '2px solid transparent',
+                    border: isDuplicateName
+                      ? '2px solid #DC2626'
+                      : inputFocused || locationName.length >= 2
+                      ? '2px solid #7CB342'
+                      : '2px solid transparent',
                     borderRadius: '12px',
                     outline: 'none',
                     transition: 'border-color 200ms',
                   }}
                 />
+                {/* Duplicate name error message */}
+                {isDuplicateName && (
+                  <p
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: '14px',
+                      color: '#DC2626',
+                      margin: '8px 0 0 0',
+                    }}
+                  >
+                    Lokasi ini sudah ada
+                  </p>
+                )}
               </div>
 
               {/* Plant Selection */}

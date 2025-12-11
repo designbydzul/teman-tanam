@@ -125,6 +125,10 @@ const styles = {
     color: '#2C2C2C',
     margin: '0 0 4px 0',
     textAlign: 'center',
+    width: '100%',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
   },
   plantStatus: {
     fontFamily: "'Inter', sans-serif",
@@ -1022,6 +1026,7 @@ const Home = ({ userName }) => {
         onClose={() => setShowAddLocationModal(false)}
         plants={plants}
         onSave={handleAddLocationSave}
+        existingLocations={storedLocations}
       />
 
       {/* Plant Long Press Menu Modal */}

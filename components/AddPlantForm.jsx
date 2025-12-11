@@ -329,6 +329,7 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
                       exit={{ opacity: 0, height: 0 }}
                       type="date"
                       value={formData.customDate}
+                      max={new Date().toISOString().split('T')[0]}
                       onChange={(e) => setFormData((prev) => ({ ...prev, customDate: e.target.value }))}
                       onFocus={() => setFocusedInput('customDate')}
                       onBlur={() => setFocusedInput(null)}
