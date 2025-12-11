@@ -289,7 +289,7 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
               transition: 'font-size 0.15s ease',
             }}
           >
-            Diagnosa Hama
+            Tanya Tanam
           </h1>
 
           {/* History Button */}

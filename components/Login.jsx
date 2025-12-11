@@ -9,41 +9,62 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import MagicLinkModal from './MagicLinkModal';
+import { auth } from '@/lib/supabase';
 
 const Login = ({ onLogin }) => {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [inputFocused, setInputFocused] = useState(false);
+  const [error, setError] = useState('');
 
   const handleEmailSubmit = async (e) => {
-    e.preventDefault();
+    // Prevent all default behaviors
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    // Don't proceed if already loading or no email
+    if (isLoading || !email) return;
+
     setIsLoading(true);
+    setError('');
 
-    // TODO: Implement magic link email sending
-    // This would typically call your backend API
-    console.log('Sending magic link to:', email);
+    console.log('[Login] Sending magic link to:', email);
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      // Show the modal instead of immediately calling onLogin
+    try {
+      const result = await auth.sendMagicLink(email);
+      console.log('[Login] Magic link sent successfully:', result);
       setShowModal(true);
-    }, 1500);
+    } catch (err) {
+      console.error('[Login] Magic link error:', err);
+      setError(err.message || 'Gagal mengirim magic link. Coba lagi.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResendMagicLink = async (emailToResend) => {
+    try {
+      await auth.sendMagicLink(emailToResend);
+    } catch (err) {
+      console.error('Resend error:', err);
+      throw err;
+    }
   };
 
   const handleModalClose = () => {
     setShowModal(false);
-    // Optionally call onLogin here if you want to progress after closing modal
-    // For now, user can manually proceed by clicking "Buka Email"
   };
 
-  const handleGoogleLogin = () => {
-    // TODO: Implement Google OAuth
-    console.log('Google login clicked');
-    // Call onLogin to progress to onboarding
-    if (onLogin) {
-      onLogin();
+  const handleGoogleLogin = async () => {
+    try {
+      await auth.signInWithGoogle();
+      // Redirect will happen automatically
+    } catch (err) {
+      console.error('Google login error:', err);
+      setError(err.message || 'Gagal login dengan Google. Coba lagi.');
     }
   };
 
@@ -84,6 +105,8 @@ const Login = ({ onLogin }) => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.2 }}
         onSubmit={handleEmailSubmit}
+        action="javascript:void(0)"
+        method="post"
         style={{
           width: '100%',
           maxWidth: '360px',
@@ -130,10 +153,26 @@ const Login = ({ onLogin }) => {
           onBlur={() => setInputFocused(false)}
         />
 
+        {/* Error Message */}
+        {error && (
+          <p
+            style={{
+              fontFamily: "'Inter', sans-serif",
+              fontSize: '14px',
+              color: '#DC2626',
+              margin: '-8px 0 0 0',
+              textAlign: 'center',
+            }}
+          >
+            {error}
+          </p>
+        )}
+
         {/* Submit Button - Masuk atau Daftar */}
         <button
           type="submit"
           disabled={isLoading || !email}
+          onClick={handleEmailSubmit}
           style={{
             width: '100%',
             padding: '18px',
@@ -243,6 +282,7 @@ const Login = ({ onLogin }) => {
         isOpen={showModal}
         onClose={handleModalClose}
         email={email}
+        onResend={handleResendMagicLink}
       />
     </div>
   );

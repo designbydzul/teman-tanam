@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import LocationSettings from './LocationSettings';
+import { compressImage } from '@/lib/imageUtils';
 
 const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) => {
   const [formData, setFormData] = useState({
@@ -11,6 +12,7 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
     customDate: '',
     notes: '',
     photo: null,
+    compressedPhoto: null, // Compressed blob for upload
   });
 
   const [photoPreview, setPhotoPreview] = useState(null);
@@ -18,7 +20,10 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
   const [focusedInput, setFocusedInput] = useState(null);
   const [locationOptions, setLocationOptions] = useState(['Teras', 'Balkon']);
   const [showLocationSettings, setShowLocationSettings] = useState(false);
+  const [isCompressing, setIsCompressing] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const dateInputRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   // Load user's saved locations from localStorage
   const loadLocations = () => {
@@ -51,15 +56,33 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
   // Name is optional now, location is required
   const isValid = formData.location;
 
-  const handlePhotoChange = (e) => {
+  const handlePhotoChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      setFormData({ ...formData, photo: file });
+      setIsCompressing(true);
+      setFormData({ ...formData, photo: file, compressedPhoto: null });
+
+      // Show preview immediately
       const reader = new FileReader();
       reader.onloadend = () => {
         setPhotoPreview(reader.result);
       };
       reader.readAsDataURL(file);
+
+      try {
+        // Compress image in the background (max 1MB)
+        console.log(`[AddPlantForm] Original file size: ${(file.size / 1024).toFixed(1)}KB`);
+        const compressedBlob = await compressImage(file, 1024, 1200, 1200);
+        console.log(`[AddPlantForm] Compressed to: ${(compressedBlob.size / 1024).toFixed(1)}KB`);
+
+        setFormData(prev => ({ ...prev, compressedPhoto: compressedBlob }));
+      } catch (error) {
+        console.error('[AddPlantForm] Compression error:', error);
+        // Fall back to original file if compression fails
+        setFormData(prev => ({ ...prev, compressedPhoto: file }));
+      } finally {
+        setIsCompressing(false);
+      }
     }
   };
 
@@ -100,21 +123,31 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (isValid) {
+    if (isValid && !isSubmitting && !isCompressing) {
+      setIsSubmitting(true);
+
       // Auto-generate name if empty
       const finalName = formData.customName.trim() || `${species.name} ${existingPlantCount + 1}`;
       const finalLocation = formData.location;
 
-      onSubmit({
-        ...formData,
-        customName: finalName,
-        location: finalLocation,
-        species,
-        id: Date.now().toString(),
-        createdAt: new Date(),
-      });
+      try {
+        await onSubmit({
+          ...formData,
+          customName: finalName,
+          location: finalLocation,
+          species,
+          id: Date.now().toString(),
+          createdAt: new Date(),
+          // Use compressed photo if available, otherwise original
+          photoBlob: formData.compressedPhoto || formData.photo,
+        });
+      } catch (error) {
+        console.error('[AddPlantForm] Submit error:', error);
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -438,12 +471,39 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
                         borderRadius: '12px',
                       }}
                     />
+                    {/* Compression overlay */}
+                    {isCompressing && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                          borderRadius: '12px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '8px',
+                        }}
+                      >
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" style={{ animation: 'spin 1s linear infinite' }}>
+                          <circle cx="12" cy="12" r="10" stroke="#FFFFFF" strokeWidth="3" strokeLinecap="round" strokeDasharray="31.4 31.4" />
+                        </svg>
+                        <span style={{ color: '#FFFFFF', fontSize: '14px', fontFamily: "'Inter', sans-serif" }}>
+                          Mengompres...
+                        </span>
+                      </div>
+                    )}
                     <button
                       type="button"
                       onClick={() => {
                         setPhotoPreview(null);
-                        setFormData({ ...formData, photo: null });
+                        setFormData({ ...formData, photo: null, compressedPhoto: null });
                       }}
+                      disabled={isCompressing}
                       style={{
                         position: 'absolute',
                         top: '8px',
@@ -453,7 +513,8 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
                         borderRadius: '50%',
                         backgroundColor: 'rgba(255, 255, 255, 0.9)',
                         border: 'none',
-                        cursor: 'pointer',
+                        cursor: isCompressing ? 'not-allowed' : 'pointer',
+                        opacity: isCompressing ? 0.5 : 1,
                       }}
                     >
                       ✕
@@ -532,7 +593,7 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
             <button
               type="submit"
               form="add-plant-form"
-              disabled={!isValid}
+              disabled={!isValid || isSubmitting || isCompressing}
               style={{
                 width: '100%',
                 padding: '16px',
@@ -540,14 +601,40 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
                 fontFamily: "'Inter', sans-serif",
                 fontWeight: 600,
                 color: '#FFFFFF',
-                backgroundColor: isValid ? '#7CB342' : '#CCCCCC',
+                backgroundColor: (isValid && !isSubmitting && !isCompressing) ? '#7CB342' : '#CCCCCC',
                 border: 'none',
                 borderRadius: '12px',
-                cursor: isValid ? 'pointer' : 'not-allowed',
+                cursor: (isValid && !isSubmitting && !isCompressing) ? 'pointer' : 'not-allowed',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
               }}
             >
-              Simpan
+              {isSubmitting ? (
+                <>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ animation: 'spin 1s linear infinite' }}>
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeDasharray="31.4 31.4" />
+                  </svg>
+                  Menyimpan...
+                </>
+              ) : isCompressing ? (
+                <>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ animation: 'spin 1s linear infinite' }}>
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeDasharray="31.4 31.4" />
+                  </svg>
+                  Mengompres foto...
+                </>
+              ) : (
+                'Simpan'
+              )}
             </button>
+            <style jsx>{`
+              @keyframes spin {
+                from { transform: rotate(0deg); }
+                to { transform: rotate(360deg); }
+              }
+            `}</style>
           </div>
         </motion.div>
       </motion.div>
