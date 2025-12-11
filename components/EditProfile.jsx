@@ -166,6 +166,8 @@ const EditProfile = ({ onBack, userName, userEmail, userPhoto, onSave, onProfile
                 <img
                   src={photoPreview}
                   alt="Preview"
+                  loading="lazy"
+                  decoding="async"
                   style={{
                     width: '100%',
                     height: '100%',

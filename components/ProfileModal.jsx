@@ -122,6 +122,8 @@ const ProfileModal = ({ isOpen, onClose, userName, userEmail, userPhoto, onNavig
                 <img
                   src={userPhoto}
                   alt="Profile"
+                  loading="lazy"
+                  decoding="async"
                   style={{
                     width: '100%',
                     height: '100%',

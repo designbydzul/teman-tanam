@@ -214,6 +214,8 @@ const AddLocationModal = ({ isOpen, onClose, plants, onSave }) => {
                             <img
                               src={plant.image}
                               alt={plant.name}
+                              loading="lazy"
+                              decoding="async"
                               style={{
                                 width: '100%',
                                 height: '100%',

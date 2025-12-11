@@ -435,6 +435,8 @@ const EditPlant = ({ plant, onClose, onSave }) => {
                     <img
                       src={photoPreview}
                       alt="Preview"
+                      loading="lazy"
+                      decoding="async"
                       style={{
                         width: '100%',
                         height: '200px',

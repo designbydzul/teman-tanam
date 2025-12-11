@@ -1,6 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import LocationSettings from './LocationSettings';
+import { useLocalStorage } from '../hooks/useLocalStorage';
+
+// Default locations for hook initialization
+const DEFAULT_LOCATIONS = [
+  { id: '1', name: 'Teras', plantCount: 0 },
+  { id: '2', name: 'Balkon', plantCount: 0 },
+];
 
 const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) => {
   const [formData, setFormData] = useState({
@@ -17,36 +24,22 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
   const [showLocationInput, setShowLocationInput] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [focusedInput, setFocusedInput] = useState(null);
-  const [locationOptions, setLocationOptions] = useState(['Teras', 'Balkon']);
   const [showLocationSettings, setShowLocationSettings] = useState(false);
 
-  // Load user's saved locations from localStorage
-  const loadLocations = () => {
-    const savedLocations = localStorage.getItem('temanTanamLocations');
-    if (savedLocations) {
-      try {
-        const parsed = JSON.parse(savedLocations);
-        if (Array.isArray(parsed)) {
-          // Filter out invalid entries and ensure uniqueness
-          const locationNames = parsed
-            .filter((loc) => loc && typeof loc === 'object' && loc.name)
-            .map((loc) => loc.name)
-            .filter((name) => typeof name === 'string' && name.trim().length > 0);
-          // Remove duplicates
-          const uniqueNames = [...new Set(locationNames)];
-          if (uniqueNames.length > 0) {
-            setLocationOptions(uniqueNames);
-          }
-        }
-      } catch (e) {
-        console.error('Error parsing locations:', e);
-      }
-    }
-  };
+  // Use centralized localStorage hook - auto-syncs when LocationSettings updates
+  const [storedLocations] = useLocalStorage('temanTanamLocations', DEFAULT_LOCATIONS);
 
-  useEffect(() => {
-    loadLocations();
-  }, []);
+  // Derive location names from stored locations (memoized for performance)
+  const locationOptions = useMemo(() => {
+    if (Array.isArray(storedLocations)) {
+      const names = storedLocations
+        .filter((loc) => loc && typeof loc === 'object' && loc.name)
+        .map((loc) => loc.name)
+        .filter((name) => typeof name === 'string' && name.trim().length > 0);
+      return [...new Set(names)]; // Remove duplicates
+    }
+    return ['Teras', 'Balkon'];
+  }, [storedLocations]);
 
   // Name is optional now, location is required
   const isValid = formData.location;
@@ -73,10 +66,9 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
     }
   };
 
-  // Handle back from LocationSettings - reload locations and return to form
+  // Handle back from LocationSettings - locations auto-sync via hook
   const handleLocationSettingsBack = () => {
     setShowLocationSettings(false);
-    loadLocations(); // Reload locations to get newly added ones
   };
 
   const handleDateSelect = (date) => {
@@ -411,6 +403,8 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
                     <img
                       src={photoPreview}
                       alt="Preview"
+                      loading="lazy"
+                      decoding="async"
                       style={{
                         width: '100%',
                         height: '200px',

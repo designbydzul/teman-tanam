@@ -350,6 +350,8 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
                     <img
                       src={plantData.coverPhotoUrl}
                       alt={plantData.name}
+                      loading="lazy"
+                      decoding="async"
                       style={{
                         width: '64px',
                         height: '64px',
@@ -460,6 +462,8 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
                         key={idx}
                         src={img}
                         alt={`Attachment ${idx + 1}`}
+                        loading="lazy"
+                        decoding="async"
                         style={{
                           width: '60px',
                           height: '60px',
@@ -580,6 +584,8 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
                   <img
                     src={img.preview}
                     alt={`Preview ${index + 1}`}
+                    loading="lazy"
+                    decoding="async"
                     style={{
                       width: '72px',
                       height: '72px',

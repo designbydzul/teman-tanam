@@ -18,6 +18,7 @@ import EditProfile from './EditProfile';
 import AddLocationModal from './AddLocationModal';
 import EditPlant from './EditPlant';
 import DiagnosaHama from './DiagnosaHama';
+import { useLocalStorage, STORAGE_KEYS } from '../hooks/useLocalStorage';
 
 // Extracted styles to prevent new object creation on every render
 const styles = {
@@ -202,9 +203,16 @@ const Home = ({ userName }) => {
 
   // Edit Profile state
   const [showEditProfile, setShowEditProfile] = useState(false);
-  const [userEmail, setUserEmail] = useState('designbydzul@gmail.com');
-  const [currentUserName, setCurrentUserName] = useState(userName || 'Dzul');
-  const [userPhoto, setUserPhoto] = useState(null);
+  // Use centralized localStorage hook for user profile - eliminates redundant JSON.parse
+  const [storedProfile, setStoredProfile] = useLocalStorage('temanTanamUserProfile', {
+    name: userName || 'Dzul',
+    email: 'designbydzul@gmail.com',
+    photo: null,
+  });
+  // Derive individual values from stored profile for compatibility
+  const currentUserName = storedProfile.name;
+  const userEmail = storedProfile.email;
+  const userPhoto = storedProfile.photo;
 
   // Add Location Modal state
   const [showAddLocationModal, setShowAddLocationModal] = useState(false);
@@ -251,38 +259,18 @@ const Home = ({ userName }) => {
     };
   }, []);
 
-  // Load user profile from localStorage
-  useEffect(() => {
-    const savedName = localStorage.getItem('temanTanamUserName');
-    const savedEmail = localStorage.getItem('temanTanamUserEmail');
-    const savedPhoto = localStorage.getItem('temanTanamUserPhoto');
-    if (savedName) setCurrentUserName(savedName);
-    if (savedEmail) setUserEmail(savedEmail);
-    if (savedPhoto) setUserPhoto(savedPhoto);
-  }, []);
+  // Use centralized localStorage hook for locations - auto-syncs across components
+  const DEFAULT_LOCATIONS = [
+    { id: '1', name: 'Teras', plantCount: 0 },
+    { id: '2', name: 'Balkon', plantCount: 0 },
+  ];
+  const [storedLocations, setStoredLocations] = useLocalStorage('temanTanamLocations', DEFAULT_LOCATIONS);
 
-  // Dynamic locations from localStorage
-  const [locations, setLocations] = useState(['Semua']);
-
-  // Load locations from localStorage on mount
-  useEffect(() => {
-    const loadLocations = () => {
-      const savedLocations = localStorage.getItem('temanTanamLocations');
-      if (savedLocations) {
-        const parsed = JSON.parse(savedLocations);
-        const locationNames = parsed.map((loc) => loc.name);
-        setLocations(['Semua', ...locationNames]);
-      } else {
-        setLocations(['Semua', 'Teras', 'Balkon']);
-      }
-    };
-
-    loadLocations();
-
-    // Listen for storage changes (when LocationSettings updates)
-    window.addEventListener('storage', loadLocations);
-    return () => window.removeEventListener('storage', loadLocations);
-  }, []);
+  // Derive location names array from stored locations
+  const locations = useMemo(() => {
+    const names = storedLocations.map((loc) => loc.name);
+    return ['Semua', ...names];
+  }, [storedLocations]);
 
   // Network status detection
   useEffect(() => {
@@ -333,21 +321,14 @@ const Home = ({ userName }) => {
     };
   }, []);
 
-  // Reload locations when returning from LocationSettings
-  const handleLocationSettingsClose = () => {
+  // Close LocationSettings - locations auto-sync via useLocalStorage hook
+  const handleLocationSettingsClose = useCallback(() => {
     setShowLocationSettings(false);
-    // Reload locations from localStorage
-    const savedLocations = localStorage.getItem('temanTanamLocations');
-    if (savedLocations) {
-      const parsed = JSON.parse(savedLocations);
-      const locationNames = parsed.map((loc) => loc.name);
-      setLocations(['Semua', ...locationNames]);
-      // Reset to 'Semua' if current selection was deleted
-      if (!['Semua', ...locationNames].includes(selectedLocation)) {
-        setSelectedLocation('Semua');
-      }
+    // Reset to 'Semua' if current selection was deleted
+    if (!locations.includes(selectedLocation)) {
+      setSelectedLocation('Semua');
     }
-  };
+  }, [locations, selectedLocation]);
 
   // Filter plants based on search and location - memoized to prevent recalculation on every render
   const filteredPlants = useMemo(() => {
@@ -542,35 +523,26 @@ const Home = ({ userName }) => {
     // TODO: Add other navigation actions (help-community, tutorial, logout)
   }, []);
 
-  // Handle profile save - memoized
+  // Handle profile save - uses centralized localStorage hook
   const handleProfileSave = useCallback((profileData) => {
-    setCurrentUserName(profileData.name);
-    setUserEmail(profileData.email);
-    // Always update photo (can be null to clear, or base64 string)
-    if (profileData.photo) {
-      setUserPhoto(profileData.photo);
-    }
-  }, []);
+    setStoredProfile((prev) => ({
+      ...prev,
+      name: profileData.name,
+      email: profileData.email,
+      // Update photo if provided, otherwise keep existing
+      photo: profileData.photo || prev.photo,
+    }));
+  }, [setStoredProfile]);
 
-  // Handle add location save - memoized
+  // Handle add location save - uses centralized localStorage hook
   const handleAddLocationSave = useCallback(({ name, selectedPlantIds }) => {
-    // Get existing locations from localStorage
-    const savedLocations = localStorage.getItem('temanTanamLocations');
-    const existingLocations = savedLocations ? JSON.parse(savedLocations) : [];
-
-    // Add new location
+    // Add new location using the hook (auto-syncs to localStorage)
     const newLocation = {
       id: Date.now().toString(),
       name,
-      emoji: '📍',
+      plantCount: selectedPlantIds.length,
     };
-    const updatedLocations = [...existingLocations, newLocation];
-
-    // Save to localStorage
-    localStorage.setItem('temanTanamLocations', JSON.stringify(updatedLocations));
-
-    // Update local state
-    setLocations(['Semua', ...updatedLocations.map((loc) => loc.name)]);
+    setStoredLocations((prev) => [...prev, newLocation]);
 
     // Update selected plants' locations
     if (selectedPlantIds.length > 0) {
@@ -585,7 +557,7 @@ const Home = ({ userName }) => {
 
     // Show toast
     showActionToastWithMessage(`Lokasi ${name} sudah ditambahkan`);
-  }, [showActionToastWithMessage]);
+  }, [setStoredLocations, showActionToastWithMessage]);
 
   return (
     <div style={styles.container}>
@@ -863,8 +835,10 @@ const Home = ({ userName }) => {
             {filteredPlants.map((plant) => (
               <motion.div
                 key={plant.id}
-                initial={{ opacity: 0, scale: 0.9 }}
+                initial={false}
                 animate={{ opacity: 1, scale: 1 }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={() => handlePlantClick(plant)}
                 onTouchStart={(e) => handleLongPressStart(plant, e)}
                 onTouchEnd={handleLongPressEnd}
@@ -885,6 +859,7 @@ const Home = ({ userName }) => {
                     src={plant.image}
                     alt={plant.name}
                     loading="lazy"
+                    decoding="async"
                     style={styles.plantImage}
                   />
                 </div>

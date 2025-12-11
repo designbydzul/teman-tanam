@@ -56,6 +56,8 @@ const AddPlantSuccess = ({ plantData, onViewDetails, onAddNew, onBackHome }) => 
             <img
               src={plantData.photoPreview}
               alt={plantData.customName}
+              loading="lazy"
+              decoding="async"
               style={{
                 width: '100%',
                 height: '100%',

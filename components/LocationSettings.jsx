@@ -1,4 +1,5 @@
-import React, { useState, useEffect, memo, useCallback } from 'react';
+import React, { useState, memo, useCallback } from 'react';
+import { useLocalStorage } from '../hooks/useLocalStorage';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   DndContext,
@@ -129,8 +130,16 @@ const SortableLocationCard = memo(({ location, onDelete }) => {
   );
 });
 
+// Default locations for first-time users
+const DEFAULT_LOCATIONS = [
+  { id: '1', name: 'Balkon', plantCount: 3 },
+  { id: '2', name: 'Teras', plantCount: 2 },
+  { id: '3', name: 'Dapur', plantCount: 0 },
+];
+
 const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded }) => {
-  const [locations, setLocations] = useState([]);
+  // Use centralized localStorage hook - auto-syncs across components
+  const [locations, setLocations] = useLocalStorage('temanTanamLocations', DEFAULT_LOCATIONS);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
   const [showMovePlantsModal, setShowMovePlantsModal] = useState(false);
@@ -156,23 +165,7 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded }) => {
     })
   );
 
-  useEffect(() => {
-    // Load locations from localStorage
-    const savedLocations = localStorage.getItem('temanTanamLocations');
-    if (savedLocations) {
-      setLocations(JSON.parse(savedLocations));
-    } else {
-      // Default locations
-      const defaultLocations = [
-        { id: '1', name: 'Balkon', plantCount: 3 },
-        { id: '2', name: 'Teras', plantCount: 2 },
-        { id: '3', name: 'Dapur', plantCount: 0 },
-      ];
-      setLocations(defaultLocations);
-      localStorage.setItem('temanTanamLocations', JSON.stringify(defaultLocations));
-    }
-  }, []);
-
+  // Drag end handler - hook automatically persists to localStorage
   const handleDragEnd = (event) => {
     const { active, over } = event;
 
@@ -180,13 +173,12 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded }) => {
       setLocations((items) => {
         const oldIndex = items.findIndex((item) => item.id === active.id);
         const newIndex = items.findIndex((item) => item.id === over.id);
-        const newLocations = arrayMove(items, oldIndex, newIndex);
-        localStorage.setItem('temanTanamLocations', JSON.stringify(newLocations));
-        return newLocations;
+        return arrayMove(items, oldIndex, newIndex);
       });
     }
   };
 
+  // Add location - hook automatically persists to localStorage
   const handleAddLocation = () => {
     if (newLocationName.trim().length >= 2) {
       const locationName = newLocationName.trim();
@@ -195,9 +187,7 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded }) => {
         name: locationName,
         plantCount: 0,
       };
-      const updatedLocations = [...locations, newLocation];
-      setLocations(updatedLocations);
-      localStorage.setItem('temanTanamLocations', JSON.stringify(updatedLocations));
+      setLocations((prev) => [...prev, newLocation]);
       setNewLocationName('');
       setShowAddModal(false);
       // Callback to show toast
@@ -217,12 +207,11 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded }) => {
     }
   }, []);
 
+  // Confirm delete - hook automatically persists to localStorage
   const confirmDelete = () => {
     if (locationToDelete) {
       const deletedLocationName = locationToDelete.name;
-      const updatedLocations = locations.filter((loc) => loc.id !== locationToDelete.id);
-      setLocations(updatedLocations);
-      localStorage.setItem('temanTanamLocations', JSON.stringify(updatedLocations));
+      setLocations((prev) => prev.filter((loc) => loc.id !== locationToDelete.id));
       setLocationToDelete(null);
       setShowDeleteConfirmModal(false);
       // Callback to show toast
@@ -232,24 +221,20 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded }) => {
     }
   };
 
+  // Move plants and delete location - hook automatically persists to localStorage
   const handleMovePlants = () => {
     if (locationToDelete && moveToLocation) {
       const deletedLocationName = locationToDelete.name;
-      // Move plants to selected location
-      const updatedLocations = locations.map((loc) => {
-        if (loc.id === moveToLocation) {
-          return { ...loc, plantCount: loc.plantCount + (locationToDelete.plantCount || 0) };
-        }
-        if (loc.id === locationToDelete.id) {
-          return { ...loc, plantCount: 0 };
-        }
-        return loc;
+      // Move plants to selected location and remove the deleted location
+      setLocations((prev) => {
+        const updatedLocations = prev.map((loc) => {
+          if (loc.id === moveToLocation) {
+            return { ...loc, plantCount: loc.plantCount + (locationToDelete.plantCount || 0) };
+          }
+          return loc;
+        });
+        return updatedLocations.filter((loc) => loc.id !== locationToDelete.id);
       });
-
-      // Remove the location after moving plants
-      const finalLocations = updatedLocations.filter((loc) => loc.id !== locationToDelete.id);
-      setLocations(finalLocations);
-      localStorage.setItem('temanTanamLocations', JSON.stringify(finalLocations));
 
       // Reset state
       setLocationToDelete(null);

@@ -249,6 +249,8 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
             <img
               src={plantData.photoUrl}
               alt={plantData.customName}
+              loading="lazy"
+              decoding="async"
               onClick={() => setShowImagePreview(true)}
               style={{
                 width: '140px',
