@@ -18,7 +18,7 @@ import LocationSettings from './LocationSettings';
 import EditProfile from './EditProfile';
 import AddLocationModal from './AddLocationModal';
 import EditPlant from './EditPlant';
-import DiagnosaHama from './DiagnosaHama';
+import TanyaTanam from './TanyaTanam';
 import { usePlants } from '@/hooks/usePlants';
 import { useLocations } from '@/hooks/useLocations';
 
@@ -84,7 +84,7 @@ const Home = ({ userName }) => {
   const [showEditPlantModal, setShowEditPlantModal] = useState(false);
 
   // Tanya Tanam from menu
-  const [showDiagnosaHamaModal, setShowDiagnosaHamaModal] = useState(false);
+  const [showTanyaTanamModal, setShowTanyaTanamModal] = useState(false);
 
   // Delete confirmation modal state
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
@@ -413,7 +413,7 @@ const Home = ({ userName }) => {
         break;
       case 'diagnose':
         if (menuPlant) {
-          setShowDiagnosaHamaModal(true);
+          setShowTanyaTanamModal(true);
         }
         break;
       case 'edit':
@@ -552,7 +552,7 @@ const Home = ({ userName }) => {
         right: 0,
         bottom: 0,
         backgroundColor: '#FAFAFA',
-        visibility: showDiagnosaHamaModal ? 'hidden' : 'visible',
+        visibility: showTanyaTanamModal ? 'hidden' : 'visible',
       }}
     >
       {/* Header - Sticky */}
@@ -1590,11 +1590,11 @@ const Home = ({ userName }) => {
       )}
 
       {/* Tanya Tanam Modal from menu - rendered via portal to avoid z-index issues */}
-      {showDiagnosaHamaModal && menuPlant && typeof document !== 'undefined' && createPortal(
-        <DiagnosaHama
+      {showTanyaTanamModal && menuPlant && typeof document !== 'undefined' && createPortal(
+        <TanyaTanam
           plant={menuPlant}
           onBack={() => {
-            setShowDiagnosaHamaModal(false);
+            setShowTanyaTanamModal(false);
             setMenuPlant(null);
           }}
         />,

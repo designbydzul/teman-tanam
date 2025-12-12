@@ -9,12 +9,15 @@ import {
   X,
 } from '@phosphor-icons/react';
 
-// Mock AI responses
-const mockResponses = [
-  'Daun keriting setelah pemupukan NPK bisa jadi karena over-fertilisasi atau kekurangan air. Coba cek pH tanah dan atur frekuensi penyiraman.',
-  'Bercak kuning pada daun timun bisa jadi karena kekurangan nutrisi atau infeksi jamur. Periksa drainase dan gunakan fungisida organik jika perlu.',
-  'Bercak kuning pada daun timun bisa jadi karena masalah pH tanah atau serangan bakteri. Lakukan tes tanah dan gunakan bakterisida sesuai dosis.',
-];
+// Helper function to calculate days since planted
+const calculateDaysSincePlanted = (plantedDate) => {
+  if (!plantedDate) return null;
+  const planted = new Date(plantedDate);
+  const today = new Date();
+  const diffTime = Math.abs(today - planted);
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays;
+};
 
 // Suggested questions
 const suggestedQuestions = [
@@ -23,7 +26,7 @@ const suggestedQuestions = [
   'Batang nya lunak atau membusuk?',
 ];
 
-const DiagnosaHama = ({ plant, plants = [], onBack }) => {
+const TanyaTanam = ({ plant, plants = [], onBack }) => {
   // State
   const [selectedPlant, setSelectedPlant] = useState(plant || null);
   const [showPlantDropdown, setShowPlantDropdown] = useState(false);
@@ -44,7 +47,7 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
 
   // Handle iOS keyboard and lock body scroll
   useEffect(() => {
-    // Lock body scroll when DiagnosaHama opens
+    // Lock body scroll when TanyaTanam opens
     const originalStyle = document.body.style.cssText;
     document.body.style.overflow = 'hidden';
     document.body.style.position = 'fixed';
@@ -117,8 +120,43 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
     }
   }, [messages, isLoading]);
 
+  // Call API to get AI response
+  const callTanyaTanamAPI = async (userMessageContent, currentMessages) => {
+    try {
+      const response = await fetch('/api/tanya-tanam', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: userMessageContent,
+          plantContext: plantData ? {
+            name: plantData.name,
+            species: plantData.species,
+            age: calculateDaysSincePlanted(plantData.plantedDate),
+            location: plantData.location,
+            lastWatered: selectedPlant?.lastWatered || null,
+            lastFertilized: selectedPlant?.lastFertilized || null
+          } : null,
+          chatHistory: currentMessages
+            .filter(m => m.role)
+            .map(m => ({ role: m.role, content: m.content }))
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        return data.message;
+      } else {
+        return 'Waduh, ada masalah koneksi nih. Coba lagi ya!';
+      }
+    } catch (error) {
+      console.error('Tanya Tanam API Error:', error);
+      return 'Waduh, ada masalah koneksi nih. Coba lagi ya!';
+    }
+  };
+
   // Handle suggestion click - auto send the message
-  const handleSuggestionClick = (question) => {
+  const handleSuggestionClick = async (question) => {
     // Hide suggestions
     setShowSuggestions(false);
 
@@ -131,20 +169,21 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
       timestamp: new Date(),
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    const updatedMessages = [...messages, userMessage];
+    setMessages(updatedMessages);
     setIsLoading(true);
 
-    // Simulate AI response
-    setTimeout(() => {
-      const aiMessage = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: mockResponses[Math.floor(Math.random() * mockResponses.length)],
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, aiMessage]);
-      setIsLoading(false);
-    }, 1500);
+    // Call real API
+    const aiResponse = await callTanyaTanamAPI(question, updatedMessages);
+
+    const aiMessage = {
+      id: (Date.now() + 1).toString(),
+      role: 'assistant',
+      content: aiResponse,
+      timestamp: new Date(),
+    };
+    setMessages((prev) => [...prev, aiMessage]);
+    setIsLoading(false);
   };
 
   // Handle image attachment
@@ -178,16 +217,19 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
     // Hide suggestions after first message
     setShowSuggestions(false);
 
+    const messageContent = inputText.trim();
+
     // Create user message
     const userMessage = {
       id: Date.now().toString(),
       role: 'user',
-      content: inputText.trim(),
+      content: messageContent,
       images: attachedImages.map((img) => img.preview),
       timestamp: new Date(),
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    const updatedMessages = [...messages, userMessage];
+    setMessages(updatedMessages);
     setInputText('');
     setAttachedImages([]);
     setIsLoading(true);
@@ -197,17 +239,17 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
       inputRef.current.style.height = 'auto';
     }
 
-    // Simulate AI response
-    setTimeout(() => {
-      const aiMessage = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: mockResponses[Math.floor(Math.random() * mockResponses.length)],
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, aiMessage]);
-      setIsLoading(false);
-    }, 1500);
+    // Call real API
+    const aiResponse = await callTanyaTanamAPI(messageContent, updatedMessages);
+
+    const aiMessage = {
+      id: (Date.now() + 1).toString(),
+      role: 'assistant',
+      content: aiResponse,
+      timestamp: new Date(),
+    };
+    setMessages((prev) => [...prev, aiMessage]);
+    setIsLoading(false);
   };
 
   // Handle key press
@@ -913,4 +955,4 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
   );
 };
 
-export default DiagnosaHama;
+export default TanyaTanam;

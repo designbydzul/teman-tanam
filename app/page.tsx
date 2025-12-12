@@ -30,17 +30,20 @@ export default function Page() {
       isAuthenticated,
       hasCompletedOnboarding,
       session: session ? 'exists' : 'null',
-      user: user ? user.email : 'null',
+      user: user ? (user as { email?: string }).email : 'null',
       profile: profile ? 'exists' : 'null',
     });
   }, [showSplash, isCheckingAuth, isAuthenticated, hasCompletedOnboarding, session, user, profile]);
 
   useEffect(() => {
-    if (profile?.display_name) {
-      setUserName(profile.display_name);
-    } else if (user?.email) {
+    const typedProfile = profile as { display_name?: string } | null;
+    const typedUser = user as { email?: string } | null;
+
+    if (typedProfile?.display_name) {
+      setUserName(typedProfile.display_name);
+    } else if (typedUser?.email) {
       // Use email prefix as fallback name
-      const emailName = user.email.split('@')[0];
+      const emailName = typedUser.email.split('@')[0];
       // Capitalize first letter
       const formattedName = emailName.charAt(0).toUpperCase() + emailName.slice(1);
       setUserName(formattedName);

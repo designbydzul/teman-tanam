@@ -17,7 +17,7 @@ import {
   Scissors,
   Basket
 } from '@phosphor-icons/react';
-import DiagnosaHama from './DiagnosaHama';
+import TanyaTanam from './TanyaTanam';
 import EditPlant from './EditPlant';
 import { supabase } from '@/lib/supabase/client';
 
@@ -26,7 +26,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [quickTipsExpanded, setQuickTipsExpanded] = useState(false);
   const [showImagePreview, setShowImagePreview] = useState(false);
-  const [showDiagnosaHama, setShowDiagnosaHama] = useState(false);
+  const [showTanyaTanam, setShowTanyaTanam] = useState(false);
   const [showEditPlant, setShowEditPlant] = useState(false);
   const [currentPlantData, setCurrentPlantData] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -298,7 +298,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction }) => {
         handleActionLog('fertilize');
         break;
       case 'diagnose':
-        setShowDiagnosaHama(true);
+        setShowTanyaTanam(true);
         break;
       case 'edit':
         setShowEditPlant(true);
@@ -323,7 +323,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction }) => {
         backgroundColor: '#FFFFFF',
         zIndex: 2000,
         overflow: 'hidden',
-        visibility: showDiagnosaHama ? 'hidden' : 'visible',
+        visibility: showTanyaTanam ? 'hidden' : 'visible',
       }}
     >
       {/* Sticky Header Section */}
@@ -1255,10 +1255,10 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction }) => {
       </AnimatePresence>
 
       {/* Tanya Tanam Screen - rendered via Portal to avoid iOS keyboard issues */}
-      {showDiagnosaHama && typeof document !== 'undefined' && createPortal(
-        <DiagnosaHama
+      {showTanyaTanam && typeof document !== 'undefined' && createPortal(
+        <TanyaTanam
           plant={plant}
-          onBack={() => setShowDiagnosaHama(false)}
+          onBack={() => setShowTanyaTanam(false)}
         />,
         document.body
       )}
