@@ -115,16 +115,17 @@ export function useAuth() {
         return false;
       }
     } catch (err) {
-      console.error('[useAuth] Onboarding check error:', err.message);
       // On error (including timeout), check localStorage cache before assuming not onboarded
       const cachedStatus = localStorage.getItem(`onboarding_complete_${userId}`);
       if (cachedStatus === 'true') {
-        console.log('[useAuth] Error occurred but found cached onboarding status, keeping as complete');
+        // Don't log error if we have a cached fallback - this is expected behavior
+        console.log('[useAuth] Profile fetch failed but using cached onboarding status');
         setHasCompletedOnboarding(true);
         hasFetchedProfile.current = true;
         return true;
       }
-      // Only set to false if no cached status
+      // Only log error if we have no fallback
+      console.warn('[useAuth] Profile fetch failed and no cached status:', err.message);
       setHasCompletedOnboarding(false);
       setProfile(null);
       hasFetchedProfile.current = true; // Mark as fetched even on error to prevent loops
