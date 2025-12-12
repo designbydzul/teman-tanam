@@ -47,7 +47,7 @@ const Home = ({ userName }) => {
 
   // Use Supabase data if available, otherwise fall back to empty array
   const plants = supabasePlants || [];
-  const setPlants = () => {}; // Placeholder - updates are done via hooks
+  // Note: Plant updates are done via usePlants hook (addSupabasePlant, deleteSupabasePlant, etc.)
 
   // Add Plant flow state
   const [showAddPlant, setShowAddPlant] = useState(false);
@@ -99,13 +99,27 @@ const Home = ({ userName }) => {
   // Action toast state (for watering, fertilizing, plant actions, etc.)
   const [showActionToast, setShowActionToast] = useState(false);
   const [actionToastMessage, setActionToastMessage] = useState('');
+  const actionToastTimer = useRef(null);
 
   // Helper function to show action toast
   const showActionToastWithMessage = (message) => {
+    // Clear any existing timer to prevent memory leaks
+    if (actionToastTimer.current) {
+      clearTimeout(actionToastTimer.current);
+    }
     setActionToastMessage(message);
     setShowActionToast(true);
-    setTimeout(() => setShowActionToast(false), 3000);
+    actionToastTimer.current = setTimeout(() => setShowActionToast(false), 3000);
   };
+
+  // Cleanup action toast timer on unmount
+  useEffect(() => {
+    return () => {
+      if (actionToastTimer.current) {
+        clearTimeout(actionToastTimer.current);
+      }
+    };
+  }, []);
 
   // Load user profile from localStorage
   useEffect(() => {
@@ -125,10 +139,17 @@ const Home = ({ userName }) => {
     const loadLocations = () => {
       const savedLocations = localStorage.getItem('temanTanamLocations');
       if (savedLocations) {
-        const parsed = JSON.parse(savedLocations);
-        const locationNames = parsed.map((loc) => loc.name);
-        const uniqueLocations = [...new Set(locationNames)];
-        setLocalLocations(['Semua', ...uniqueLocations]);
+        try {
+          const parsed = JSON.parse(savedLocations);
+          if (Array.isArray(parsed)) {
+            const locationNames = parsed.map((loc) => loc.name);
+            const uniqueLocations = [...new Set(locationNames)];
+            setLocalLocations(['Semua', ...uniqueLocations]);
+          }
+        } catch (err) {
+          console.error('[Home] Failed to parse locations:', err);
+          // Keep default locations on error
+        }
       }
     };
 
@@ -527,15 +548,13 @@ const Home = ({ userName }) => {
     const uniqueLocations = [...new Set(updatedLocations.map((loc) => loc.name))];
     setLocations(['Semua', ...uniqueLocations]);
 
-    // Update selected plants' locations
+    // Update selected plants' locations in Supabase
+    // Note: This feature needs to be implemented in usePlants hook
+    // For now, we'll refetch after adding location
     if (selectedPlantIds.length > 0) {
-      setPlants((prevPlants) =>
-        prevPlants.map((plant) =>
-          selectedPlantIds.includes(plant.id)
-            ? { ...plant, location: name }
-            : plant
-        )
-      );
+      // TODO: Implement updatePlantLocation in usePlants hook
+      console.log('[Home] Plants to update location:', selectedPlantIds, 'to', name);
+      // After implementing, call refetchPlants() to refresh the list
     }
 
     // Show toast with plant count
@@ -1239,8 +1258,9 @@ const Home = ({ userName }) => {
             showActionToastWithMessage(`Lokasi ${locationName} sudah ditambahkan`);
           }}
           plants={plants}
-          onPlantsUpdated={(updatedPlants) => {
-            setPlants(updatedPlants);
+          onPlantsUpdated={() => {
+            // Refetch plants from Supabase after location changes
+            refetchPlants();
           }}
         />
       )}
@@ -1581,7 +1601,8 @@ const Home = ({ userName }) => {
             setMenuPlant(null);
           }}
           onSave={(updatedPlant) => {
-            setPlants(plants.map((p) => (p.id === updatedPlant.id ? { ...p, ...updatedPlant } : p)));
+            // Refetch plants from Supabase after edit
+            refetchPlants();
             setShowEditPlantModal(false);
             setMenuPlant(null);
             showActionToastWithMessage(`${updatedPlant.name || updatedPlant.customName} sudah diperbarui`);

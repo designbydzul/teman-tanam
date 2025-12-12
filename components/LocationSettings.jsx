@@ -171,13 +171,29 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
     // Load locations from localStorage
     const savedLocations = localStorage.getItem('temanTanamLocations');
     if (savedLocations) {
-      setLocations(JSON.parse(savedLocations));
+      try {
+        const parsed = JSON.parse(savedLocations);
+        if (Array.isArray(parsed)) {
+          setLocations(parsed);
+        } else {
+          throw new Error('Invalid locations format');
+        }
+      } catch (err) {
+        console.error('[LocationSettings] Failed to parse locations:', err);
+        // Clear corrupted data and set defaults
+        localStorage.removeItem('temanTanamLocations');
+        const defaultLocations = [
+          { id: '1', name: 'Balkon', plantCount: 0 },
+          { id: '2', name: 'Teras', plantCount: 0 },
+        ];
+        setLocations(defaultLocations);
+        localStorage.setItem('temanTanamLocations', JSON.stringify(defaultLocations));
+      }
     } else {
       // Default locations
       const defaultLocations = [
-        { id: '1', name: 'Balkon', plantCount: 3 },
-        { id: '2', name: 'Teras', plantCount: 2 },
-        { id: '3', name: 'Dapur', plantCount: 0 },
+        { id: '1', name: 'Balkon', plantCount: 0 },
+        { id: '2', name: 'Teras', plantCount: 0 },
       ];
       setLocations(defaultLocations);
       localStorage.setItem('temanTanamLocations', JSON.stringify(defaultLocations));
