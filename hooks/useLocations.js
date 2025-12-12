@@ -46,11 +46,11 @@ export function useLocations() {
 
       console.log('[useLocations] Fetched locations:', data);
 
-      // Transform to include "Semua" as first option
+      // Transform locations (icon column doesn't exist in DB, use default emoji)
       const transformedLocations = (data || []).map(loc => ({
         id: loc.id,
         name: loc.name,
-        emoji: loc.icon || '📍',
+        emoji: '📍', // Default emoji (icon column doesn't exist in DB)
         sortOrder: loc.order_index,
       }));
 
@@ -86,12 +86,12 @@ export function useLocations() {
       // Get the highest order_index
       const maxOrderIndex = locations.reduce((max, loc) => Math.max(max, loc.sortOrder || 0), 0);
 
+      // Note: 'icon' column doesn't exist in DB, so we don't include it
       const { data, error } = await supabase
         .from('locations')
         .insert({
           user_id: user.id,
           name,
-          icon: emoji,
           order_index: maxOrderIndex + 1,
         })
         .select()
@@ -99,11 +99,11 @@ export function useLocations() {
 
       if (error) throw error;
 
-      // Update local state
+      // Update local state (use default emoji since icon column doesn't exist)
       const newLocation = {
         id: data.id,
         name: data.name,
-        emoji: data.icon || '📍',
+        emoji: '📍',
         sortOrder: data.order_index,
       };
       setLocations(prev => [...prev, newLocation]);
@@ -115,14 +115,13 @@ export function useLocations() {
     }
   };
 
-  // Update a location
+  // Update a location (only name, icon column doesn't exist in DB)
   const updateLocation = async (locationId, updates) => {
     try {
       const { data, error } = await supabase
         .from('locations')
         .update({
           name: updates.name,
-          icon: updates.emoji,
         })
         .eq('id', locationId)
         .select()
@@ -134,7 +133,7 @@ export function useLocations() {
       setLocations(prev =>
         prev.map(loc =>
           loc.id === locationId
-            ? { ...loc, name: data.name, emoji: data.icon }
+            ? { ...loc, name: data.name }
             : loc
         )
       );

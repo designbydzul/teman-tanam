@@ -4,6 +4,39 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useAuth } from './useAuth';
 
+// Map species names to emojis (since DB doesn't have icon column)
+const SPECIES_EMOJI_MAP = {
+  'labuh': '🎃',
+  'kentang': '🥔',
+  'wortel': '🥕',
+  'brokoli': '🥦',
+  'kacang hijau': '🫘',
+  'paprika': '🫑',
+  'bawang merah': '🧅',
+  'bayam': '🥬',
+  'kembang kol': '🥬',
+  'tomat': '🍅',
+  'kubis': '🥬',
+  'terong': '🍆',
+  'cabai': '🌶️',
+  'jagung': '🌽',
+  'selada': '🥗',
+  'mentimun': '🥒',
+  'timun': '🥒',
+  'bawang putih': '🧄',
+  'labu siam': '🥒',
+  'kangkung': '🥬',
+  'sawi': '🥬',
+  'seledri': '🥬',
+};
+
+// Get emoji for species by name (case insensitive)
+const getSpeciesEmoji = (speciesName) => {
+  if (!speciesName) return '🌱';
+  const normalized = speciesName.toLowerCase().trim();
+  return SPECIES_EMOJI_MAP[normalized] || '🌱';
+};
+
 /**
  * usePlants Hook
  *
@@ -127,9 +160,35 @@ export function usePlants() {
         const wateringFrequency = 3;
         const status = calculateStatus(actions.siram, wateringFrequency);
 
+        // Parse species info from notes if available (stored as <!--species:{...}-->)
+        let storedSpeciesInfo = null;
+        let cleanNotes = plant.notes || '';
+        const speciesMatch = cleanNotes.match(/<!--species:(\{.*?\})-->/);
+        if (speciesMatch) {
+          try {
+            storedSpeciesInfo = JSON.parse(speciesMatch[1]);
+            cleanNotes = cleanNotes.replace(speciesMatch[0], ''); // Remove species tag from notes
+          } catch (e) {
+            console.warn('[usePlants] Failed to parse stored species info:', e);
+          }
+        }
+
+        // Get emoji - priority: stored emoji > species from DB > plant name lookup
+        const plantName = plant.name || species?.common_name || 'Tanaman';
+        let speciesEmoji;
+        if (storedSpeciesInfo?.speciesEmoji) {
+          speciesEmoji = storedSpeciesInfo.speciesEmoji;
+        } else if (species) {
+          speciesEmoji = getSpeciesEmoji(species.common_name);
+        } else if (storedSpeciesInfo?.speciesName) {
+          speciesEmoji = getSpeciesEmoji(storedSpeciesInfo.speciesName);
+        } else {
+          speciesEmoji = getSpeciesEmoji(plantName);
+        }
+
         return {
           id: plant.id,
-          name: plant.name || species?.common_name || 'Tanaman',
+          name: plantName,
           customName: plant.name,
           status: plant.status || status,
           location: location?.name || 'Semua',
@@ -141,12 +200,15 @@ export function usePlants() {
             scientific: species.latin_name,
             category: species.category,
             quickTips: species.quick_tips,
-            emoji: '🌱', // plant_species table doesn't have icon column
-          } : null,
+            emoji: speciesEmoji,
+          } : {
+            // Provide fallback species object with emoji based on plant name
+            emoji: speciesEmoji,
+          },
           plantedDate: plant.planted_date ? new Date(plant.planted_date) : new Date(plant.created_at),
           lastWatered: actions.siram ? new Date(actions.siram) : null,
           lastFertilized: actions.pupuk ? new Date(actions.pupuk) : null,
-          notes: plant.notes || '',
+          notes: cleanNotes, // Use cleaned notes (without species tag)
           createdAt: new Date(plant.created_at),
         };
       });
@@ -215,6 +277,18 @@ export function usePlants() {
     }
 
     try {
+      // Store species info in notes as JSON if species name provided
+      // This is a workaround since there's no species_name column
+      let notesWithSpecies = plantData.notes || '';
+      if (plantData.speciesName) {
+        const speciesInfo = JSON.stringify({
+          speciesName: plantData.speciesName,
+          speciesEmoji: plantData.speciesEmoji || '🌱',
+        });
+        // Prepend species info to notes (will be parsed on read)
+        notesWithSpecies = `<!--species:${speciesInfo}-->${notesWithSpecies}`;
+      }
+
       // First, insert the plant to get an ID
       const insertData = {
         user_id: user.id,
@@ -223,7 +297,7 @@ export function usePlants() {
         name: plantData.customName || plantData.name,
         photo_url: null, // Will update after upload
         planted_date: plantData.plantedDate || new Date().toISOString(),
-        notes: plantData.notes || null,
+        notes: notesWithSpecies || null,
         status: 'active', // Must be 'active', 'archived', or 'deceased' per DB constraint
       };
 

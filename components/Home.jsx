@@ -39,6 +39,7 @@ const Home = ({ userName }) => {
     locations: supabaseLocations,
     loading: locationsLoading,
     addLocation: addSupabaseLocation,
+    refetch: refetchLocations,
   } = useLocations();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -96,6 +97,9 @@ const Home = ({ userName }) => {
   const [toastMessage, setToastMessage] = useState({ title: '', message: '' });
   const reconnectingTimer = useRef(null);
 
+  // Track failed plant images to show fallback
+  const [failedImages, setFailedImages] = useState(new Set());
+
   // Action toast state (for watering, fertilizing, plant actions, etc.)
   const [showActionToast, setShowActionToast] = useState(false);
   const [actionToastMessage, setActionToastMessage] = useState('');
@@ -131,36 +135,9 @@ const Home = ({ userName }) => {
     if (savedPhoto) setUserPhoto(savedPhoto);
   }, []);
 
-  // Use locations from Supabase hook, with fallback to localStorage
-  const [localLocations, setLocalLocations] = useState(['Semua', 'Teras', 'Balkon']);
-
-  // Load locations from localStorage as fallback
-  useEffect(() => {
-    const loadLocations = () => {
-      const savedLocations = localStorage.getItem('temanTanamLocations');
-      if (savedLocations) {
-        try {
-          const parsed = JSON.parse(savedLocations);
-          if (Array.isArray(parsed)) {
-            const locationNames = parsed.map((loc) => loc.name);
-            const uniqueLocations = [...new Set(locationNames)];
-            setLocalLocations(['Semua', ...uniqueLocations]);
-          }
-        } catch (err) {
-          console.error('[Home] Failed to parse locations:', err);
-          // Keep default locations on error
-        }
-      }
-    };
-
-    loadLocations();
-    window.addEventListener('storage', loadLocations);
-    return () => window.removeEventListener('storage', loadLocations);
-  }, []);
-
-  // Use Supabase locations if available, otherwise fallback to localStorage
-  const locations = supabaseLocationNames?.length > 1 ? supabaseLocationNames : localLocations;
-  const setLocations = setLocalLocations;
+  // Use locations from Supabase hook
+  // supabaseLocationNames already includes "Semua" as the first option
+  const locations = supabaseLocationNames;
 
   // Network status detection
   useEffect(() => {
@@ -214,18 +191,11 @@ const Home = ({ userName }) => {
   // Reload locations when returning from LocationSettings
   const handleLocationSettingsClose = () => {
     setShowLocationSettings(false);
-    // Reload locations from localStorage
-    const savedLocations = localStorage.getItem('temanTanamLocations');
-    if (savedLocations) {
-      const parsed = JSON.parse(savedLocations);
-      const locationNames = parsed.map((loc) => loc.name);
-      // Remove duplicates using Set
-      const uniqueLocations = [...new Set(locationNames)];
-      setLocations(['Semua', ...uniqueLocations]);
-      // Reset to 'Semua' if current selection was deleted
-      if (!['Semua', ...uniqueLocations].includes(selectedLocation)) {
-        setSelectedLocation('Semua');
-      }
+    // Refetch locations from Supabase
+    refetchLocations();
+    // Reset to 'Semua' if current selection was deleted
+    if (!supabaseLocationNames.includes(selectedLocation)) {
+      setSelectedLocation('Semua');
     }
   };
 
@@ -242,9 +212,34 @@ const Home = ({ userName }) => {
   const isSearching = searchQuery.trim().length > 0;
   const isFilteringLocation = selectedLocation !== 'Semua';
 
-  const handleBulkWater = () => {
-    console.log('Bulk watering plants in:', selectedLocation);
-    // TODO: Implement bulk watering logic
+  const handleBulkWater = async () => {
+    // Get plants in the selected location
+    const plantsToWater = filteredPlants.filter(p => p.location === selectedLocation);
+
+    if (plantsToWater.length === 0) {
+      showActionToastWithMessage('Tidak ada tanaman di lokasi ini');
+      return;
+    }
+
+    // Record water action for each plant
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const plant of plantsToWater) {
+      const result = await recordAction(plant.id, 'water');
+      if (result.success) {
+        successCount++;
+      } else {
+        failCount++;
+      }
+    }
+
+    // Show result toast
+    if (failCount === 0) {
+      showActionToastWithMessage(`${successCount} tanaman di ${selectedLocation} sudah disiram`);
+    } else {
+      showActionToastWithMessage(`${successCount} berhasil, ${failCount} gagal disiram`);
+    }
   };
 
   // Add Plant flow handlers
@@ -282,11 +277,13 @@ const Home = ({ userName }) => {
 
     // Prepare data for Supabase
     // NOTE: species_id is set to null because we're using local species data (not Supabase UUIDs)
-    // The plant name already contains the species info. We can add species lookup later.
+    // We pass speciesName and speciesEmoji for display purposes
     const supabaseData = {
       customName: plantData.customName,
       name: plantData.customName || plantData.species?.name || 'Tanaman',
       speciesId: null, // Set to null - local species IDs are not valid UUIDs
+      speciesName: plantData.species?.name || null, // Store species name for emoji lookup
+      speciesEmoji: plantData.species?.emoji || '🌱', // Store emoji directly
       locationId: locationId,
       notes: plantData.notes || '',
       plantedDate: plantData.customDate || new Date().toISOString(),
@@ -324,9 +321,10 @@ const Home = ({ userName }) => {
         customName: newPlantData.customName,
         species: newPlantData.species,
         location: newPlantData.location,
-        plantedDate: newPlantData.plantedDate,
+        plantedDate: newPlantData.plantedDate || new Date(),
         image: newPlantData.photoPreview || null,
         photoUrl: newPlantData.photoPreview || null,
+        notes: newPlantData.notes || '',
         status: 'Baik Baik Saja',
       };
       setSelectedPlant(plantForDetail);
@@ -484,8 +482,10 @@ const Home = ({ userName }) => {
   };
 
   const handlePlantEdit = (plant) => {
-    console.log('Edit plant:', plant);
-    // TODO: Implement plant editing
+    // Close plant detail and open edit modal
+    setShowPlantDetail(false);
+    setMenuPlant(plant);
+    setShowEditPlantModal(true);
   };
 
   const handlePlantDelete = async (plantId) => {
@@ -528,29 +528,20 @@ const Home = ({ userName }) => {
   };
 
   // Handle add location save
-  const handleAddLocationSave = ({ name, selectedPlantIds }) => {
-    // Get existing locations from localStorage
-    const savedLocations = localStorage.getItem('temanTanamLocations');
-    const existingLocations = savedLocations ? JSON.parse(savedLocations) : [];
+  const handleAddLocationSave = async ({ name, selectedPlantIds }) => {
+    // Add location to Supabase via useLocations hook
+    const result = await addSupabaseLocation(name, '📍');
 
-    // Add new location
-    const newLocation = {
-      id: Date.now().toString(),
-      name,
-      emoji: '📍',
-    };
-    const updatedLocations = [...existingLocations, newLocation];
+    if (!result.success) {
+      showActionToastWithMessage(result.error || 'Gagal menambahkan lokasi');
+      return;
+    }
 
-    // Save to localStorage
-    localStorage.setItem('temanTanamLocations', JSON.stringify(updatedLocations));
-
-    // Update local state - remove duplicates using Set
-    const uniqueLocations = [...new Set(updatedLocations.map((loc) => loc.name))];
-    setLocations(['Semua', ...uniqueLocations]);
+    // Refetch locations to update the list
+    refetchLocations();
 
     // Update selected plants' locations in Supabase
     // Note: This feature needs to be implemented in usePlants hook
-    // For now, we'll refetch after adding location
     if (selectedPlantIds.length > 0) {
       // TODO: Implement updatePlantLocation in usePlants hook
       console.log('[Home] Plants to update location:', selectedPlantIds, 'to', name);
@@ -1054,7 +1045,7 @@ const Home = ({ userName }) => {
                     justifyContent: 'center',
                   }}
                 >
-                  {plant.image ? (
+                  {plant.image && !failedImages.has(plant.id) ? (
                     <img
                       src={plant.image}
                       alt={plant.name}
@@ -1064,21 +1055,14 @@ const Home = ({ userName }) => {
                         objectFit: 'cover',
                         display: 'block',
                       }}
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                        e.target.parentElement.innerHTML = `
-                          <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                            <path d="M24 42C24 42 10 34 10 22C10 17 14 12 19 12C21.5 12 23.8 13 25.5 14.5C27.2 13 29.5 12 32 12C37 12 41 17 41 22C41 34 27 42 24 42Z" fill="#7CB342"/>
-                            <path d="M24 14.5V42" stroke="#2D5016" strokeWidth="2.5" strokeLinecap="round"/>
-                          </svg>
-                        `;
+                      onError={() => {
+                        setFailedImages(prev => new Set(prev).add(plant.id));
                       }}
                     />
                   ) : (
-                    <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                      <path d="M24 42C24 42 10 34 10 22C10 17 14 12 19 12C21.5 12 23.8 13 25.5 14.5C27.2 13 29.5 12 32 12C37 12 41 17 41 22C41 34 27 42 24 42Z" fill="#7CB342"/>
-                      <path d="M24 14.5V42" stroke="#2D5016" strokeWidth="2.5" strokeLinecap="round"/>
-                    </svg>
+                    <span style={{ fontSize: '3rem' }}>
+                      {plant.species?.emoji || '🌱'}
+                    </span>
                   )}
                 </div>
 

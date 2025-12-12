@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import LocationSettings from './LocationSettings';
+import { useLocations } from '@/hooks/useLocations';
 
 const EditPlant = ({ plant, onClose, onSave }) => {
   const [formData, setFormData] = useState({
@@ -16,37 +17,15 @@ const EditPlant = ({ plant, onClose, onSave }) => {
   const [photoPreview, setPhotoPreview] = useState(null);
   const [showLocationInput, setShowLocationInput] = useState(false);
   const [focusedInput, setFocusedInput] = useState(null);
-  const [locationOptions, setLocationOptions] = useState(['Teras', 'Balkon']);
   const [showLocationSettings, setShowLocationSettings] = useState(false);
   const dateInputRef = useRef(null);
 
-  // Load user's saved locations from localStorage
-  const loadLocations = () => {
-    const savedLocations = localStorage.getItem('temanTanamLocations');
-    if (savedLocations) {
-      try {
-        const parsed = JSON.parse(savedLocations);
-        if (Array.isArray(parsed)) {
-          // Filter out invalid entries and ensure uniqueness
-          const locationNames = parsed
-            .filter((loc) => loc && typeof loc === 'object' && loc.name)
-            .map((loc) => loc.name)
-            .filter((name) => typeof name === 'string' && name.trim().length > 0);
-          // Remove duplicates
-          const uniqueNames = [...new Set(locationNames)];
-          if (uniqueNames.length > 0) {
-            setLocationOptions(uniqueNames);
-          }
-        }
-      } catch (e) {
-        console.error('Error parsing locations:', e);
-      }
-    }
-  };
-
-  useEffect(() => {
-    loadLocations();
-  }, []);
+  // Get locations from Supabase via useLocations hook
+  const { locations: supabaseLocations, refetch: refetchLocations } = useLocations();
+  // Extract location names (exclude "Semua" option, filter out any undefined)
+  const locationOptions = supabaseLocations
+    .map(loc => loc.name)
+    .filter(name => name && name !== 'Semua');
 
   // Format date for display
   const formatDateForDisplay = (dateStr) => {
@@ -107,10 +86,10 @@ const EditPlant = ({ plant, onClose, onSave }) => {
     }
   };
 
-  // Handle back from LocationSettings - reload locations and return to form
+  // Handle back from LocationSettings - refetch locations and return to form
   const handleLocationSettingsBack = () => {
     setShowLocationSettings(false);
-    loadLocations(); // Reload locations to get newly added ones
+    refetchLocations(); // Refetch locations from Supabase to get newly added ones
   };
 
   const handleDateSelect = (date) => {

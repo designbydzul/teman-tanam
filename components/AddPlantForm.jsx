@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import LocationSettings from './LocationSettings';
 import { compressImage } from '@/lib/imageUtils';
+import { useLocations } from '@/hooks/useLocations';
 
 const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) => {
   const [formData, setFormData] = useState({
@@ -18,40 +19,19 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
   const [photoPreview, setPhotoPreview] = useState(null);
   const [showLocationInput, setShowLocationInput] = useState(false);
   const [focusedInput, setFocusedInput] = useState(null);
-  const [locationOptions, setLocationOptions] = useState(['Teras', 'Balkon']);
   const [showLocationSettings, setShowLocationSettings] = useState(false);
   const [isCompressing, setIsCompressing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [compressionWarning, setCompressionWarning] = useState(null);
   const dateInputRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  // Load user's saved locations from localStorage
-  const loadLocations = () => {
-    const savedLocations = localStorage.getItem('temanTanamLocations');
-    if (savedLocations) {
-      try {
-        const parsed = JSON.parse(savedLocations);
-        if (Array.isArray(parsed)) {
-          // Filter out invalid entries and ensure uniqueness
-          const locationNames = parsed
-            .filter((loc) => loc && typeof loc === 'object' && loc.name)
-            .map((loc) => loc.name)
-            .filter((name) => typeof name === 'string' && name.trim().length > 0);
-          // Remove duplicates
-          const uniqueNames = [...new Set(locationNames)];
-          if (uniqueNames.length > 0) {
-            setLocationOptions(uniqueNames);
-          }
-        }
-      } catch (e) {
-        console.error('Error parsing locations:', e);
-      }
-    }
-  };
-
-  useEffect(() => {
-    loadLocations();
-  }, []);
+  // Get locations from Supabase via useLocations hook
+  const { locations: supabaseLocations, refetch: refetchLocations } = useLocations();
+  // Extract location names (exclude "Semua" option, filter out any undefined)
+  const locationOptions = supabaseLocations
+    .map(loc => loc.name)
+    .filter(name => name && name !== 'Semua');
 
   // Name is optional now, location is required
   const isValid = formData.location;
@@ -60,6 +40,7 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
     const file = e.target.files[0];
     if (file) {
       setIsCompressing(true);
+      setCompressionWarning(null);
       setFormData({ ...formData, photo: file, compressedPhoto: null });
 
       // Show preview immediately
@@ -80,6 +61,14 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
         console.error('[AddPlantForm] Compression error:', error);
         // Fall back to original file if compression fails
         setFormData(prev => ({ ...prev, compressedPhoto: file }));
+
+        // Warn user if original file is large (over 5MB may fail to upload)
+        const fileSizeMB = file.size / (1024 * 1024);
+        if (fileSizeMB > 5) {
+          setCompressionWarning(`Foto terlalu besar (${fileSizeMB.toFixed(1)}MB). Mungkin gagal upload, coba pilih foto lain.`);
+        } else {
+          setCompressionWarning('Kompresi gagal, menggunakan foto asli.');
+        }
       } finally {
         setIsCompressing(false);
       }
@@ -96,10 +85,10 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
     }
   };
 
-  // Handle back from LocationSettings - reload locations and return to form
+  // Handle back from LocationSettings - refetch locations and return to form
   const handleLocationSettingsBack = () => {
     setShowLocationSettings(false);
-    loadLocations(); // Reload locations to get newly added ones
+    refetchLocations(); // Refetch locations from Supabase to get newly added ones
   };
 
   const handleDateSelect = (date) => {
@@ -501,6 +490,7 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
                       type="button"
                       onClick={() => {
                         setPhotoPreview(null);
+                        setCompressionWarning(null);
                         setFormData({ ...formData, photo: null, compressedPhoto: null });
                       }}
                       disabled={isCompressing}
@@ -560,6 +550,24 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
                       style={{ display: 'none' }}
                     />
                   </label>
+                )}
+
+                {/* Compression warning */}
+                {compressionWarning && (
+                  <p
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: '12px',
+                      color: '#DC2626',
+                      textAlign: 'center',
+                      marginTop: '8px',
+                      padding: '8px 12px',
+                      backgroundColor: '#FEF2F2',
+                      borderRadius: '8px',
+                    }}
+                  >
+                    {compressionWarning}
+                  </p>
                 )}
 
                 <p

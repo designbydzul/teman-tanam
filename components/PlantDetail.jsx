@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -110,7 +110,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction }) => {
     : null;
 
   // Fetch actions history from Supabase
-  const fetchActionsHistory = async () => {
+  const fetchActionsHistory = useCallback(async () => {
     if (!plantData?.id) return;
 
     setActionsLoading(true);
@@ -133,14 +133,14 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction }) => {
     } finally {
       setActionsLoading(false);
     }
-  };
+  }, [plantData?.id]);
 
   // Fetch actions when tab changes to riwayat or after recording an action
   useEffect(() => {
     if (activeTab === 'riwayat') {
       fetchActionsHistory();
     }
-  }, [activeTab, plantData?.id]);
+  }, [activeTab, fetchActionsHistory]);
 
   // Helper function to format date in Indonesian
   const formatDateIndonesian = (dateString) => {
@@ -446,7 +446,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction }) => {
                   margin: 0,
                 }}
               >
-                {plantData.location} • {daysSincePlanted} hari sejak ditanam
+                {plantData.location} • {daysSincePlanted} hari sejak ditanam{plantData.notes ? ` • ${plantData.notes}` : ''}
               </p>
             </div>
           </div>

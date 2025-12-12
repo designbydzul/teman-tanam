@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   DndContext,
@@ -24,8 +24,9 @@ import {
   Plus,
   X,
 } from '@phosphor-icons/react';
+import { useLocations } from '@/hooks/useLocations';
 
-const SortableLocationCard = ({ location, plantCount, onDelete }) => {
+const SortableLocationCard = ({ location, plantCount, onDelete, isDeleting }) => {
   const {
     attributes,
     listeners,
@@ -104,6 +105,7 @@ const SortableLocationCard = ({ location, plantCount, onDelete }) => {
         {/* Delete Button */}
         <button
           onClick={() => onDelete(location)}
+          disabled={isDeleting}
           style={{
             width: '40px',
             height: '40px',
@@ -113,7 +115,8 @@ const SortableLocationCard = ({ location, plantCount, onDelete }) => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            cursor: 'pointer',
+            cursor: isDeleting ? 'not-allowed' : 'pointer',
+            opacity: isDeleting ? 0.5 : 1,
           }}
         >
           <Trash size={20} weight="bold" color="#DC2626" />
@@ -124,7 +127,17 @@ const SortableLocationCard = ({ location, plantCount, onDelete }) => {
 };
 
 const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants = [], onPlantsUpdated }) => {
-  const [locations, setLocations] = useState([]);
+  // Use Supabase locations hook
+  const {
+    locations,
+    loading,
+    error: locationsError,
+    addLocation,
+    deleteLocation,
+    reorderLocations,
+    refetch,
+  } = useLocations();
+
   const [showAddModal, setShowAddModal] = useState(false);
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
   const [showMovePlantsModal, setShowMovePlantsModal] = useState(false);
@@ -133,15 +146,12 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
   const [moveToLocation, setMoveToLocation] = useState('');
   const [inputFocused, setInputFocused] = useState(false);
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Calculate plant count for a location from actual plants data
   const getPlantCountForLocation = (locationName) => {
     return plants.filter((plant) => plant.location === locationName).length;
-  };
-
-  // Get plants for a specific location
-  const getPlantsForLocation = (locationName) => {
-    return plants.filter((plant) => plant.location === locationName);
   };
 
   // Check for duplicate location name
@@ -167,50 +177,19 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
     })
   );
 
-  useEffect(() => {
-    // Load locations from localStorage
-    const savedLocations = localStorage.getItem('temanTanamLocations');
-    if (savedLocations) {
-      try {
-        const parsed = JSON.parse(savedLocations);
-        if (Array.isArray(parsed)) {
-          setLocations(parsed);
-        } else {
-          throw new Error('Invalid locations format');
-        }
-      } catch (err) {
-        console.error('[LocationSettings] Failed to parse locations:', err);
-        // Clear corrupted data and set defaults
-        localStorage.removeItem('temanTanamLocations');
-        const defaultLocations = [
-          { id: '1', name: 'Balkon', plantCount: 0 },
-          { id: '2', name: 'Teras', plantCount: 0 },
-        ];
-        setLocations(defaultLocations);
-        localStorage.setItem('temanTanamLocations', JSON.stringify(defaultLocations));
-      }
-    } else {
-      // Default locations
-      const defaultLocations = [
-        { id: '1', name: 'Balkon', plantCount: 0 },
-        { id: '2', name: 'Teras', plantCount: 0 },
-      ];
-      setLocations(defaultLocations);
-      localStorage.setItem('temanTanamLocations', JSON.stringify(defaultLocations));
-    }
-  }, []);
-
-  const handleDragEnd = (event) => {
+  const handleDragEnd = async (event) => {
     const { active, over } = event;
 
     if (over && active.id !== over.id) {
-      setLocations((items) => {
-        const oldIndex = items.findIndex((item) => item.id === active.id);
-        const newIndex = items.findIndex((item) => item.id === over.id);
-        const newLocations = arrayMove(items, oldIndex, newIndex);
-        localStorage.setItem('temanTanamLocations', JSON.stringify(newLocations));
-        return newLocations;
-      });
+      const oldIndex = locations.findIndex((item) => item.id === active.id);
+      const newIndex = locations.findIndex((item) => item.id === over.id);
+      const reorderedLocations = arrayMove(locations, oldIndex, newIndex);
+
+      // Update in Supabase
+      const result = await reorderLocations(reorderedLocations);
+      if (!result.success) {
+        console.error('[LocationSettings] Failed to reorder:', result.error);
+      }
     }
   };
 
@@ -224,7 +203,7 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
     }
   };
 
-  const handleAddLocation = () => {
+  const handleAddLocation = async () => {
     if (newLocationName.trim().length < 2) return;
 
     // Check for duplicate before saving
@@ -233,22 +212,25 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
       return;
     }
 
+    setIsSubmitting(true);
     const locationName = newLocationName.trim();
-    const newLocation = {
-      id: Date.now().toString(),
-      name: locationName,
-      plantCount: 0,
-    };
-    const updatedLocations = [...locations, newLocation];
-    setLocations(updatedLocations);
-    localStorage.setItem('temanTanamLocations', JSON.stringify(updatedLocations));
-    setNewLocationName('');
-    setError('');
-    setShowAddModal(false);
-    // Callback to show toast
-    if (onLocationAdded) {
-      onLocationAdded(locationName);
+
+    // Add to Supabase
+    const result = await addLocation(locationName, '📍');
+
+    if (result.success) {
+      setNewLocationName('');
+      setError('');
+      setShowAddModal(false);
+      // Callback to show toast
+      if (onLocationAdded) {
+        onLocationAdded(locationName);
+      }
+    } else {
+      setError(result.error || 'Gagal menambahkan lokasi');
     }
+
+    setIsSubmitting(false);
   };
 
   const isValidNewLocation = newLocationName.trim().length >= 2 && !checkDuplicate(newLocationName);
@@ -263,23 +245,32 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
     }
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (locationToDelete) {
+      setIsDeleting(true);
       const deletedLocationName = locationToDelete.name;
-      const updatedLocations = locations.filter((loc) => loc.id !== locationToDelete.id);
-      setLocations(updatedLocations);
-      localStorage.setItem('temanTanamLocations', JSON.stringify(updatedLocations));
-      setLocationToDelete(null);
-      setShowDeleteConfirmModal(false);
-      // Callback to show toast
-      if (onLocationDeleted) {
-        onLocationDeleted(deletedLocationName);
+
+      // Delete from Supabase
+      const result = await deleteLocation(locationToDelete.id);
+
+      if (result.success) {
+        setLocationToDelete(null);
+        setShowDeleteConfirmModal(false);
+        // Callback to show toast
+        if (onLocationDeleted) {
+          onLocationDeleted(deletedLocationName);
+        }
+      } else {
+        setError(result.error || 'Gagal menghapus lokasi');
       }
+
+      setIsDeleting(false);
     }
   };
 
-  const handleMovePlants = () => {
+  const handleMovePlants = async () => {
     if (locationToDelete && moveToLocation) {
+      setIsDeleting(true);
       const deletedLocationName = locationToDelete.name;
       const targetLocation = locations.find((loc) => loc.id === moveToLocation);
 
@@ -298,20 +289,24 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
         }
       }
 
-      // Remove the location
-      const finalLocations = locations.filter((loc) => loc.id !== locationToDelete.id);
-      setLocations(finalLocations);
-      localStorage.setItem('temanTanamLocations', JSON.stringify(finalLocations));
+      // Delete from Supabase
+      const result = await deleteLocation(locationToDelete.id);
 
-      // Reset state
-      setLocationToDelete(null);
-      setMoveToLocation('');
-      setShowMovePlantsModal(false);
+      if (result.success) {
+        // Reset state
+        setLocationToDelete(null);
+        setMoveToLocation('');
+        setShowMovePlantsModal(false);
 
-      // Callback to show toast
-      if (onLocationDeleted) {
-        onLocationDeleted(deletedLocationName);
+        // Callback to show toast
+        if (onLocationDeleted) {
+          onLocationDeleted(deletedLocationName);
+        }
+      } else {
+        setError(result.error || 'Gagal menghapus lokasi');
       }
+
+      setIsDeleting(false);
     }
   };
 
@@ -381,56 +376,103 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
 
       {/* Content */}
       <div style={{ padding: '24px' }}>
+        {/* Loading State */}
+        {loading && (
+          <div style={{ textAlign: 'center', padding: '40px' }}>
+            <p style={{ color: '#666666', fontFamily: "'Inter', sans-serif" }}>
+              Memuat lokasi...
+            </p>
+          </div>
+        )}
+
+        {/* Error State */}
+        {locationsError && !loading && (
+          <div style={{ textAlign: 'center', padding: '40px' }}>
+            <p style={{ color: '#DC2626', fontFamily: "'Inter', sans-serif", marginBottom: '16px' }}>
+              {locationsError}
+            </p>
+            <button
+              onClick={refetch}
+              style={{
+                padding: '12px 24px',
+                backgroundColor: '#7CB342',
+                color: '#FFFFFF',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontFamily: "'Inter', sans-serif",
+                fontWeight: 600,
+              }}
+            >
+              Coba Lagi
+            </button>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!loading && !locationsError && locations.length === 0 && (
+          <div style={{ textAlign: 'center', padding: '40px' }}>
+            <p style={{ color: '#666666', fontFamily: "'Inter', sans-serif" }}>
+              Belum ada lokasi. Tambahkan lokasi pertamamu!
+            </p>
+          </div>
+        )}
+
         {/* Draggable Location List */}
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext
-            items={locations.map((loc) => loc.id)}
-            strategy={verticalListSortingStrategy}
+        {!loading && !locationsError && locations.length > 0 && (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
           >
-            {locations.map((location) => (
-              <SortableLocationCard
-                key={location.id}
-                location={location}
-                plantCount={getPlantCountForLocation(location.name)}
-                onDelete={handleDeleteLocation}
-              />
-            ))}
-          </SortableContext>
-        </DndContext>
+            <SortableContext
+              items={locations.map((loc) => loc.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              {locations.map((location) => (
+                <SortableLocationCard
+                  key={location.id}
+                  location={location}
+                  plantCount={getPlantCountForLocation(location.name)}
+                  onDelete={handleDeleteLocation}
+                  isDeleting={isDeleting}
+                />
+              ))}
+            </SortableContext>
+          </DndContext>
+        )}
 
         {/* Add New Location Button */}
-        <button
-          onClick={() => setShowAddModal(true)}
-          style={{
-            width: '100%',
-            padding: '16px',
-            backgroundColor: '#FFFFFF',
-            border: '2px dashed #7CB342',
-            borderRadius: '12px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px',
-            cursor: 'pointer',
-            marginTop: '12px',
-          }}
-        >
-          <Plus size={24} weight="bold" color="#7CB342" />
-          <span
+        {!loading && (
+          <button
+            onClick={() => setShowAddModal(true)}
             style={{
-              fontFamily: "'Inter', sans-serif",
-              fontSize: '1rem',
-              fontWeight: 600,
-              color: '#7CB342',
+              width: '100%',
+              padding: '16px',
+              backgroundColor: '#FFFFFF',
+              border: '2px dashed #7CB342',
+              borderRadius: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              cursor: 'pointer',
+              marginTop: '12px',
             }}
           >
-            Tambah Lokasi Baru
-          </span>
-        </button>
+            <Plus size={24} weight="bold" color="#7CB342" />
+            <span
+              style={{
+                fontFamily: "'Inter', sans-serif",
+                fontSize: '1rem',
+                fontWeight: 600,
+                color: '#7CB342',
+              }}
+            >
+              Tambah Lokasi Baru
+            </span>
+          </button>
+        )}
       </div>
 
       {/* Add Location Modal */}
@@ -441,7 +483,7 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setShowAddModal(false)}
+              onClick={() => !isSubmitting && setShowAddModal(false)}
               style={{
                 position: 'fixed',
                 top: 0,
@@ -471,7 +513,8 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
             >
               {/* Close Button */}
               <button
-                onClick={() => setShowAddModal(false)}
+                onClick={() => !isSubmitting && setShowAddModal(false)}
+                disabled={isSubmitting}
                 style={{
                   position: 'absolute',
                   top: '20px',
@@ -484,7 +527,8 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  cursor: 'pointer',
+                  cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                  opacity: isSubmitting ? 0.5 : 1,
                 }}
               >
                 <X size={20} weight="bold" color="#666666" />
@@ -511,6 +555,7 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
                 onChange={(e) => handleNameChange(e.target.value)}
                 onFocus={() => setInputFocused(true)}
                 onBlur={() => setInputFocused(false)}
+                disabled={isSubmitting}
                 style={{
                   width: '100%',
                   padding: '16px',
@@ -527,6 +572,7 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
                   outline: 'none',
                   marginBottom: error ? '8px' : '16px',
                   transition: 'border-color 200ms',
+                  opacity: isSubmitting ? 0.5 : 1,
                 }}
               />
               {error && (
@@ -545,7 +591,7 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
               {/* Submit Button */}
               <button
                 onClick={handleAddLocation}
-                disabled={!isValidNewLocation}
+                disabled={!isValidNewLocation || isSubmitting}
                 style={{
                   width: '100%',
                   padding: '14px',
@@ -553,13 +599,13 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
                   fontFamily: "'Inter', sans-serif",
                   fontWeight: 600,
                   color: '#FFFFFF',
-                  backgroundColor: isValidNewLocation ? '#7CB342' : '#CCCCCC',
+                  backgroundColor: isValidNewLocation && !isSubmitting ? '#7CB342' : '#CCCCCC',
                   border: 'none',
                   borderRadius: '12px',
-                  cursor: isValidNewLocation ? 'pointer' : 'not-allowed',
+                  cursor: isValidNewLocation && !isSubmitting ? 'pointer' : 'not-allowed',
                 }}
               >
-                Simpan
+                {isSubmitting ? 'Menyimpan...' : 'Simpan'}
               </button>
             </motion.div>
           </>
@@ -573,7 +619,7 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={() => setShowDeleteConfirmModal(false)}
+            onClick={() => !isDeleting && setShowDeleteConfirmModal(false)}
             style={{
               position: 'fixed',
               top: 0,
@@ -628,6 +674,7 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
               <div style={{ display: 'flex', gap: '12px' }}>
                 <button
                   onClick={() => setShowDeleteConfirmModal(false)}
+                  disabled={isDeleting}
                   style={{
                     flex: 1,
                     padding: '12px',
@@ -638,13 +685,15 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
                     backgroundColor: '#F5F5F5',
                     border: 'none',
                     borderRadius: '12px',
-                    cursor: 'pointer',
+                    cursor: isDeleting ? 'not-allowed' : 'pointer',
+                    opacity: isDeleting ? 0.5 : 1,
                   }}
                 >
                   Batal
                 </button>
                 <button
                   onClick={confirmDelete}
+                  disabled={isDeleting}
                   style={{
                     flex: 1,
                     padding: '12px',
@@ -655,10 +704,11 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
                     backgroundColor: '#DC2626',
                     border: 'none',
                     borderRadius: '12px',
-                    cursor: 'pointer',
+                    cursor: isDeleting ? 'not-allowed' : 'pointer',
+                    opacity: isDeleting ? 0.5 : 1,
                   }}
                 >
-                  Hapus
+                  {isDeleting ? 'Menghapus...' : 'Hapus'}
                 </button>
               </div>
             </motion.div>
@@ -674,7 +724,7 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setShowMovePlantsModal(false)}
+              onClick={() => !isDeleting && setShowMovePlantsModal(false)}
               style={{
                 position: 'fixed',
                 top: 0,
@@ -706,7 +756,8 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
             >
               {/* Close Button */}
               <button
-                onClick={() => setShowMovePlantsModal(false)}
+                onClick={() => !isDeleting && setShowMovePlantsModal(false)}
+                disabled={isDeleting}
                 style={{
                   position: 'absolute',
                   top: '20px',
@@ -719,7 +770,8 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  cursor: 'pointer',
+                  cursor: isDeleting ? 'not-allowed' : 'pointer',
+                  opacity: isDeleting ? 0.5 : 1,
                 }}
               >
                 <X size={20} weight="bold" color="#666666" />
@@ -758,6 +810,7 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
                     <button
                       key={location.id}
                       onClick={() => setMoveToLocation(location.id)}
+                      disabled={isDeleting}
                       style={{
                         padding: '16px',
                         fontSize: '1rem',
@@ -771,8 +824,9 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
                             ? '2px solid #7CB342'
                             : '1px solid #E0E0E0',
                         borderRadius: '12px',
-                        cursor: 'pointer',
+                        cursor: isDeleting ? 'not-allowed' : 'pointer',
                         textAlign: 'left',
+                        opacity: isDeleting ? 0.5 : 1,
                       }}
                     >
                       {location.name}
@@ -789,6 +843,7 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
               <div style={{ display: 'flex', gap: '12px' }}>
                 <button
                   onClick={() => setShowMovePlantsModal(false)}
+                  disabled={isDeleting}
                   style={{
                     flex: 1,
                     padding: '14px',
@@ -799,14 +854,15 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
                     backgroundColor: '#F5F5F5',
                     border: 'none',
                     borderRadius: '12px',
-                    cursor: 'pointer',
+                    cursor: isDeleting ? 'not-allowed' : 'pointer',
+                    opacity: isDeleting ? 0.5 : 1,
                   }}
                 >
                   Batal
                 </button>
                 <button
                   onClick={handleMovePlants}
-                  disabled={!moveToLocation}
+                  disabled={!moveToLocation || isDeleting}
                   style={{
                     flex: 1,
                     padding: '14px',
@@ -814,13 +870,13 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
                     fontFamily: "'Inter', sans-serif",
                     fontWeight: 600,
                     color: '#FFFFFF',
-                    backgroundColor: moveToLocation ? '#7CB342' : '#CCCCCC',
+                    backgroundColor: moveToLocation && !isDeleting ? '#7CB342' : '#CCCCCC',
                     border: 'none',
                     borderRadius: '12px',
-                    cursor: moveToLocation ? 'pointer' : 'not-allowed',
+                    cursor: moveToLocation && !isDeleting ? 'pointer' : 'not-allowed',
                   }}
                 >
-                  Konfirmasi
+                  {isDeleting ? 'Memproses...' : 'Konfirmasi'}
                 </button>
               </div>
             </motion.div>

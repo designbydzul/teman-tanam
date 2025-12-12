@@ -102,6 +102,7 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
         id: selectedPlant.id,
         name: selectedPlant.customName || selectedPlant.name,
         species: selectedPlant.species?.scientific || 'Cucumis sativus',
+        speciesEmoji: selectedPlant.species?.emoji || '🌱',
         location: selectedPlant.location || 'Teras',
         plantedDate: selectedPlant.plantedDate || new Date(Date.now() - 12 * 24 * 60 * 60 * 1000),
         coverPhotoUrl: selectedPlant.photoUrl || (selectedPlant.image !== null && selectedPlant.image) || null,
@@ -280,22 +281,15 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
         overflow: 'hidden',
       }}
     >
-      {/* Header - Always visible */}
-      <div
-        style={{
-          padding: keyboardHeight > 0 ? '8px 16px' : '16px 24px',
-          backgroundColor: '#FFFFFF',
-          flexShrink: 0,
-          borderBottom: '1px solid #F5F5F5',
-          transition: 'padding 0.15s ease',
-        }}
-      >
+      {/* Header - Matches PlantDetail header layout exactly */}
+      <div style={{ position: 'relative', zIndex: 10, backgroundColor: '#FFFFFF', flexShrink: 0 }}>
+        {/* Navigation Row - Same as PlantDetail */}
         <div
           style={{
-            position: 'relative',
             display: 'flex',
+            justifyContent: 'space-between',
             alignItems: 'center',
-            justifyContent: 'center',
+            padding: '24px',
           }}
         >
           {/* Back Button */}
@@ -303,10 +297,8 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
             onClick={onBack}
             aria-label="Kembali"
             style={{
-              position: 'absolute',
-              left: 0,
-              width: keyboardHeight > 0 ? '32px' : '40px',
-              height: keyboardHeight > 0 ? '32px' : '40px',
+              width: '40px',
+              height: '40px',
               borderRadius: '50%',
               backgroundColor: '#FFFFFF',
               border: '1px solid #E0E0E0',
@@ -314,21 +306,22 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
-              transition: 'all 0.15s ease',
             }}
           >
             <ArrowLeft size={16} weight="bold" color="#2D5016" />
           </button>
 
-          {/* Title */}
+          {/* Title - Centered */}
           <h1
             style={{
               fontFamily: 'var(--font-caveat), Caveat, cursive',
-              fontSize: keyboardHeight > 0 ? '1.25rem' : '1.75rem',
+              fontSize: '1.75rem',
               fontWeight: 600,
               color: '#2D5016',
               margin: 0,
-              transition: 'font-size 0.15s ease',
+              position: 'absolute',
+              left: '50%',
+              transform: 'translateX(-50%)',
             }}
           >
             Tanya Tanam
@@ -339,10 +332,8 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
             onClick={() => setShowHistoryModal(true)}
             aria-label="Riwayat chat"
             style={{
-              position: 'absolute',
-              right: 0,
-              width: keyboardHeight > 0 ? '32px' : '40px',
-              height: keyboardHeight > 0 ? '32px' : '40px',
+              width: '40px',
+              height: '40px',
               borderRadius: '50%',
               backgroundColor: '#FFFFFF',
               border: '1px solid #E0E0E0',
@@ -350,7 +341,6 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
-              transition: 'all 0.15s ease',
             }}
           >
             <ClockCounterClockwise size={16} weight="regular" color="#666666" />
@@ -455,20 +445,10 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
+                          fontSize: '2rem',
                         }}
                       >
-                        <svg width="32" height="32" viewBox="0 0 60 60" fill="none">
-                          <path
-                            d="M30 52.5C30 52.5 12 42 12 27C12 20.3726 17.3726 15 24 15C26.8328 15 29.4134 15.9876 31.5 17.6459C33.5866 15.9876 36.1672 15 39 15C45.6274 15 51 20.3726 51 27C51 42 33 52.5 30 52.5Z"
-                            fill="#7CB342"
-                          />
-                          <path
-                            d="M30 17.6459V52.5"
-                            stroke="#2D5016"
-                            strokeWidth="3"
-                            strokeLinecap="round"
-                          />
-                        </svg>
+                        {plantData.speciesEmoji}
                       </div>
                     )}
                     <div>
