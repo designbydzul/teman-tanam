@@ -19,6 +19,7 @@ import EditProfile from './EditProfile';
 import AddLocationModal from './AddLocationModal';
 import EditPlant from './EditPlant';
 import TanyaTanam from './TanyaTanam';
+import OfflineIndicator from './OfflineIndicator';
 import { usePlants } from '@/hooks/usePlants';
 import { useLocations } from '@/hooks/useLocations';
 
@@ -32,6 +33,11 @@ const Home = ({ userName }) => {
     addPlant: addSupabasePlant,
     deletePlant: deleteSupabasePlant,
     recordAction,
+    // Offline support
+    isOnline,
+    syncStatus,
+    pendingCount,
+    syncNow,
   } = usePlants();
 
   const {
@@ -565,6 +571,14 @@ const Home = ({ userName }) => {
         visibility: showTanyaTanamModal ? 'hidden' : 'visible',
       }}
     >
+      {/* Offline Status Indicator */}
+      <OfflineIndicator
+        isOnline={isOnline}
+        syncStatus={syncStatus}
+        pendingCount={pendingCount}
+        syncNow={syncNow}
+      />
+
       {/* Header - Sticky */}
       <div
         style={{

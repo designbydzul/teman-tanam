@@ -3,6 +3,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useAuth } from './useAuth';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import {
+  saveToCache,
+  getFromCache,
+  addToSyncQueue,
+  generateTempId,
+} from '@/lib/offlineStorage';
+
+const LOCATIONS_CACHE_KEY = 'locations';
 
 /**
  * useLocations Hook
@@ -12,14 +21,16 @@ import { useAuth } from './useAuth';
  * - Allows adding new locations
  * - Allows reordering locations
  * - Allows deleting locations
+ * - Supports offline mode with caching
  */
 export function useLocations() {
   const { user } = useAuth();
+  const { isOnline } = useOnlineStatus();
   const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Fetch locations from Supabase
+  // Fetch locations from Supabase (online) or cache (offline)
   const fetchLocations = useCallback(async () => {
     if (!user?.id) {
       setLocations([]);
@@ -31,7 +42,26 @@ export function useLocations() {
     setError(null);
 
     try {
-      console.log('[useLocations] Fetching locations for user:', user.id);
+      // OFFLINE MODE: Load from cache
+      if (!isOnline) {
+        console.log('[useLocations] OFFLINE: Loading from cache');
+        const cached = getFromCache(LOCATIONS_CACHE_KEY);
+
+        if (cached?.data) {
+          console.log('[useLocations] OFFLINE: Found cached locations:', cached.data.length);
+          setLocations(cached.data);
+          setError(null);
+        } else {
+          console.log('[useLocations] OFFLINE: No cached data available');
+          setLocations([]);
+          // Don't set error - empty locations is fine
+        }
+        setLoading(false);
+        return;
+      }
+
+      // ONLINE MODE: Fetch from Supabase
+      console.log('[useLocations] ONLINE: Fetching locations for user:', user.id);
 
       const { data, error: fetchError } = await supabase
         .from('locations')
@@ -55,13 +85,27 @@ export function useLocations() {
       }));
 
       setLocations(transformedLocations);
+
+      // Save to cache for offline use
+      saveToCache(LOCATIONS_CACHE_KEY, transformedLocations);
+      console.log('[useLocations] Saved locations to cache');
+
     } catch (err) {
       console.error('[useLocations] Error:', err);
-      setError(err.message || 'Gagal memuat lokasi');
+
+      // Try to load from cache as fallback
+      const cached = getFromCache(LOCATIONS_CACHE_KEY);
+      if (cached?.data) {
+        console.log('[useLocations] Using cached data as fallback');
+        setLocations(cached.data);
+        setError('Menggunakan data tersimpan.');
+      } else {
+        setError(err.message || 'Gagal memuat lokasi');
+      }
     } finally {
       setLoading(false);
     }
-  }, [user?.id]);
+  }, [user?.id, isOnline]);
 
   // Initial fetch
   useEffect(() => {
@@ -82,10 +126,54 @@ export function useLocations() {
       return { success: false, error: 'Lokasi dengan nama ini sudah ada' };
     }
 
-    try {
-      // Get the highest order_index
-      const maxOrderIndex = locations.reduce((max, loc) => Math.max(max, loc.sortOrder || 0), 0);
+    // Get the highest order_index
+    const maxOrderIndex = locations.reduce((max, loc) => Math.max(max, loc.sortOrder || 0), 0);
 
+    // OFFLINE MODE: Save locally and queue for sync
+    if (!isOnline) {
+      try {
+        console.log('[useLocations] OFFLINE: Adding location locally');
+
+        const tempId = generateTempId();
+
+        const newLocation = {
+          id: tempId,
+          name,
+          emoji: '📍',
+          sortOrder: maxOrderIndex + 1,
+          isOffline: true,
+          pendingSync: true,
+        };
+
+        // Add to sync queue
+        addToSyncQueue({
+          type: 'location',
+          action: 'create',
+          data: {
+            user_id: user.id,
+            name,
+            order_index: maxOrderIndex + 1,
+            tempId,
+          },
+        });
+
+        // Update local state
+        const updatedLocations = [...locations, newLocation];
+        setLocations(updatedLocations);
+
+        // Update cache
+        saveToCache(LOCATIONS_CACHE_KEY, updatedLocations);
+
+        console.log('[useLocations] OFFLINE: Added location to sync queue');
+        return { success: true, location: newLocation, offline: true };
+      } catch (err) {
+        console.error('[useLocations] OFFLINE addLocation error:', err);
+        return { success: false, error: err.message };
+      }
+    }
+
+    // ONLINE MODE: Insert to Supabase
+    try {
       // Note: 'icon' column doesn't exist in DB, so we don't include it
       const { data, error } = await supabase
         .from('locations')
@@ -106,7 +194,12 @@ export function useLocations() {
         emoji: '📍',
         sortOrder: data.order_index,
       };
-      setLocations(prev => [...prev, newLocation]);
+
+      const updatedLocations = [...locations, newLocation];
+      setLocations(updatedLocations);
+
+      // Update cache
+      saveToCache(LOCATIONS_CACHE_KEY, updatedLocations);
 
       return { success: true, location: newLocation };
     } catch (err) {
