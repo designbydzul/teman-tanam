@@ -81,8 +81,8 @@ const Home = ({ userName }) => {
 
   // Edit Profile state
   const [showEditProfile, setShowEditProfile] = useState(false);
-  const [userEmail, setUserEmail] = useState('designbydzul@gmail.com');
-  const [currentUserName, setCurrentUserName] = useState(userName || 'Dzul');
+  const [userEmail, setUserEmail] = useState('');
+  const [currentUserName, setCurrentUserName] = useState(userName || '');
   const [userPhoto, setUserPhoto] = useState(null);
 
 
