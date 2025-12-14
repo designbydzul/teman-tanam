@@ -25,13 +25,18 @@ const Onboarding = ({ onComplete }) => {
   const handleSubmit = () => {
     if (name.trim().length < 2) return;
 
+    console.log('[Onboarding] handleSubmit called:', { name, locations });
+
     // Save to localStorage for now (later: save to Supabase)
     localStorage.setItem('userName', name);
     localStorage.setItem('userLocations', JSON.stringify(locations));
 
     // Call completion callback
     if (onComplete) {
+      console.log('[Onboarding] Calling onComplete with:', { name, locations });
       onComplete({ name, locations });
+    } else {
+      console.warn('[Onboarding] onComplete callback is not defined!');
     }
   };
 
