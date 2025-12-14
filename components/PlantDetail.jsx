@@ -41,6 +41,12 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction }) => {
   const [actionsHistory, setActionsHistory] = useState([]);
   const [actionsLoading, setActionsLoading] = useState(false);
 
+  // Local override for last action dates (updated after logging actions)
+  const [lastActionOverrides, setLastActionOverrides] = useState({
+    lastWatered: null,
+    lastFertilized: null,
+  });
+
   // Lock body scroll and prevent iOS viewport shifting when modals are open
   useEffect(() => {
     // Lock scroll when PlantDetail mounts
@@ -75,8 +81,8 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction }) => {
     location: sourcePlant.location,
     plantedDate: sourcePlant.plantedDate || sourcePlant.createdAt || new Date(Date.now() - 12 * 24 * 60 * 60 * 1000),
     photoUrl: sourcePlant.photoUrl || sourcePlant.photoPreview || sourcePlant.image || null,
-    lastWatered: sourcePlant.lastWatered || new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
-    lastFertilized: sourcePlant.lastFertilized || new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
+    lastWatered: lastActionOverrides.lastWatered || sourcePlant.lastWatered || null,
+    lastFertilized: lastActionOverrides.lastFertilized || sourcePlant.lastFertilized || null,
     quickTips: sourcePlant.quickTips || sourcePlant.species?.quickTips || 'Pilih lahan yang memiliki sinar matahari penuh dan tanah yang gembur, mudah menyerap air, serta kaya akan humus dengan pH sekitar 6–7. Bersihkan lahan dari gulma dan bebatuan, lalu gemburkan tanah dengan pencangkulan. Buat bedengan atau guludan dengan lebar sekitar 1 meter, tinggi 20–30 cm, dan jarak antar bedengan 30–50 cm.',
     notes: sourcePlant.notes || '',
   } : {
@@ -113,6 +119,19 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction }) => {
   const fetchActionsHistory = useCallback(async () => {
     if (!plantData?.id) return;
 
+    // Skip fetching from Supabase for offline/temp plants
+    if (plantData.id.startsWith('temp-')) {
+      console.log('[PlantDetail] Skipping fetch for temp plant:', plantData.id);
+      setActionsHistory([]);
+      return;
+    }
+
+    // Skip fetching if offline
+    if (!navigator.onLine) {
+      console.log('[PlantDetail] Offline, skipping fetch');
+      return;
+    }
+
     setActionsLoading(true);
     try {
       const { data, error } = await supabase
@@ -129,6 +148,11 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction }) => {
       console.log('[PlantDetail] Fetched actions:', data);
       setActionsHistory(data || []);
     } catch (err) {
+      // Silently handle network errors when offline
+      if (!navigator.onLine) {
+        console.log('[PlantDetail] Network error while offline, ignoring');
+        return;
+      }
       console.error('[PlantDetail] Error:', err);
     } finally {
       setActionsLoading(false);
@@ -263,6 +287,14 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction }) => {
         setShowActionToast(true);
         setTimeout(() => setShowActionToast(false), 3000);
         return;
+      }
+
+      // Update local state to reflect the new action immediately
+      const now = new Date();
+      if (actionType === 'water') {
+        setLastActionOverrides(prev => ({ ...prev, lastWatered: now }));
+      } else if (actionType === 'fertilize') {
+        setLastActionOverrides(prev => ({ ...prev, lastFertilized: now }));
       }
 
       // Refetch actions history to update the Riwayat tab
@@ -562,7 +594,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction }) => {
                         margin: '4px 0 0 0',
                       }}
                     >
-                      Terakhir disiram {daysSinceWatered} hari yang lalu
+                      {daysSinceWatered === null ? 'Belum pernah disiram' : daysSinceWatered === 0 ? 'Terakhir disiram hari ini' : `Terakhir disiram ${daysSinceWatered} hari yang lalu`}
                     </p>
                   </div>
 
@@ -618,7 +650,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction }) => {
                         margin: '4px 0 0 0',
                       }}
                     >
-                      Terakhir diberi pupuk {daysSinceFertilized} hari yang lalu
+                      {daysSinceFertilized === null ? 'Belum pernah dipupuk' : daysSinceFertilized === 0 ? 'Terakhir dipupuk hari ini' : `Terakhir dipupuk ${daysSinceFertilized} hari yang lalu`}
                     </p>
                   </div>
 
