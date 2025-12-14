@@ -23,6 +23,7 @@ import {
   Trash,
   Plus,
   X,
+  WifiSlash,
 } from '@phosphor-icons/react';
 import { useLocations } from '@/hooks/useLocations';
 
@@ -132,6 +133,7 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
     locations,
     loading,
     error: locationsError,
+    isOnline,
     addLocation,
     deleteLocation,
     reorderLocations,
@@ -376,6 +378,32 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
 
       {/* Content */}
       <div style={{ padding: '24px' }}>
+        {/* Offline Banner */}
+        {!isOnline && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '12px 16px',
+              backgroundColor: '#FEF3C7',
+              borderRadius: '8px',
+              marginBottom: '16px',
+            }}
+          >
+            <WifiSlash size={20} weight="bold" color="#D97706" />
+            <span
+              style={{
+                fontFamily: "'Inter', sans-serif",
+                fontSize: '14px',
+                color: '#92400E',
+              }}
+            >
+              Mode offline - perubahan akan disinkronkan saat online
+            </span>
+          </div>
+        )}
+
         {/* Loading State */}
         {loading && (
           <div style={{ textAlign: 'center', padding: '40px' }}>
@@ -385,8 +413,8 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
           </div>
         )}
 
-        {/* Error State */}
-        {locationsError && !loading && (
+        {/* Error State - only show if no locations loaded */}
+        {locationsError && !loading && locations.length === 0 && (
           <div style={{ textAlign: 'center', padding: '40px' }}>
             <p style={{ color: '#DC2626', fontFamily: "'Inter', sans-serif", marginBottom: '16px' }}>
               {locationsError}
@@ -418,8 +446,8 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
           </div>
         )}
 
-        {/* Draggable Location List */}
-        {!loading && !locationsError && locations.length > 0 && (
+        {/* Draggable Location List - show even if there's an error as long as we have cached data */}
+        {!loading && locations.length > 0 && (
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}

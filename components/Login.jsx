@@ -7,9 +7,11 @@
  */
 
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import MagicLinkModal from './MagicLinkModal';
 import { auth } from '@/lib/supabase';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { WifiSlash } from '@phosphor-icons/react';
 
 const Login = ({ onLogin }) => {
   const [email, setEmail] = useState('');
@@ -17,6 +19,10 @@ const Login = ({ onLogin }) => {
   const [showModal, setShowModal] = useState(false);
   const [inputFocused, setInputFocused] = useState(false);
   const [error, setError] = useState('');
+  const { isOnline } = useOnlineStatus();
+
+  // Disable buttons when offline or loading
+  const isButtonDisabled = !isOnline || isLoading;
 
   const handleEmailSubmit = async (e) => {
     // Prevent all default behaviors
@@ -99,6 +105,40 @@ const Login = ({ onLogin }) => {
         Teman Tanam
       </motion.h1>
 
+      {/* Offline Banner */}
+      <AnimatePresence>
+        {!isOnline && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              padding: '14px 20px',
+              backgroundColor: '#FEF3C7',
+              borderRadius: '12px',
+              maxWidth: '360px',
+              width: '100%',
+              marginTop: '-20px',
+            }}
+          >
+            <WifiSlash size={22} weight="bold" color="#D97706" style={{ flexShrink: 0 }} />
+            <span
+              style={{
+                fontFamily: "'Inter', sans-serif",
+                fontSize: '14px',
+                color: '#92400E',
+                lineHeight: 1.4,
+              }}
+            >
+              Kamu lagi offline. Login butuh koneksi internet ya!
+            </span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Login Form */}
       <motion.form
         initial={{ opacity: 0, y: 20 }}
@@ -171,7 +211,7 @@ const Login = ({ onLogin }) => {
         {/* Submit Button - Masuk atau Daftar */}
         <button
           type="submit"
-          disabled={isLoading || !email}
+          disabled={isButtonDisabled || !email}
           onClick={handleEmailSubmit}
           style={{
             width: '100%',
@@ -180,22 +220,24 @@ const Login = ({ onLogin }) => {
             fontWeight: 600,
             fontFamily: "'Inter', sans-serif",
             color: '#FFFFFF',
-            backgroundColor: isLoading ? '#9CCC65' : '#7CB342', // Green Fresh
+            backgroundColor: !isOnline ? '#CCCCCC' : (isLoading ? '#9CCC65' : '#7CB342'),
             border: 'none',
             borderRadius: '12px',
-            cursor: isLoading || !email ? 'not-allowed' : 'pointer',
+            cursor: isButtonDisabled || !email ? 'not-allowed' : 'pointer',
             transition: 'all 200ms',
-            opacity: isLoading || !email ? 0.6 : 1,
+            opacity: isButtonDisabled || !email ? 0.6 : 1,
           }}
           onMouseEnter={(e) => {
-            if (!isLoading && email) {
+            if (!isButtonDisabled && email) {
               e.target.style.backgroundColor = '#689F38';
               e.target.style.transform = 'translateY(-2px)';
               e.target.style.boxShadow = '0 4px 12px rgba(124, 179, 66, 0.3)';
             }
           }}
           onMouseLeave={(e) => {
-            e.target.style.backgroundColor = '#7CB342';
+            if (isOnline) {
+              e.target.style.backgroundColor = '#7CB342';
+            }
             e.target.style.transform = 'translateY(0)';
             e.target.style.boxShadow = 'none';
           }}
@@ -207,32 +249,38 @@ const Login = ({ onLogin }) => {
         <button
           type="button"
           onClick={handleGoogleLogin}
+          disabled={!isOnline}
           style={{
             width: '100%',
             padding: '18px',
             fontSize: '1.125rem',
             fontWeight: 500,
             fontFamily: "'Inter', sans-serif",
-            color: '#2C2C2C',
-            backgroundColor: '#FFFFFF',
+            color: !isOnline ? '#999999' : '#2C2C2C',
+            backgroundColor: !isOnline ? '#F5F5F5' : '#FFFFFF',
             border: '2px solid #E0E0E0',
             borderRadius: '12px',
-            cursor: 'pointer',
+            cursor: !isOnline ? 'not-allowed' : 'pointer',
             transition: 'all 200ms',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             gap: '12px',
+            opacity: !isOnline ? 0.6 : 1,
           }}
           onMouseEnter={(e) => {
-            e.target.style.backgroundColor = '#FAFAFA';
-            e.target.style.borderColor = '#BDBDBD';
-            e.target.style.transform = 'translateY(-2px)';
-            e.target.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.08)';
+            if (isOnline) {
+              e.target.style.backgroundColor = '#FAFAFA';
+              e.target.style.borderColor = '#BDBDBD';
+              e.target.style.transform = 'translateY(-2px)';
+              e.target.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.08)';
+            }
           }}
           onMouseLeave={(e) => {
-            e.target.style.backgroundColor = '#FFFFFF';
-            e.target.style.borderColor = '#E0E0E0';
+            if (isOnline) {
+              e.target.style.backgroundColor = '#FFFFFF';
+              e.target.style.borderColor = '#E0E0E0';
+            }
             e.target.style.transform = 'translateY(0)';
             e.target.style.boxShadow = 'none';
           }}

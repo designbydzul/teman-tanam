@@ -41,26 +41,35 @@ export function useLocations() {
     setLoading(true);
     setError(null);
 
-    try {
-      // OFFLINE MODE: Load from cache
-      if (!isOnline) {
-        console.log('[useLocations] OFFLINE: Loading from cache');
-        const cached = getFromCache(LOCATIONS_CACHE_KEY);
-
-        if (cached?.data) {
-          console.log('[useLocations] OFFLINE: Found cached locations:', cached.data.length);
-          setLocations(cached.data);
+    // Helper to load from cache
+    const loadFromCache = (isOfflineMode = false) => {
+      const cached = getFromCache(LOCATIONS_CACHE_KEY);
+      if (cached?.data) {
+        console.log('[useLocations] Loading from cache:', cached.data.length, 'locations');
+        setLocations(cached.data);
+        // Don't show error for offline mode - it's expected behavior
+        if (!isOfflineMode) {
           setError(null);
-        } else {
-          console.log('[useLocations] OFFLINE: No cached data available');
-          setLocations([]);
-          // Don't set error - empty locations is fine
         }
-        setLoading(false);
-        return;
+        return true;
       }
+      return false;
+    };
 
-      // ONLINE MODE: Fetch from Supabase
+    // OFFLINE MODE: Load from cache directly
+    if (!isOnline) {
+      console.log('[useLocations] OFFLINE: Loading from cache');
+      const hasCache = loadFromCache(true);
+      if (!hasCache) {
+        console.log('[useLocations] OFFLINE: No cached data available');
+        setLocations([]);
+      }
+      setLoading(false);
+      return;
+    }
+
+    // ONLINE MODE: Try to fetch from Supabase
+    try {
       console.log('[useLocations] ONLINE: Fetching locations for user:', user.id);
 
       const { data, error: fetchError } = await supabase
@@ -85,6 +94,7 @@ export function useLocations() {
       }));
 
       setLocations(transformedLocations);
+      setError(null);
 
       // Save to cache for offline use
       saveToCache(LOCATIONS_CACHE_KEY, transformedLocations);
@@ -93,14 +103,17 @@ export function useLocations() {
     } catch (err) {
       console.error('[useLocations] Error:', err);
 
-      // Try to load from cache as fallback
-      const cached = getFromCache(LOCATIONS_CACHE_KEY);
-      if (cached?.data) {
+      // Try to load from cache as fallback (network error, etc.)
+      const hasCache = loadFromCache(false);
+      if (hasCache) {
         console.log('[useLocations] Using cached data as fallback');
-        setLocations(cached.data);
-        setError('Menggunakan data tersimpan.');
+        // Don't show error if we have cached data - just use it silently
       } else {
-        setError(err.message || 'Gagal memuat lokasi');
+        // Only show error if we have no cached data to fall back to
+        const isNetworkError = err.message?.includes('Failed to fetch') ||
+                               err.message?.includes('NetworkError') ||
+                               err.message?.includes('network');
+        setError(isNetworkError ? 'Tidak ada koneksi internet' : (err.message || 'Gagal memuat lokasi'));
       }
     } finally {
       setLoading(false);
@@ -210,6 +223,45 @@ export function useLocations() {
 
   // Update a location (only name, icon column doesn't exist in DB)
   const updateLocation = async (locationId, updates) => {
+    if (!user?.id) {
+      return { success: false, error: 'User not authenticated' };
+    }
+
+    // OFFLINE MODE: Update locally and queue for sync
+    if (!isOnline) {
+      try {
+        console.log('[useLocations] OFFLINE: Updating location locally');
+
+        // Update local state
+        const updatedLocations = locations.map(loc =>
+          loc.id === locationId
+            ? { ...loc, name: updates.name, pendingSync: true }
+            : loc
+        );
+        setLocations(updatedLocations);
+
+        // Update cache
+        saveToCache(LOCATIONS_CACHE_KEY, updatedLocations);
+
+        // Add to sync queue
+        addToSyncQueue({
+          type: 'location',
+          action: 'update',
+          data: {
+            id: locationId,
+            name: updates.name,
+          },
+        });
+
+        console.log('[useLocations] OFFLINE: Added location update to sync queue');
+        return { success: true, offline: true };
+      } catch (err) {
+        console.error('[useLocations] OFFLINE updateLocation error:', err);
+        return { success: false, error: err.message };
+      }
+    }
+
+    // ONLINE MODE: Update in Supabase
     try {
       const { data, error } = await supabase
         .from('locations')
@@ -223,13 +275,15 @@ export function useLocations() {
       if (error) throw error;
 
       // Update local state
-      setLocations(prev =>
-        prev.map(loc =>
-          loc.id === locationId
-            ? { ...loc, name: data.name }
-            : loc
-        )
+      const updatedLocations = locations.map(loc =>
+        loc.id === locationId
+          ? { ...loc, name: data.name }
+          : loc
       );
+      setLocations(updatedLocations);
+
+      // Update cache
+      saveToCache(LOCATIONS_CACHE_KEY, updatedLocations);
 
       return { success: true, location: data };
     } catch (err) {
@@ -240,6 +294,44 @@ export function useLocations() {
 
   // Delete a location
   const deleteLocation = async (locationId) => {
+    if (!user?.id) {
+      return { success: false, error: 'User not authenticated' };
+    }
+
+    // OFFLINE MODE: Delete locally and queue for sync
+    if (!isOnline) {
+      try {
+        console.log('[useLocations] OFFLINE: Deleting location locally');
+
+        // Update local state
+        const updatedLocations = locations.filter(loc => loc.id !== locationId);
+        setLocations(updatedLocations);
+
+        // Update cache
+        saveToCache(LOCATIONS_CACHE_KEY, updatedLocations);
+
+        // Add to sync queue (only if not a temp ID - temp IDs were never synced)
+        if (!locationId.startsWith('temp-')) {
+          addToSyncQueue({
+            type: 'location',
+            action: 'delete',
+            data: {
+              id: locationId,
+            },
+          });
+          console.log('[useLocations] OFFLINE: Added location delete to sync queue');
+        } else {
+          console.log('[useLocations] OFFLINE: Skipping sync queue for temp location');
+        }
+
+        return { success: true, offline: true };
+      } catch (err) {
+        console.error('[useLocations] OFFLINE deleteLocation error:', err);
+        return { success: false, error: err.message };
+      }
+    }
+
+    // ONLINE MODE: Delete from Supabase
     try {
       // First, update any plants in this location to have no location
       const { error: updateError } = await supabase
@@ -260,7 +352,11 @@ export function useLocations() {
       if (error) throw error;
 
       // Update local state
-      setLocations(prev => prev.filter(loc => loc.id !== locationId));
+      const updatedLocations = locations.filter(loc => loc.id !== locationId);
+      setLocations(updatedLocations);
+
+      // Update cache
+      saveToCache(LOCATIONS_CACHE_KEY, updatedLocations);
 
       return { success: true };
     } catch (err) {
@@ -271,6 +367,25 @@ export function useLocations() {
 
   // Reorder locations
   const reorderLocations = async (reorderedLocations) => {
+    // Update local state immediately for responsive UI
+    const updatedLocations = reorderedLocations.map((loc, index) => ({
+      ...loc,
+      sortOrder: index,
+    }));
+    setLocations(updatedLocations);
+
+    // Update cache
+    saveToCache(LOCATIONS_CACHE_KEY, updatedLocations);
+
+    // OFFLINE MODE: Just update locally (sync will handle it when online)
+    if (!isOnline) {
+      console.log('[useLocations] OFFLINE: Reordered locations locally');
+      // Note: We don't queue reorder for sync as it's complex and order will be
+      // re-fetched when online. The local order is preserved in cache.
+      return { success: true, offline: true };
+    }
+
+    // ONLINE MODE: Update in Supabase
     try {
       // Update order_index for each location
       const updates = reorderedLocations.map((loc, index) => ({
@@ -280,6 +395,9 @@ export function useLocations() {
 
       // Update each location's order_index
       for (const update of updates) {
+        // Skip temp IDs - they haven't been synced yet
+        if (update.id.startsWith?.('temp-')) continue;
+
         const { error } = await supabase
           .from('locations')
           .update({ order_index: update.order_index })
@@ -287,12 +405,6 @@ export function useLocations() {
 
         if (error) throw error;
       }
-
-      // Update local state
-      setLocations(reorderedLocations.map((loc, index) => ({
-        ...loc,
-        sortOrder: index,
-      })));
 
       return { success: true };
     } catch (err) {
@@ -316,6 +428,7 @@ export function useLocations() {
     locationNames,
     loading,
     error,
+    isOnline,
     refetch: fetchLocations,
     addLocation,
     updateLocation,
