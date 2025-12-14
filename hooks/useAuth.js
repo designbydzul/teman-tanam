@@ -96,7 +96,8 @@ export function useAuth() {
       }
 
       if (data.display_name) {
-        console.log('[useAuth] Profile has display_name, onboarding complete');
+        console.log('[useAuth] Profile has display_name, onboarding complete. display_name:', data.display_name);
+        console.log('[useAuth] Setting hasCompletedOnboarding to TRUE (from checkOnboardingStatus)');
         setProfile(data);
         setHasCompletedOnboarding(true);
         // Cache onboarding status in localStorage
@@ -349,6 +350,7 @@ export function useAuth() {
       }
 
       setProfile(profileData);
+      console.log('[useAuth] Setting hasCompletedOnboarding to TRUE (from completeOnboarding)');
       setHasCompletedOnboarding(true);
 
       // Cache onboarding status and userName in localStorage

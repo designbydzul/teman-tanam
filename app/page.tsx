@@ -35,6 +35,11 @@ export default function Page() {
     });
   }, [showSplash, isCheckingAuth, isAuthenticated, hasCompletedOnboarding, session, user, profile]);
 
+  // Debug when hasCompletedOnboarding changes
+  useEffect(() => {
+    console.log('[Page] hasCompletedOnboarding changed to:', hasCompletedOnboarding);
+  }, [hasCompletedOnboarding]);
+
   useEffect(() => {
     const typedProfile = profile as { display_name?: string } | null;
     const typedUser = user as { email?: string } | null;
