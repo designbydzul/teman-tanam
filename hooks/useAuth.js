@@ -68,22 +68,25 @@ export function useAuth() {
         return false;
       }
 
-      // No profile found - create one (without email since profiles table doesn't have email column)
+      // No profile found - the handle_new_user trigger should have created one
+      // If not found, try to create one using upsert to handle race conditions
       if (!data) {
         console.log('[useAuth] No profile found, creating one...');
         const { data: newProfile, error: createError } = await supabase
           .from('profiles')
-          .insert({
+          .upsert({
             id: userId,
             updated_at: new Date().toISOString(),
-          })
+          }, { onConflict: 'id' })
           .select()
           .single();
 
         if (createError) {
           console.error('[useAuth] Error creating profile:', createError);
+          // Even if we can't create, set onboarding to false so user sees onboarding screen
           setHasCompletedOnboarding(false);
           setProfile(null);
+          hasFetchedProfile.current = true;
           return false;
         }
 
