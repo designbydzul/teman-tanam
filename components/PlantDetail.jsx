@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -12,25 +12,34 @@ import {
   PencilSimple,
   Trash,
   Plant,
-  X
+  X,
+  ChatCircle,
+  Scissors,
+  Basket
 } from '@phosphor-icons/react';
-import DiagnosaHama from './DiagnosaHama';
+import TanyaTanam from './TanyaTanam';
 import EditPlant from './EditPlant';
+import { supabase } from '@/lib/supabase/client';
 
-const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
+const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction }) => {
   const [activeTab, setActiveTab] = useState('perawatan');
   const [showMenu, setShowMenu] = useState(false);
   const [quickTipsExpanded, setQuickTipsExpanded] = useState(false);
   const [showImagePreview, setShowImagePreview] = useState(false);
-  const [showDiagnosaHama, setShowDiagnosaHama] = useState(false);
+  const [showTanyaTanam, setShowTanyaTanam] = useState(false);
   const [showEditPlant, setShowEditPlant] = useState(false);
   const [currentPlantData, setCurrentPlantData] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [imageLoadError, setImageLoadError] = useState(false);
   const containerRef = useRef(null);
 
   // Toast state for actions
   const [showActionToast, setShowActionToast] = useState(false);
   const [actionToastMessage, setActionToastMessage] = useState('');
+
+  // Actions history state
+  const [actionsHistory, setActionsHistory] = useState([]);
+  const [actionsLoading, setActionsLoading] = useState(false);
 
   // Lock body scroll and prevent iOS viewport shifting when modals are open
   useEffect(() => {
@@ -46,6 +55,11 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
     };
   }, []);
 
+  // Reset image error state when plant changes
+  useEffect(() => {
+    setImageLoadError(false);
+  }, [plant?.id]);
+
   // Use currentPlantData if available (after edit), otherwise use plant prop
   const sourcePlant = currentPlantData || plant;
 
@@ -60,10 +74,10 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
     },
     location: sourcePlant.location,
     plantedDate: sourcePlant.plantedDate || sourcePlant.createdAt || new Date(Date.now() - 12 * 24 * 60 * 60 * 1000),
-    photoUrl: sourcePlant.photoUrl || sourcePlant.photoPreview || sourcePlant.image || 'https://images.unsplash.com/photo-1568584711271-6c0b7a1e0d64?w=600',
+    photoUrl: sourcePlant.photoUrl || sourcePlant.photoPreview || sourcePlant.image || null,
     lastWatered: sourcePlant.lastWatered || new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
     lastFertilized: sourcePlant.lastFertilized || new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
-    quickTips: sourcePlant.quickTips || 'Pilih lahan yang memiliki sinar matahari penuh dan tanah yang gembur, mudah menyerap air, serta kaya akan humus dengan pH sekitar 6–7. Bersihkan lahan dari gulma dan bebatuan, lalu gemburkan tanah dengan pencangkulan. Buat bedengan atau guludan dengan lebar sekitar 1 meter, tinggi 20–30 cm, dan jarak antar bedengan 30–50 cm.',
+    quickTips: sourcePlant.quickTips || sourcePlant.species?.quickTips || 'Pilih lahan yang memiliki sinar matahari penuh dan tanah yang gembur, mudah menyerap air, serta kaya akan humus dengan pH sekitar 6–7. Bersihkan lahan dari gulma dan bebatuan, lalu gemburkan tanah dengan pencangkulan. Buat bedengan atau guludan dengan lebar sekitar 1 meter, tinggi 20–30 cm, dan jarak antar bedengan 30–50 cm.',
     notes: sourcePlant.notes || '',
   } : {
     id: '1',
@@ -75,7 +89,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
     },
     location: 'Teras',
     plantedDate: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000),
-    photoUrl: 'https://images.unsplash.com/photo-1568584711271-6c0b7a1e0d64?w=600',
+    photoUrl: null,
     lastWatered: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
     lastFertilized: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
     quickTips: 'Pilih lahan yang memiliki sinar matahari penuh dan tanah yang gembur, mudah menyerap air, serta kaya akan humus dengan pH sekitar 6–7. Bersihkan lahan dari gulma dan bebatuan, lalu gemburkan tanah dengan pencangkulan. Buat bedengan atau guludan dengan lebar sekitar 1 meter, tinggi 20–30 cm, dan jarak antar bedengan 30–50 cm.',
@@ -95,30 +109,114 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
     ? Math.floor((new Date() - new Date(plantData.lastFertilized)) / (1000 * 60 * 60 * 24))
     : null;
 
-  // Mock timeline data
-  const timeline = [
-    {
-      date: '18 Desember 2025',
-      entries: [
-        { type: 'water', label: 'Penyiraman', time: '7.45' },
-        { type: 'fertilize', label: 'Pemupukan', time: '6.30' },
-      ],
-    },
-    {
-      date: '16 Desember 2025',
-      entries: [
-        { type: 'water', label: 'Penyiraman', time: '7.45' },
-        { type: 'diagnose', label: 'Diagnosa penyakit', time: '6.30', hasDetails: true },
-      ],
-    },
-    {
-      date: '10 Desember 2025',
-      entries: [
-        { type: 'water', label: 'Penyiraman', time: '10.15' },
-        { type: 'add', label: 'Tanaman ditambahkan', time: '8.23' },
-      ],
-    },
-  ];
+  // Fetch actions history from Supabase
+  const fetchActionsHistory = useCallback(async () => {
+    if (!plantData?.id) return;
+
+    setActionsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('actions')
+        .select('*')
+        .eq('plant_id', plantData.id)
+        .order('action_date', { ascending: false });
+
+      if (error) {
+        console.error('[PlantDetail] Error fetching actions:', error);
+        return;
+      }
+
+      console.log('[PlantDetail] Fetched actions:', data);
+      setActionsHistory(data || []);
+    } catch (err) {
+      console.error('[PlantDetail] Error:', err);
+    } finally {
+      setActionsLoading(false);
+    }
+  }, [plantData?.id]);
+
+  // Fetch actions when tab changes to riwayat or after recording an action
+  useEffect(() => {
+    if (activeTab === 'riwayat') {
+      fetchActionsHistory();
+    }
+  }, [activeTab, fetchActionsHistory]);
+
+  // Helper function to format date in Indonesian
+  const formatDateIndonesian = (dateString) => {
+    const date = new Date(dateString);
+    const months = [
+      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+    const day = date.getDate();
+    const month = months[date.getMonth()];
+    const year = date.getFullYear();
+    return `${day} ${month} ${year}`;
+  };
+
+  // Helper function to format time in HH.mm format
+  const formatTime = (timestamp) => {
+    if (!timestamp) return null;
+    const date = new Date(timestamp);
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    return `${hours}.${minutes}`;
+  };
+
+  // Helper function to get action label in Indonesian
+  const getActionLabel = (actionType) => {
+    switch (actionType) {
+      case 'siram':
+        return 'Penyiraman';
+      case 'pupuk':
+        return 'Pemupukan';
+      case 'pangkas':
+        return 'Pemangkasan';
+      case 'panen':
+        return 'Panen';
+      default:
+        return actionType;
+    }
+  };
+
+  // Helper function to map DB action type to UI type for icons
+  const mapActionTypeForIcon = (actionType) => {
+    switch (actionType) {
+      case 'siram':
+        return 'water';
+      case 'pupuk':
+        return 'fertilize';
+      case 'pangkas':
+        return 'prune';
+      case 'panen':
+        return 'harvest';
+      default:
+        return actionType;
+    }
+  };
+
+  // Group actions by date for timeline display
+  const groupedActions = actionsHistory.reduce((groups, action) => {
+    const dateKey = action.action_date;
+    if (!groups[dateKey]) {
+      groups[dateKey] = [];
+    }
+    groups[dateKey].push(action);
+    return groups;
+  }, {});
+
+  // Convert to array format for rendering
+  const timeline = Object.entries(groupedActions).map(([date, actions]) => ({
+    date: formatDateIndonesian(date),
+    entries: actions.map(action => ({
+      type: mapActionTypeForIcon(action.action_type),
+      label: getActionLabel(action.action_type),
+      notes: action.notes,
+      id: action.id,
+      time: formatTime(action.created_at),
+    })),
+  }));
 
   const getActionIcon = (type) => {
     switch (type) {
@@ -126,6 +224,10 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
         return <Drop size={20} weight="regular" color="#666666" />;
       case 'fertilize':
         return <Leaf size={20} weight="regular" color="#666666" />;
+      case 'prune':
+        return <Scissors size={20} weight="regular" color="#666666" />;
+      case 'harvest':
+        return <Basket size={20} weight="regular" color="#666666" />;
       case 'diagnose':
         return <FirstAidKit size={20} weight="regular" color="#666666" />;
       case 'add':
@@ -135,10 +237,41 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
     }
   };
 
-  const handleActionLog = (actionType) => {
+  const handleActionLog = async (actionType) => {
     const plantName = plantData.customName;
-    let message = '';
 
+    // Map UI action types to database action types
+    // UI: 'water', 'fertilize' -> DB: 'siram', 'pupuk'
+    const dbActionType = actionType === 'water' ? 'siram' : actionType === 'fertilize' ? 'pupuk' : actionType;
+
+    console.log('[PlantDetail] handleActionLog called:', {
+      actionType,
+      dbActionType,
+      plantId: plantData.id,
+      plantName,
+    });
+
+    // Call the onRecordAction prop to save to Supabase
+    if (onRecordAction) {
+      console.log('[PlantDetail] Calling onRecordAction with:', plantData.id, dbActionType);
+      const result = await onRecordAction(plantData.id, dbActionType);
+      console.log('[PlantDetail] onRecordAction result:', result);
+
+      if (!result.success) {
+        console.error('[PlantDetail] Failed to record action:', result.error);
+        setActionToastMessage(`Gagal mencatat: ${result.error}`);
+        setShowActionToast(true);
+        setTimeout(() => setShowActionToast(false), 3000);
+        return;
+      }
+
+      // Refetch actions history to update the Riwayat tab
+      fetchActionsHistory();
+    } else {
+      console.warn('[PlantDetail] onRecordAction prop not provided');
+    }
+
+    let message = '';
     switch (actionType) {
       case 'water':
         message = `Penyiraman ${plantName} sudah dicatat`;
@@ -165,7 +298,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
         handleActionLog('fertilize');
         break;
       case 'diagnose':
-        setShowDiagnosaHama(true);
+        setShowTanyaTanam(true);
         break;
       case 'edit':
         setShowEditPlant(true);
@@ -190,7 +323,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
         backgroundColor: '#FFFFFF',
         zIndex: 2000,
         overflow: 'hidden',
-        visibility: showDiagnosaHama ? 'hidden' : 'visible',
+        visibility: showTanyaTanam ? 'hidden' : 'visible',
       }}
     >
       {/* Sticky Header Section */}
@@ -249,19 +382,38 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
             }}
           >
             {/* Plant Thumbnail - Clickable */}
-            <img
-              src={plantData.photoUrl}
-              alt={plantData.customName}
-              onClick={() => setShowImagePreview(true)}
-              style={{
-                width: '140px',
-                height: '140px',
-                objectFit: 'cover',
-                borderRadius: '24px',
-                flexShrink: 0,
-                cursor: 'pointer',
-              }}
-            />
+            {plantData.photoUrl && !imageLoadError ? (
+              <img
+                src={plantData.photoUrl}
+                alt={plantData.customName}
+                onClick={() => setShowImagePreview(true)}
+                onError={() => setImageLoadError(true)}
+                style={{
+                  width: '140px',
+                  height: '140px',
+                  objectFit: 'cover',
+                  borderRadius: '24px',
+                  flexShrink: 0,
+                  cursor: 'pointer',
+                }}
+              />
+            ) : (
+              <div
+                style={{
+                  width: '140px',
+                  height: '140px',
+                  borderRadius: '24px',
+                  backgroundColor: '#F1F8E9',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '4rem',
+                  flexShrink: 0,
+                }}
+              >
+                {plantData.species?.emoji || '🌱'}
+              </div>
+            )}
 
             {/* Plant Details */}
             <div style={{ flex: 1 }}>
@@ -294,7 +446,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
                   margin: 0,
                 }}
               >
-                {plantData.location} • {daysSincePlanted} hari sejak ditanam
+                {plantData.location} • {daysSincePlanted} hari sejak ditanam{plantData.notes ? ` • ${plantData.notes}` : ''}
               </p>
             </div>
           </div>
@@ -552,7 +704,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
                 </AnimatePresence>
               </div>
 
-              {/* Diagnosis Section */}
+              {/* Tanya Tanam Section */}
               <p
                 style={{
                   fontFamily: "'Inter', sans-serif",
@@ -562,7 +714,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
                   marginBottom: '12px',
                 }}
               >
-                Ada yang aneh dengan {plantData.customName}?
+                Ngobrol sama {plantData.customName} yuk
               </p>
 
               <div
@@ -589,7 +741,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
                       margin: 0,
                     }}
                   >
-                    Diagnosa Hama
+                    Tanya Tanam
                   </h3>
                 </div>
 
@@ -610,102 +762,152 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
                   onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#E5E5E5')}
                   onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#F5F5F5')}
                 >
-                  <Camera size={24} weight="bold" color="#4B5563" />
+                  <ChatCircle size={24} weight="bold" color="#4B5563" />
                 </button>
               </div>
           </div>
         ) : (
           <div style={{ padding: '0 24px 100px 24px' }}>
-              {timeline.map((group, groupIndex) => (
-                <div key={groupIndex}>
-                  {/* Date Header */}
-                  <h3
+              {/* Loading State */}
+              {actionsLoading ? (
+                <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                  <p style={{ fontFamily: "'Inter', sans-serif", color: '#666666' }}>
+                    Memuat riwayat...
+                  </p>
+                </div>
+              ) : timeline.length === 0 ? (
+                /* Empty State */
+                <div style={{ textAlign: 'center', padding: '60px 0' }}>
+                  <div
+                    style={{
+                      width: '80px',
+                      height: '80px',
+                      borderRadius: '50%',
+                      backgroundColor: '#F5F5F5',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      margin: '0 auto 16px',
+                    }}
+                  >
+                    <Drop size={40} weight="regular" color="#CCCCCC" />
+                  </div>
+                  <p
                     style={{
                       fontFamily: "'Inter', sans-serif",
                       fontSize: '1rem',
-                      fontWeight: 700,
-                      color: '#2C2C2C',
-                      marginTop: groupIndex > 0 ? '32px' : '0',
-                      marginBottom: '12px',
+                      color: '#666666',
+                      margin: 0,
                     }}
                   >
-                    {group.date}
-                  </h3>
-
-                  {/* Timeline Entries */}
-                  {group.entries.map((entry, entryIndex) => (
-                    <div
-                      key={entryIndex}
+                    Belum ada riwayat perawatan
+                  </p>
+                  <p
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: '14px',
+                      color: '#999999',
+                      margin: '8px 0 0 0',
+                    }}
+                  >
+                    Catat penyiraman atau pemupukan pertamamu!
+                  </p>
+                </div>
+              ) : (
+                /* Timeline Entries */
+                timeline.map((group, groupIndex) => (
+                  <div key={groupIndex}>
+                    {/* Date Header */}
+                    <h3
                       style={{
-                        backgroundColor: '#FFFFFF',
-                        borderRadius: '16px',
-                        padding: '16px',
-                        border: '1px solid #F5F5F5',
-                        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
+                        fontFamily: "'Inter', sans-serif",
+                        fontSize: '1rem',
+                        fontWeight: 700,
+                        color: '#2C2C2C',
+                        marginTop: groupIndex > 0 ? '32px' : '0',
                         marginBottom: '12px',
-                        display: 'flex',
-                        alignItems: entry.hasDetails ? 'flex-start' : 'center',
-                        gap: '12px',
                       }}
                     >
-                      {/* Icon */}
+                      {group.date}
+                    </h3>
+
+                    {/* Timeline Entries for this date */}
+                    {group.entries.map((entry, entryIndex) => (
                       <div
+                        key={entry.id || entryIndex}
                         style={{
-                          width: '40px',
-                          height: '40px',
-                          borderRadius: '50%',
-                          backgroundColor: '#F5F5F5',
+                          backgroundColor: '#FFFFFF',
+                          borderRadius: '16px',
+                          padding: '16px',
+                          border: '1px solid #F5F5F5',
+                          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
+                          marginBottom: '12px',
                           display: 'flex',
                           alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '1.25rem',
-                          flexShrink: 0,
+                          gap: '12px',
                         }}
                       >
-                        {getActionIcon(entry.type)}
-                      </div>
-
-                      {/* Content */}
-                      <div style={{ flex: 1 }}>
-                        <h4
+                        {/* Icon */}
+                        <div
                           style={{
-                            fontFamily: "'Inter', sans-serif",
-                            fontSize: '1rem',
-                            fontWeight: 500,
-                            color: '#2C2C2C',
-                            margin: 0,
+                            width: '40px',
+                            height: '40px',
+                            borderRadius: '50%',
+                            backgroundColor: '#F5F5F5',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '1.25rem',
+                            flexShrink: 0,
                           }}
                         >
-                          {entry.label}
-                        </h4>
-                        {entry.hasDetails && (
-                          <p
-                            style={{
-                              fontFamily: "'Inter', sans-serif",
-                              fontSize: '14px',
-                              color: '#666666',
-                              margin: '4px 0 0 0',
-                            }}
-                          >
-                            Lihat details
-                          </p>
-                        )}
-                      </div>
+                          {getActionIcon(entry.type)}
+                        </div>
 
-                      {/* Timestamp */}
-                      <span
-                        style={{
-                          fontFamily: "'Inter', sans-serif",
-                          fontSize: '14px',
-                          color: '#999999',
-                        }}
-                      >
-                        {entry.time}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              ))}
+                        {/* Content */}
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <h4
+                              style={{
+                                fontFamily: "'Inter', sans-serif",
+                                fontSize: '1rem',
+                                fontWeight: 500,
+                                color: '#2C2C2C',
+                                margin: 0,
+                              }}
+                            >
+                              {entry.label}
+                            </h4>
+                            {entry.time && (
+                              <span
+                                style={{
+                                  fontFamily: "'Inter', sans-serif",
+                                  fontSize: '14px',
+                                  color: '#999999',
+                                }}
+                              >
+                                {entry.time}
+                              </span>
+                            )}
+                          </div>
+                          {entry.notes && (
+                            <p
+                              style={{
+                                fontFamily: "'Inter', sans-serif",
+                                fontSize: '14px',
+                                color: '#666666',
+                                margin: '4px 0 0 0',
+                              }}
+                            >
+                              {entry.notes}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ))
+              )}
           </div>
         )}
       </div>
@@ -894,7 +1096,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
                       color: '#2C2C2C',
                     }}
                   >
-                    Diagnosa Hama
+                    Tanya Tanam
                   </span>
                 </button>
               </div>
@@ -991,9 +1193,9 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
         )}
       </AnimatePresence>
 
-      {/* Image Preview Modal */}
+      {/* Image Preview Modal - only show if there's a photo and it loaded successfully */}
       <AnimatePresence>
-        {showImagePreview && (
+        {showImagePreview && plantData.photoUrl && !imageLoadError && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -1052,11 +1254,11 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete }) => {
         )}
       </AnimatePresence>
 
-      {/* Diagnosa Hama Screen - rendered via Portal to avoid iOS keyboard issues */}
-      {showDiagnosaHama && typeof document !== 'undefined' && createPortal(
-        <DiagnosaHama
+      {/* Tanya Tanam Screen - rendered via Portal to avoid iOS keyboard issues */}
+      {showTanyaTanam && typeof document !== 'undefined' && createPortal(
+        <TanyaTanam
           plant={plant}
-          onBack={() => setShowDiagnosaHama(false)}
+          onBack={() => setShowTanyaTanam(false)}
         />,
         document.body
       )}

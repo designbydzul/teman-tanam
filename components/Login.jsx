@@ -7,43 +7,70 @@
  */
 
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import MagicLinkModal from './MagicLinkModal';
+import { auth } from '@/lib/supabase';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { WifiSlash } from '@phosphor-icons/react';
 
 const Login = ({ onLogin }) => {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [inputFocused, setInputFocused] = useState(false);
+  const [error, setError] = useState('');
+  const { isOnline } = useOnlineStatus();
+
+  // Disable buttons when offline or loading
+  const isButtonDisabled = !isOnline || isLoading;
 
   const handleEmailSubmit = async (e) => {
-    e.preventDefault();
+    // Prevent all default behaviors
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    // Don't proceed if already loading or no email
+    if (isLoading || !email) return;
+
     setIsLoading(true);
+    setError('');
 
-    // TODO: Implement magic link email sending
-    // This would typically call your backend API
-    console.log('Sending magic link to:', email);
+    console.log('[Login] Sending magic link to:', email);
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      // Show the modal instead of immediately calling onLogin
+    try {
+      const result = await auth.sendMagicLink(email);
+      console.log('[Login] Magic link sent successfully:', result);
       setShowModal(true);
-    }, 1500);
+    } catch (err) {
+      console.error('[Login] Magic link error:', err);
+      setError(err.message || 'Gagal mengirim magic link. Coba lagi.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResendMagicLink = async (emailToResend) => {
+    try {
+      await auth.sendMagicLink(emailToResend);
+    } catch (err) {
+      console.error('Resend error:', err);
+      throw err;
+    }
   };
 
   const handleModalClose = () => {
     setShowModal(false);
-    // Optionally call onLogin here if you want to progress after closing modal
-    // For now, user can manually proceed by clicking "Buka Email"
   };
 
-  const handleGoogleLogin = () => {
-    // TODO: Implement Google OAuth
-    console.log('Google login clicked');
-    // Call onLogin to progress to onboarding
-    if (onLogin) {
-      onLogin();
+  const handleGoogleLogin = async () => {
+    try {
+      await auth.signInWithGoogle();
+      // Redirect will happen automatically
+    } catch (err) {
+      console.error('Google login error:', err);
+      setError(err.message || 'Gagal login dengan Google. Coba lagi.');
     }
   };
 
@@ -78,12 +105,48 @@ const Login = ({ onLogin }) => {
         Teman Tanam
       </motion.h1>
 
+      {/* Offline Banner */}
+      <AnimatePresence>
+        {!isOnline && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              padding: '14px 20px',
+              backgroundColor: '#FEF3C7',
+              borderRadius: '12px',
+              maxWidth: '360px',
+              width: '100%',
+              marginTop: '-20px',
+            }}
+          >
+            <WifiSlash size={22} weight="bold" color="#D97706" style={{ flexShrink: 0 }} />
+            <span
+              style={{
+                fontFamily: "'Inter', sans-serif",
+                fontSize: '14px',
+                color: '#92400E',
+                lineHeight: 1.4,
+              }}
+            >
+              Kamu lagi offline. Login butuh koneksi internet ya!
+            </span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Login Form */}
       <motion.form
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.2 }}
         onSubmit={handleEmailSubmit}
+        action="javascript:void(0)"
+        method="post"
         style={{
           width: '100%',
           maxWidth: '360px',
@@ -130,10 +193,26 @@ const Login = ({ onLogin }) => {
           onBlur={() => setInputFocused(false)}
         />
 
+        {/* Error Message */}
+        {error && (
+          <p
+            style={{
+              fontFamily: "'Inter', sans-serif",
+              fontSize: '14px',
+              color: '#DC2626',
+              margin: '-8px 0 0 0',
+              textAlign: 'center',
+            }}
+          >
+            {error}
+          </p>
+        )}
+
         {/* Submit Button - Masuk atau Daftar */}
         <button
           type="submit"
-          disabled={isLoading || !email}
+          disabled={isButtonDisabled || !email}
+          onClick={handleEmailSubmit}
           style={{
             width: '100%',
             padding: '18px',
@@ -141,22 +220,24 @@ const Login = ({ onLogin }) => {
             fontWeight: 600,
             fontFamily: "'Inter', sans-serif",
             color: '#FFFFFF',
-            backgroundColor: isLoading ? '#9CCC65' : '#7CB342', // Green Fresh
+            backgroundColor: !isOnline ? '#CCCCCC' : (isLoading ? '#9CCC65' : '#7CB342'),
             border: 'none',
             borderRadius: '12px',
-            cursor: isLoading || !email ? 'not-allowed' : 'pointer',
+            cursor: isButtonDisabled || !email ? 'not-allowed' : 'pointer',
             transition: 'all 200ms',
-            opacity: isLoading || !email ? 0.6 : 1,
+            opacity: isButtonDisabled || !email ? 0.6 : 1,
           }}
           onMouseEnter={(e) => {
-            if (!isLoading && email) {
+            if (!isButtonDisabled && email) {
               e.target.style.backgroundColor = '#689F38';
               e.target.style.transform = 'translateY(-2px)';
               e.target.style.boxShadow = '0 4px 12px rgba(124, 179, 66, 0.3)';
             }
           }}
           onMouseLeave={(e) => {
-            e.target.style.backgroundColor = '#7CB342';
+            if (isOnline) {
+              e.target.style.backgroundColor = '#7CB342';
+            }
             e.target.style.transform = 'translateY(0)';
             e.target.style.boxShadow = 'none';
           }}
@@ -168,32 +249,38 @@ const Login = ({ onLogin }) => {
         <button
           type="button"
           onClick={handleGoogleLogin}
+          disabled={!isOnline}
           style={{
             width: '100%',
             padding: '18px',
             fontSize: '1.125rem',
             fontWeight: 500,
             fontFamily: "'Inter', sans-serif",
-            color: '#2C2C2C',
-            backgroundColor: '#FFFFFF',
+            color: !isOnline ? '#999999' : '#2C2C2C',
+            backgroundColor: !isOnline ? '#F5F5F5' : '#FFFFFF',
             border: '2px solid #E0E0E0',
             borderRadius: '12px',
-            cursor: 'pointer',
+            cursor: !isOnline ? 'not-allowed' : 'pointer',
             transition: 'all 200ms',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             gap: '12px',
+            opacity: !isOnline ? 0.6 : 1,
           }}
           onMouseEnter={(e) => {
-            e.target.style.backgroundColor = '#FAFAFA';
-            e.target.style.borderColor = '#BDBDBD';
-            e.target.style.transform = 'translateY(-2px)';
-            e.target.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.08)';
+            if (isOnline) {
+              e.target.style.backgroundColor = '#FAFAFA';
+              e.target.style.borderColor = '#BDBDBD';
+              e.target.style.transform = 'translateY(-2px)';
+              e.target.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.08)';
+            }
           }}
           onMouseLeave={(e) => {
-            e.target.style.backgroundColor = '#FFFFFF';
-            e.target.style.borderColor = '#E0E0E0';
+            if (isOnline) {
+              e.target.style.backgroundColor = '#FFFFFF';
+              e.target.style.borderColor = '#E0E0E0';
+            }
             e.target.style.transform = 'translateY(0)';
             e.target.style.boxShadow = 'none';
           }}
@@ -243,6 +330,7 @@ const Login = ({ onLogin }) => {
         isOpen={showModal}
         onClose={handleModalClose}
         email={email}
+        onResend={handleResendMagicLink}
       />
     </div>
   );

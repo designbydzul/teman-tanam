@@ -5,53 +5,104 @@ import Splash from '../components/Splash';
 import Login from '../components/Login';
 import Onboarding from '../components/Onboarding';
 import Home from '../components/Home';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function Page() {
   const [showSplash, setShowSplash] = useState(true);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
+  const {
+    isAuthenticated,
+    hasCompletedOnboarding,
+    profile,
+    loading: isCheckingAuth,
+    completeOnboarding,
+    session,
+    user,
+  } = useAuth();
+
+  // Get user name from profile or localStorage for backward compatibility
   const [userName, setUserName] = useState('');
 
-  // Check if user has already completed onboarding
+  // Debug auth state changes
   useEffect(() => {
-    const savedName = localStorage.getItem('userName');
-    if (savedName) {
-      setUserName(savedName);
-      setHasCompletedOnboarding(true);
+    console.log('[Page] Auth state:', {
+      showSplash,
+      isCheckingAuth,
+      isAuthenticated,
+      hasCompletedOnboarding,
+      session: session ? 'exists' : 'null',
+      user: user ? (user as { email?: string }).email : 'null',
+      profile: profile ? 'exists' : 'null',
+    });
+  }, [showSplash, isCheckingAuth, isAuthenticated, hasCompletedOnboarding, session, user, profile]);
+
+  useEffect(() => {
+    const typedProfile = profile as { display_name?: string } | null;
+    const typedUser = user as { email?: string } | null;
+
+    if (typedProfile?.display_name) {
+      setUserName(typedProfile.display_name);
+    } else if (typedUser?.email) {
+      // Use email prefix as fallback name
+      const emailName = typedUser.email.split('@')[0];
+      // Capitalize first letter
+      const formattedName = emailName.charAt(0).toUpperCase() + emailName.slice(1);
+      setUserName(formattedName);
+    } else {
+      // Final fallback
+      setUserName('Teman');
     }
-  }, []);
+  }, [profile, user]);
 
   // Handle splash screen completion
   const handleSplashComplete = () => {
+    console.log('[Page] Splash complete');
     setShowSplash(false);
   };
 
-  // Handle login completion
+  // Handle login completion (for manual override/testing)
   const handleLogin = () => {
-    setIsLoggedIn(true);
+    console.log('[Page] handleLogin called');
+    // Auth state will be updated automatically by useAuth hook
   };
 
   // Handle onboarding completion
-  const handleOnboardingComplete = ({ name, locations }: { name: string; locations: string[] }) => {
-    setUserName(name);
-    setHasCompletedOnboarding(true);
+  const handleOnboardingComplete = async ({ name, locations }: { name: string; locations: string[] }) => {
+    console.log('[Page] Onboarding complete:', { name, locations });
+    // Save to Supabase via the hook
+    const result = await completeOnboarding(name, locations);
+    if (result.success) {
+      setUserName(name);
+    } else {
+      // Fallback to localStorage if Supabase fails
+      localStorage.setItem('userName', name);
+      localStorage.setItem('userLocations', JSON.stringify(locations));
+      setUserName(name);
+    }
   };
 
-  // Show splash screen on initial load
+  // Show splash screen only during initial load
+  // Once splash animation completes AND auth check is done, proceed
   if (showSplash) {
     return <Splash onComplete={handleSplashComplete} />;
   }
 
+  // Show splash/loading if still checking auth (after splash animation)
+  if (isCheckingAuth) {
+    console.log('[Page] Still checking auth...');
+    return <Splash onComplete={() => {}} />;
+  }
+
   // Show login screen if not logged in
-  if (!isLoggedIn) {
+  if (!isAuthenticated) {
     return <Login onLogin={handleLogin} />;
   }
 
   // Show onboarding if logged in but hasn't completed onboarding
+  // hasCompletedOnboarding is true only when profile has display_name
   if (!hasCompletedOnboarding) {
     return <Onboarding onComplete={handleOnboardingComplete} />;
   }
 
   // Show the Home component
-  return <Home userName={userName} />;
+  return <Home userName={userName || 'Teman'} />;
 }

@@ -1,25 +1,36 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User } from '@phosphor-icons/react';
+import { auth } from '@/lib/supabase';
 
 const ProfileModal = ({ isOpen, onClose, userName, userEmail, userPhoto, onNavigate, onLogout }) => {
   console.log('ProfileModal render - userPhoto:', !!userPhoto);
 
-  const handleMenuAction = (action) => {
+  const handleMenuAction = async (action) => {
     console.log('Menu action:', action);
 
     if (action === 'logout') {
       onClose();
-      // Small delay to ensure modal closes before reload
-      setTimeout(() => {
+      // Small delay to ensure modal closes before logout
+      setTimeout(async () => {
+        try {
+          // Sign out from Supabase
+          await auth.signOut();
+        } catch (err) {
+          console.error('Logout error:', err);
+        }
+
+        // Clear localStorage
+        localStorage.removeItem('userName');
+        localStorage.removeItem('userLocations');
+        localStorage.removeItem('temanTanamUserName');
+        localStorage.removeItem('temanTanamUserEmail');
+        localStorage.removeItem('temanTanamUserPhoto');
+        localStorage.removeItem('temanTanamLocations');
+
         if (onLogout) {
           onLogout();
         } else {
-          // Default logout behavior: clear localStorage and reload
-          localStorage.removeItem('temanTanamUserName');
-          localStorage.removeItem('temanTanamUserEmail');
-          localStorage.removeItem('temanTanamUserPhoto');
-          localStorage.removeItem('temanTanamLocations');
           window.location.reload();
         }
       }, 100);

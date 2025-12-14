@@ -18,240 +18,43 @@ import LocationSettings from './LocationSettings';
 import EditProfile from './EditProfile';
 import AddLocationModal from './AddLocationModal';
 import EditPlant from './EditPlant';
-import DiagnosaHama from './DiagnosaHama';
-
-// Comprehensive mock plant data with all edge cases
-const MOCK_PLANTS = [
-  // Edge case 1: Very long name (truncation test)
-  {
-    id: 1,
-    name: 'Tomat Cherry Merah Manis Kesayangan',
-    customName: 'Tomat Cherry Merah Manis Kesayangan',
-    status: 'Perlu disiram',
-    location: 'Teras',
-    image: 'https://images.unsplash.com/photo-1592841200221-a6898f307baa?w=300',
-    species: { id: 'tomat', name: 'Tomat', scientific: 'Solanum lycopersicum', emoji: '🍅' },
-    plantedDate: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000), // 45 days ago
-    lastWatered: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
-    lastFertilized: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000), // 14 days ago
-    notes: 'Tanaman pertama yang ditanam di kebun baru. Perlu perhatian ekstra karena cuaca sedang tidak menentu.',
-  },
-  // Edge case 2: Short name (1-2 chars)
-  {
-    id: 2,
-    name: 'CB',
-    customName: 'CB',
-    status: 'Baik Baik Saja',
-    location: 'Balkon',
-    image: 'https://images.unsplash.com/photo-1583119022894-919a68a3d0e3?w=300',
-    species: { id: 'cabai', name: 'Cabai', scientific: 'Capsicum frutescens', emoji: '🌶️' },
-    plantedDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-    lastWatered: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-    lastFertilized: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-    notes: '',
-  },
-  // Edge case 3: Siap dipanen status
-  {
-    id: 3,
-    name: 'Kentang Manis',
-    customName: 'Kentang Manis',
-    status: 'Siap dipanen',
-    location: 'Teras',
-    image: 'https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=300',
-    species: { id: 'kentang', name: 'Kentang', scientific: 'Solanum tuberosum', emoji: '🥔' },
-    plantedDate: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000), // 90 days - ready to harvest
-    lastWatered: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-    lastFertilized: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000),
-    notes: 'Sudah 3 bulan, waktunya panen!',
-  },
-  // Edge case 4: Plant without specific location (Semua)
-  {
-    id: 4,
-    name: 'Bayam Hijau',
-    customName: 'Bayam Hijau',
-    status: 'Baik Baik Saja',
-    location: 'Semua',
-    image: 'https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=300',
-    species: { id: 'bayam', name: 'Bayam', scientific: 'Spinacia oleracea', emoji: '🥬' },
-    plantedDate: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000),
-    lastWatered: new Date(),
-    lastFertilized: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
-    notes: '',
-  },
-  // Edge case 5: Plant just planted today
-  {
-    id: 5,
-    name: 'Wortel Baru',
-    customName: 'Wortel Baru',
-    status: 'Baik Baik Saja',
-    location: 'Balkon',
-    image: 'https://images.unsplash.com/photo-1598170845058-32b9d6a5da37?w=300',
-    species: { id: 'wortel', name: 'Wortel', scientific: 'Daucus carota', emoji: '🥕' },
-    plantedDate: new Date(), // Today
-    lastWatered: new Date(),
-    lastFertilized: null, // Never fertilized
-    notes: 'Baru tanam hari ini, semoga tumbuh subur!',
-  },
-  // Edge case 6: Very long notes
-  {
-    id: 6,
-    name: 'Brokoli Super',
-    customName: 'Brokoli Super',
-    status: 'Perlu disiram',
-    location: 'Teras',
-    image: 'https://images.unsplash.com/photo-1459411552884-841db9b3cc2a?w=300',
-    species: { id: 'brokoli', name: 'Brokoli', scientific: 'Brassica oleracea', emoji: '🥦' },
-    plantedDate: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000),
-    lastWatered: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-    lastFertilized: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-    notes: 'Catatan panjang untuk testing: Brokoli ini ditanam dari benih organik yang dibeli dari toko pertanian lokal. Perlu disiram setiap 2 hari sekali dan dipupuk setiap 2 minggu. Hindari sinar matahari langsung yang terlalu terik. Tanaman ini sangat sensitif terhadap hama ulat, jadi perlu dicek setiap hari. Pastikan drainase tanah baik untuk menghindari akar busuk. Panen bisa dilakukan setelah 60-90 hari sejak tanam.',
-  },
-  // Edge case 7: Plant that needs urgent watering (7+ days)
-  {
-    id: 7,
-    name: 'Terong Ungu',
-    customName: 'Terong Ungu',
-    status: 'Perlu disiram',
-    location: 'Teras',
-    image: 'https://images.unsplash.com/photo-1615484477778-ca3b77940c25?w=300',
-    species: { id: 'terong', name: 'Terong', scientific: 'Solanum melongena', emoji: '🍆' },
-    plantedDate: new Date(Date.now() - 75 * 24 * 60 * 60 * 1000),
-    lastWatered: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000), // 8 days - urgent!
-    lastFertilized: new Date(Date.now() - 28 * 24 * 60 * 60 * 1000),
-    notes: 'Perlu disiram segera!',
-  },
-  // Edge case 8: Plant with special characters in name
-  {
-    id: 8,
-    name: 'Cabai "Rawit" #1',
-    customName: 'Cabai "Rawit" #1',
-    status: 'Baik Baik Saja',
-    location: 'Balkon',
-    image: 'https://images.unsplash.com/photo-1583119022894-919a68a3d0e3?w=300',
-    species: { id: 'cabai', name: 'Cabai', scientific: 'Capsicum frutescens', emoji: '🌶️' },
-    plantedDate: new Date(Date.now() - 40 * 24 * 60 * 60 * 1000),
-    lastWatered: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-    lastFertilized: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
-    notes: '',
-  },
-  // Edge case 9: Plant with emoji in name
-  {
-    id: 9,
-    name: 'Jagung Manis 🌽',
-    customName: 'Jagung Manis 🌽',
-    status: 'Baik Baik Saja',
-    location: 'Teras',
-    image: 'https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=300',
-    species: { id: 'jagung', name: 'Jagung', scientific: 'Zea mays', emoji: '🌽' },
-    plantedDate: new Date(Date.now() - 55 * 24 * 60 * 60 * 1000),
-    lastWatered: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-    lastFertilized: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000),
-    notes: '',
-  },
-  // Edge case 10: Plant with custom location (not default)
-  {
-    id: 10,
-    name: 'Selada Keriting',
-    customName: 'Selada Keriting',
-    status: 'Baik Baik Saja',
-    location: 'Dapur',
-    image: 'https://images.unsplash.com/photo-1556801712-76c8eb07bbc9?w=300',
-    species: { id: 'selada', name: 'Selada', scientific: 'Lactuca sativa', emoji: '🥗' },
-    plantedDate: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000),
-    lastWatered: new Date(),
-    lastFertilized: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-    notes: 'Ditanam di pot kecil di dekat jendela dapur',
-  },
-  // Edge case 11: Plant without image (should show fallback)
-  {
-    id: 11,
-    name: 'Kangkung',
-    customName: 'Kangkung',
-    status: 'Perlu disiram',
-    location: 'Semua',
-    image: null,
-    species: { id: 'kangkung', name: 'Kangkung', scientific: 'Ipomoea aquatica', emoji: '🥬' },
-    plantedDate: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000),
-    lastWatered: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
-    lastFertilized: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
-    notes: '',
-  },
-  // Edge case 12: Plant with number-only name
-  {
-    id: 12,
-    name: '001',
-    customName: '001',
-    status: 'Baik Baik Saja',
-    location: 'Teras',
-    image: 'https://images.unsplash.com/photo-1587411768078-af8b0b9c8f78?w=300',
-    species: { id: 'bawang-merah', name: 'Bawang Merah', scientific: 'Allium cepa', emoji: '🧅' },
-    plantedDate: new Date(Date.now() - 35 * 24 * 60 * 60 * 1000),
-    lastWatered: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-    lastFertilized: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
-    notes: '',
-  },
-  // Edge case 13: Multiple plants same species
-  {
-    id: 13,
-    name: 'Tomat 1',
-    customName: 'Tomat 1',
-    status: 'Baik Baik Saja',
-    location: 'Balkon',
-    image: 'https://images.unsplash.com/photo-1592841200221-a6898f307baa?w=300',
-    species: { id: 'tomat', name: 'Tomat', scientific: 'Solanum lycopersicum', emoji: '🍅' },
-    plantedDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-    lastWatered: new Date(),
-    lastFertilized: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
-    notes: '',
-  },
-  {
-    id: 14,
-    name: 'Tomat 2',
-    customName: 'Tomat 2',
-    status: 'Perlu disiram',
-    location: 'Balkon',
-    image: 'https://images.unsplash.com/photo-1592841200221-a6898f307baa?w=300',
-    species: { id: 'tomat', name: 'Tomat', scientific: 'Solanum lycopersicum', emoji: '🍅' },
-    plantedDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-    lastWatered: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-    lastFertilized: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
-    notes: '',
-  },
-  // Edge case 14: Very old plant (1 year+)
-  {
-    id: 15,
-    name: 'Paprika Tua',
-    customName: 'Paprika Tua',
-    status: 'Siap dipanen',
-    location: 'Teras',
-    image: 'https://images.unsplash.com/photo-1563565375-f3fdfdbefa83?w=300',
-    species: { id: 'paprika', name: 'Paprika', scientific: 'Capsicum annuum', emoji: '🫑' },
-    plantedDate: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year ago
-    lastWatered: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-    lastFertilized: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-    notes: 'Tanaman veteran, masih produktif!',
-  },
-  // Edge case 15: Plant with all null optional fields
-  {
-    id: 16,
-    name: 'Sawi Baru',
-    customName: 'Sawi Baru',
-    status: 'Baik Baik Saja',
-    location: 'Semua',
-    image: 'https://images.unsplash.com/photo-1594282486756-576b93e0e912?w=300',
-    species: { id: 'sawi', name: 'Sawi', scientific: 'Brassica juncea', emoji: '🥬' },
-    plantedDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-    lastWatered: null,
-    lastFertilized: null,
-    notes: null,
-  },
-];
+import TanyaTanam from './TanyaTanam';
+import OfflineIndicator from './OfflineIndicator';
+import { usePlants } from '@/hooks/usePlants';
+import { useLocations } from '@/hooks/useLocations';
 
 const Home = ({ userName }) => {
+  // Data hooks - fetch real data from Supabase
+  const {
+    plants: supabasePlants,
+    loading: plantsLoading,
+    error: plantsError,
+    refetch: refetchPlants,
+    addPlant: addSupabasePlant,
+    deletePlant: deleteSupabasePlant,
+    recordAction,
+    // Offline support
+    isOnline,
+    syncStatus,
+    pendingCount,
+    syncNow,
+  } = usePlants();
+
+  const {
+    locationNames: supabaseLocationNames,
+    locations: supabaseLocations,
+    loading: locationsLoading,
+    addLocation: addSupabaseLocation,
+    refetch: refetchLocations,
+  } = useLocations();
+
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState('Semua');
-  const [plants, setPlants] = useState(MOCK_PLANTS);
+
+  // Use Supabase data if available, otherwise fall back to empty array
+  const plants = supabasePlants || [];
+  // Note: Plant updates are done via usePlants hook (addSupabasePlant, deleteSupabasePlant, etc.)
 
   // Add Plant flow state
   const [showAddPlant, setShowAddPlant] = useState(false);
@@ -287,8 +90,8 @@ const Home = ({ userName }) => {
   // Edit plant from menu
   const [showEditPlantModal, setShowEditPlantModal] = useState(false);
 
-  // Diagnosa Hama from menu
-  const [showDiagnosaHamaModal, setShowDiagnosaHamaModal] = useState(false);
+  // Tanya Tanam from menu
+  const [showTanyaTanamModal, setShowTanyaTanamModal] = useState(false);
 
   // Delete confirmation modal state
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
@@ -300,16 +103,33 @@ const Home = ({ userName }) => {
   const [toastMessage, setToastMessage] = useState({ title: '', message: '' });
   const reconnectingTimer = useRef(null);
 
+  // Track failed plant images to show fallback
+  const [failedImages, setFailedImages] = useState(new Set());
+
   // Action toast state (for watering, fertilizing, plant actions, etc.)
   const [showActionToast, setShowActionToast] = useState(false);
   const [actionToastMessage, setActionToastMessage] = useState('');
+  const actionToastTimer = useRef(null);
 
   // Helper function to show action toast
   const showActionToastWithMessage = (message) => {
+    // Clear any existing timer to prevent memory leaks
+    if (actionToastTimer.current) {
+      clearTimeout(actionToastTimer.current);
+    }
     setActionToastMessage(message);
     setShowActionToast(true);
-    setTimeout(() => setShowActionToast(false), 3000);
+    actionToastTimer.current = setTimeout(() => setShowActionToast(false), 3000);
   };
+
+  // Cleanup action toast timer on unmount
+  useEffect(() => {
+    return () => {
+      if (actionToastTimer.current) {
+        clearTimeout(actionToastTimer.current);
+      }
+    };
+  }, []);
 
   // Load user profile from localStorage
   useEffect(() => {
@@ -321,30 +141,9 @@ const Home = ({ userName }) => {
     if (savedPhoto) setUserPhoto(savedPhoto);
   }, []);
 
-  // Dynamic locations from localStorage
-  const [locations, setLocations] = useState(['Semua']);
-
-  // Load locations from localStorage on mount
-  useEffect(() => {
-    const loadLocations = () => {
-      const savedLocations = localStorage.getItem('temanTanamLocations');
-      if (savedLocations) {
-        const parsed = JSON.parse(savedLocations);
-        const locationNames = parsed.map((loc) => loc.name);
-        // Remove duplicates using Set
-        const uniqueLocations = [...new Set(locationNames)];
-        setLocations(['Semua', ...uniqueLocations]);
-      } else {
-        setLocations(['Semua', 'Teras', 'Balkon']);
-      }
-    };
-
-    loadLocations();
-
-    // Listen for storage changes (when LocationSettings updates)
-    window.addEventListener('storage', loadLocations);
-    return () => window.removeEventListener('storage', loadLocations);
-  }, []);
+  // Use locations from Supabase hook
+  // supabaseLocationNames already includes "Semua" as the first option
+  const locations = supabaseLocationNames;
 
   // Network status detection
   useEffect(() => {
@@ -398,18 +197,11 @@ const Home = ({ userName }) => {
   // Reload locations when returning from LocationSettings
   const handleLocationSettingsClose = () => {
     setShowLocationSettings(false);
-    // Reload locations from localStorage
-    const savedLocations = localStorage.getItem('temanTanamLocations');
-    if (savedLocations) {
-      const parsed = JSON.parse(savedLocations);
-      const locationNames = parsed.map((loc) => loc.name);
-      // Remove duplicates using Set
-      const uniqueLocations = [...new Set(locationNames)];
-      setLocations(['Semua', ...uniqueLocations]);
-      // Reset to 'Semua' if current selection was deleted
-      if (!['Semua', ...uniqueLocations].includes(selectedLocation)) {
-        setSelectedLocation('Semua');
-      }
+    // Refetch locations from Supabase
+    refetchLocations();
+    // Reset to 'Semua' if current selection was deleted
+    if (!supabaseLocationNames.includes(selectedLocation)) {
+      setSelectedLocation('Semua');
     }
   };
 
@@ -426,9 +218,34 @@ const Home = ({ userName }) => {
   const isSearching = searchQuery.trim().length > 0;
   const isFilteringLocation = selectedLocation !== 'Semua';
 
-  const handleBulkWater = () => {
-    console.log('Bulk watering plants in:', selectedLocation);
-    // TODO: Implement bulk watering logic
+  const handleBulkWater = async () => {
+    // Get plants in the selected location
+    const plantsToWater = filteredPlants.filter(p => p.location === selectedLocation);
+
+    if (plantsToWater.length === 0) {
+      showActionToastWithMessage('Tidak ada tanaman di lokasi ini');
+      return;
+    }
+
+    // Record water action for each plant
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const plant of plantsToWater) {
+      const result = await recordAction(plant.id, 'water');
+      if (result.success) {
+        successCount++;
+      } else {
+        failCount++;
+      }
+    }
+
+    // Show result toast
+    if (failCount === 0) {
+      showActionToastWithMessage(`${successCount} tanaman di ${selectedLocation} sudah disiram`);
+    } else {
+      showActionToastWithMessage(`${successCount} berhasil, ${failCount} gagal disiram`);
+    }
   };
 
   // Add Plant flow handlers
@@ -442,31 +259,61 @@ const Home = ({ userName }) => {
     // Keep showAddPlant true so it stays visible behind the form modal
   };
 
-  const handleFormSubmit = (plantData) => {
+  const handleFormSubmit = async (plantData) => {
+    console.log('[Home] handleFormSubmit called with:', plantData);
+
     // Add photo preview to plant data
     const dataWithPhoto = {
       ...plantData,
       photoPreview: plantData.photo ? URL.createObjectURL(plantData.photo) : null,
     };
 
-    setNewPlantData(dataWithPhoto);
-    setShowAddPlantForm(false);
-    setShowSuccess(true);
+    // Find location ID from supabase locations
+    const locationObj = supabaseLocations?.find(
+      loc => loc.name.toLowerCase() === plantData.location.toLowerCase()
+    );
+    const locationId = locationObj?.id || null;
 
-    // Add to plants list
-    const newPlant = {
-      id: Date.now(),
-      name: plantData.customName,
-      status: 'Baru ditambahkan',
-      location: plantData.location,
-      image: dataWithPhoto.photoPreview || 'https://images.unsplash.com/photo-1509587584298-0f3b3a3a1797?w=300',
+    console.log('[Home] Location lookup:', {
+      locationName: plantData.location,
+      locationObj,
+      locationId,
+      availableLocations: supabaseLocations
+    });
+
+    // Prepare data for Supabase
+    // NOTE: species_id is set to null because we're using local species data (not Supabase UUIDs)
+    // We pass speciesName and speciesEmoji for display purposes
+    const supabaseData = {
+      customName: plantData.customName,
+      name: plantData.customName || plantData.species?.name || 'Tanaman',
+      speciesId: null, // Set to null - local species IDs are not valid UUIDs
+      speciesName: plantData.species?.name || null, // Store species name for emoji lookup
+      speciesEmoji: plantData.species?.emoji || '🌱', // Store emoji directly
+      locationId: locationId,
+      notes: plantData.notes || '',
+      plantedDate: plantData.customDate || new Date().toISOString(),
+      photoBlob: plantData.photoBlob || null, // Compressed photo blob for upload
     };
-    setPlants([newPlant, ...plants]);
 
-    // Add custom location to locations list if it doesn't exist
-    if (plantData.location && !locations.includes(plantData.location) && plantData.location !== 'Semua') {
-      // This would be handled in a real app by updating global state or localStorage
-      console.log('New location added:', plantData.location);
+    console.log('[Home] Calling addSupabasePlant with:', {
+      ...supabaseData,
+      photoBlob: supabaseData.photoBlob ? `Blob(${(supabaseData.photoBlob.size / 1024).toFixed(1)}KB)` : null
+    });
+
+    // Save to Supabase
+    const result = await addSupabasePlant(supabaseData);
+
+    console.log('[Home] addSupabasePlant result:', result);
+
+    if (result.success) {
+      setNewPlantData(dataWithPhoto);
+      setShowAddPlantForm(false);
+      setShowSuccess(true);
+    } else {
+      // Show error toast or alert
+      console.error('[Home] Failed to add plant:', result.error);
+      alert(`Gagal menambah tanaman: ${result.error}`);
     }
   };
 
@@ -480,9 +327,10 @@ const Home = ({ userName }) => {
         customName: newPlantData.customName,
         species: newPlantData.species,
         location: newPlantData.location,
-        plantedDate: newPlantData.plantedDate,
+        plantedDate: newPlantData.plantedDate || new Date(),
         image: newPlantData.photoPreview || null,
         photoUrl: newPlantData.photoPreview || null,
+        notes: newPlantData.notes || '',
         status: 'Baik Baik Saja',
       };
       setSelectedPlant(plantForDetail);
@@ -566,21 +414,31 @@ const Home = ({ userName }) => {
         break;
       case 'water':
         if (menuPlant) {
-          setActionToastMessage(`Penyiraman ${menuPlant.name} sudah dicatat`);
-          setShowActionToast(true);
-          setTimeout(() => setShowActionToast(false), 3000);
+          // Record watering action in Supabase
+          recordAction(menuPlant.id, 'water').then((result) => {
+            if (result.success) {
+              showActionToastWithMessage(`Penyiraman ${menuPlant.name} sudah dicatat`);
+            } else {
+              showActionToastWithMessage(`Gagal mencatat penyiraman: ${result.error}`);
+            }
+          });
         }
         break;
       case 'fertilize':
         if (menuPlant) {
-          setActionToastMessage(`Pemupukan ${menuPlant.name} sudah dicatat`);
-          setShowActionToast(true);
-          setTimeout(() => setShowActionToast(false), 3000);
+          // Record fertilizing action in Supabase
+          recordAction(menuPlant.id, 'fertilize').then((result) => {
+            if (result.success) {
+              showActionToastWithMessage(`Pemupukan ${menuPlant.name} sudah dicatat`);
+            } else {
+              showActionToastWithMessage(`Gagal mencatat pemupukan: ${result.error}`);
+            }
+          });
         }
         break;
       case 'diagnose':
         if (menuPlant) {
-          setShowDiagnosaHamaModal(true);
+          setShowTanyaTanamModal(true);
         }
         break;
       case 'edit':
@@ -600,14 +458,18 @@ const Home = ({ userName }) => {
   };
 
   // Handle confirmed delete from modal
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (plantToDelete) {
       const plantName = plantToDelete.name;
-      setPlants(plants.filter((p) => p.id !== plantToDelete.id));
+      const result = await deleteSupabasePlant(plantToDelete.id);
       setShowDeleteConfirmModal(false);
       setPlantToDelete(null);
       setMenuPlant(null);
-      showActionToastWithMessage(`${plantName} sudah dihapus`);
+      if (result.success) {
+        showActionToastWithMessage(`${plantName} sudah dihapus`);
+      } else {
+        showActionToastWithMessage(`Gagal menghapus: ${result.error}`);
+      }
     }
   };
 
@@ -626,17 +488,27 @@ const Home = ({ userName }) => {
   };
 
   const handlePlantEdit = (plant) => {
-    console.log('Edit plant:', plant);
-    // TODO: Implement plant editing
+    // Close plant detail and open edit modal
+    setShowPlantDetail(false);
+    setMenuPlant(plant);
+    setShowEditPlantModal(true);
   };
 
-  const handlePlantDelete = (plantId) => {
-    const plantToDelete = plants.find((p) => p.id === plantId);
-    const plantName = plantToDelete?.name || plantToDelete?.customName || 'Tanaman';
-    setPlants(plants.filter((p) => p.id !== plantId));
+  const handlePlantDelete = async (plantId) => {
+    const plantToDeleteItem = plants.find((p) => p.id === plantId);
+    const plantName = plantToDeleteItem?.name || plantToDeleteItem?.customName || 'Tanaman';
+
+    // Delete from Supabase
+    const result = await deleteSupabasePlant(plantId);
+
     setShowPlantDetail(false);
     setSelectedPlant(null);
-    showActionToastWithMessage(`${plantName} sudah dihapus`);
+
+    if (result.success) {
+      showActionToastWithMessage(`${plantName} sudah dihapus`);
+    } else {
+      showActionToastWithMessage(`Gagal menghapus: ${result.error}`);
+    }
   };
 
   // Handle navigation from ProfileModal
@@ -662,35 +534,24 @@ const Home = ({ userName }) => {
   };
 
   // Handle add location save
-  const handleAddLocationSave = ({ name, selectedPlantIds }) => {
-    // Get existing locations from localStorage
-    const savedLocations = localStorage.getItem('temanTanamLocations');
-    const existingLocations = savedLocations ? JSON.parse(savedLocations) : [];
+  const handleAddLocationSave = async ({ name, selectedPlantIds }) => {
+    // Add location to Supabase via useLocations hook
+    const result = await addSupabaseLocation(name, '📍');
 
-    // Add new location
-    const newLocation = {
-      id: Date.now().toString(),
-      name,
-      emoji: '📍',
-    };
-    const updatedLocations = [...existingLocations, newLocation];
+    if (!result.success) {
+      showActionToastWithMessage(result.error || 'Gagal menambahkan lokasi');
+      return;
+    }
 
-    // Save to localStorage
-    localStorage.setItem('temanTanamLocations', JSON.stringify(updatedLocations));
+    // Refetch locations to update the list
+    refetchLocations();
 
-    // Update local state - remove duplicates using Set
-    const uniqueLocations = [...new Set(updatedLocations.map((loc) => loc.name))];
-    setLocations(['Semua', ...uniqueLocations]);
-
-    // Update selected plants' locations
+    // Update selected plants' locations in Supabase
+    // Note: This feature needs to be implemented in usePlants hook
     if (selectedPlantIds.length > 0) {
-      setPlants((prevPlants) =>
-        prevPlants.map((plant) =>
-          selectedPlantIds.includes(plant.id)
-            ? { ...plant, location: name }
-            : plant
-        )
-      );
+      // TODO: Implement updatePlantLocation in usePlants hook
+      console.log('[Home] Plants to update location:', selectedPlantIds, 'to', name);
+      // After implementing, call refetchPlants() to refresh the list
     }
 
     // Show toast with plant count
@@ -707,9 +568,17 @@ const Home = ({ userName }) => {
         right: 0,
         bottom: 0,
         backgroundColor: '#FAFAFA',
-        visibility: showDiagnosaHamaModal ? 'hidden' : 'visible',
+        visibility: showTanyaTanamModal ? 'hidden' : 'visible',
       }}
     >
+      {/* Offline Status Indicator */}
+      <OfflineIndicator
+        isOnline={isOnline}
+        syncStatus={syncStatus}
+        pendingCount={pendingCount}
+        syncNow={syncNow}
+      />
+
       {/* Header - Sticky */}
       <div
         style={{
@@ -1003,7 +872,64 @@ const Home = ({ userName }) => {
             paddingBottom: '100px',
           }}
         >
-        {showEmptyState ? (
+        {/* Loading Skeleton */}
+        {plantsLoading ? (
+          <>
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div
+                key={`skeleton-${i}`}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                }}
+              >
+                {/* Skeleton Image */}
+                <div
+                  style={{
+                    width: '100%',
+                    aspectRatio: '1',
+                    borderRadius: '24px',
+                    backgroundColor: '#F1F8E9',
+                    marginBottom: '8px',
+                    animation: 'pulse 1.5s ease-in-out infinite',
+                  }}
+                />
+                {/* Skeleton Name */}
+                <div
+                  style={{
+                    width: '80%',
+                    height: '16px',
+                    borderRadius: '8px',
+                    backgroundColor: '#E8F5E9',
+                    marginBottom: '4px',
+                    animation: 'pulse 1.5s ease-in-out infinite',
+                  }}
+                />
+                {/* Skeleton Status */}
+                <div
+                  style={{
+                    width: '60%',
+                    height: '14px',
+                    borderRadius: '7px',
+                    backgroundColor: '#F5F5F5',
+                    animation: 'pulse 1.5s ease-in-out infinite',
+                  }}
+                />
+              </div>
+            ))}
+            <style jsx>{`
+              @keyframes pulse {
+                0%, 100% {
+                  opacity: 1;
+                }
+                50% {
+                  opacity: 0.5;
+                }
+              }
+            `}</style>
+          </>
+        ) : showEmptyState ? (
           /* Empty State */
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -1133,7 +1059,7 @@ const Home = ({ userName }) => {
                     justifyContent: 'center',
                   }}
                 >
-                  {plant.image ? (
+                  {plant.image && !failedImages.has(plant.id) ? (
                     <img
                       src={plant.image}
                       alt={plant.name}
@@ -1143,21 +1069,14 @@ const Home = ({ userName }) => {
                         objectFit: 'cover',
                         display: 'block',
                       }}
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                        e.target.parentElement.innerHTML = `
-                          <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                            <path d="M24 42C24 42 10 34 10 22C10 17 14 12 19 12C21.5 12 23.8 13 25.5 14.5C27.2 13 29.5 12 32 12C37 12 41 17 41 22C41 34 27 42 24 42Z" fill="#7CB342"/>
-                            <path d="M24 14.5V42" stroke="#2D5016" strokeWidth="2.5" strokeLinecap="round"/>
-                          </svg>
-                        `;
+                      onError={() => {
+                        setFailedImages(prev => new Set(prev).add(plant.id));
                       }}
                     />
                   ) : (
-                    <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                      <path d="M24 42C24 42 10 34 10 22C10 17 14 12 19 12C21.5 12 23.8 13 25.5 14.5C27.2 13 29.5 12 32 12C37 12 41 17 41 22C41 34 27 42 24 42Z" fill="#7CB342"/>
-                      <path d="M24 14.5V42" stroke="#2D5016" strokeWidth="2.5" strokeLinecap="round"/>
-                    </svg>
+                    <span style={{ fontSize: '3rem' }}>
+                      {plant.species?.emoji || '🌱'}
+                    </span>
                   )}
                 </div>
 
@@ -1312,6 +1231,7 @@ const Home = ({ userName }) => {
           onBack={handlePlantDetailBack}
           onEdit={handlePlantEdit}
           onDelete={handlePlantDelete}
+          onRecordAction={recordAction}
         />
       )}
 
@@ -1336,8 +1256,9 @@ const Home = ({ userName }) => {
             showActionToastWithMessage(`Lokasi ${locationName} sudah ditambahkan`);
           }}
           plants={plants}
-          onPlantsUpdated={(updatedPlants) => {
-            setPlants(updatedPlants);
+          onPlantsUpdated={() => {
+            // Refetch plants from Supabase after location changes
+            refetchPlants();
           }}
         />
       )}
@@ -1550,7 +1471,7 @@ const Home = ({ userName }) => {
                   </span>
                 </button>
 
-                {/* Diagnosa Hama */}
+                {/* Tanya Tanam */}
                 <button
                   onClick={() => handlePlantMenuAction('diagnose')}
                   style={{
@@ -1574,7 +1495,7 @@ const Home = ({ userName }) => {
                       color: '#2C2C2C',
                     }}
                   >
-                    Diagnosa Hama
+                    Tanya Tanam
                   </span>
                 </button>
               </div>
@@ -1678,7 +1599,8 @@ const Home = ({ userName }) => {
             setMenuPlant(null);
           }}
           onSave={(updatedPlant) => {
-            setPlants(plants.map((p) => (p.id === updatedPlant.id ? { ...p, ...updatedPlant } : p)));
+            // Refetch plants from Supabase after edit
+            refetchPlants();
             setShowEditPlantModal(false);
             setMenuPlant(null);
             showActionToastWithMessage(`${updatedPlant.name || updatedPlant.customName} sudah diperbarui`);
@@ -1686,12 +1608,12 @@ const Home = ({ userName }) => {
         />
       )}
 
-      {/* Diagnosa Hama Modal from menu - rendered via portal to avoid z-index issues */}
-      {showDiagnosaHamaModal && menuPlant && typeof document !== 'undefined' && createPortal(
-        <DiagnosaHama
+      {/* Tanya Tanam Modal from menu - rendered via portal to avoid z-index issues */}
+      {showTanyaTanamModal && menuPlant && typeof document !== 'undefined' && createPortal(
+        <TanyaTanam
           plant={menuPlant}
           onBack={() => {
-            setShowDiagnosaHamaModal(false);
+            setShowTanyaTanamModal(false);
             setMenuPlant(null);
           }}
         />,

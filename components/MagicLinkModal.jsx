@@ -1,10 +1,50 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const MagicLinkModal = ({ isOpen, onClose, email }) => {
+const MagicLinkModal = ({ isOpen, onClose, email, onResend }) => {
+  const [isResending, setIsResending] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState(false);
+
   const handleOpenEmail = () => {
-    // Open default email client
-    window.location.href = 'mailto:';
+    // Detect email provider and open appropriate app/URL
+    const emailDomain = email?.split('@')[1]?.toLowerCase();
+
+    let emailUrl = 'mailto:'; // Default fallback
+
+    if (emailDomain?.includes('gmail')) {
+      emailUrl = 'https://mail.google.com';
+    } else if (emailDomain?.includes('yahoo')) {
+      emailUrl = 'https://mail.yahoo.com';
+    } else if (emailDomain?.includes('outlook') || emailDomain?.includes('hotmail') || emailDomain?.includes('live')) {
+      emailUrl = 'https://outlook.live.com';
+    } else if (emailDomain?.includes('icloud')) {
+      emailUrl = 'https://www.icloud.com/mail';
+    } else {
+      // For other providers, try to open native email app on mobile
+      // This works better on mobile devices
+      emailUrl = 'mailto:';
+    }
+
+    window.open(emailUrl, '_blank');
+  };
+
+  const handleResend = async () => {
+    setIsResending(true);
+    setResendSuccess(false);
+
+    // Call the onResend callback if provided, otherwise simulate
+    if (onResend) {
+      await onResend(email);
+    } else {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1500));
+    }
+
+    setIsResending(false);
+    setResendSuccess(true);
+
+    // Reset success message after 3 seconds
+    setTimeout(() => setResendSuccess(false), 3000);
   };
 
   return (
@@ -202,19 +242,72 @@ const MagicLinkModal = ({ isOpen, onClose, email }) => {
 
             {/* Kirim Ulang Button */}
             <button
-              onClick={onClose}
+              onClick={handleResend}
+              disabled={isResending}
               style={{
                 background: 'transparent',
                 border: 'none',
                 fontFamily: "'Inter', sans-serif",
                 fontSize: '16px',
                 fontWeight: 600,
-                color: '#666666',
-                cursor: 'pointer',
+                color: resendSuccess ? '#7CB342' : '#666666',
+                cursor: isResending ? 'not-allowed' : 'pointer',
                 padding: '8px',
+                opacity: isResending ? 0.6 : 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                transition: 'all 0.2s ease',
               }}
             >
-              Kirim Ulang
+              {isResending ? (
+                <>
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    style={{
+                      animation: 'spin 1s linear infinite',
+                    }}
+                  >
+                    <circle
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="#666666"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      strokeDasharray="31.4 31.4"
+                    />
+                  </svg>
+                  <style>
+                    {`
+                      @keyframes spin {
+                        from { transform: rotate(0deg); }
+                        to { transform: rotate(360deg); }
+                      }
+                    `}
+                  </style>
+                  Mengirim...
+                </>
+              ) : resendSuccess ? (
+                <>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M20 6L9 17L4 12"
+                      stroke="#7CB342"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  Magic link terkirim!
+                </>
+              ) : (
+                'Kirim Ulang'
+              )}
             </button>
           </motion.div>
         </>

@@ -9,12 +9,15 @@ import {
   X,
 } from '@phosphor-icons/react';
 
-// Mock AI responses
-const mockResponses = [
-  'Daun keriting setelah pemupukan NPK bisa jadi karena over-fertilisasi atau kekurangan air. Coba cek pH tanah dan atur frekuensi penyiraman.',
-  'Bercak kuning pada daun timun bisa jadi karena kekurangan nutrisi atau infeksi jamur. Periksa drainase dan gunakan fungisida organik jika perlu.',
-  'Bercak kuning pada daun timun bisa jadi karena masalah pH tanah atau serangan bakteri. Lakukan tes tanah dan gunakan bakterisida sesuai dosis.',
-];
+// Helper function to calculate days since planted
+const calculateDaysSincePlanted = (plantedDate) => {
+  if (!plantedDate) return null;
+  const planted = new Date(plantedDate);
+  const today = new Date();
+  const diffTime = Math.abs(today - planted);
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays;
+};
 
 // Suggested questions
 const suggestedQuestions = [
@@ -23,7 +26,7 @@ const suggestedQuestions = [
   'Batang nya lunak atau membusuk?',
 ];
 
-const DiagnosaHama = ({ plant, plants = [], onBack }) => {
+const TanyaTanam = ({ plant, plants = [], onBack }) => {
   // State
   const [selectedPlant, setSelectedPlant] = useState(plant || null);
   const [showPlantDropdown, setShowPlantDropdown] = useState(false);
@@ -44,7 +47,7 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
 
   // Handle iOS keyboard and lock body scroll
   useEffect(() => {
-    // Lock body scroll when DiagnosaHama opens
+    // Lock body scroll when TanyaTanam opens
     const originalStyle = document.body.style.cssText;
     document.body.style.overflow = 'hidden';
     document.body.style.position = 'fixed';
@@ -99,6 +102,7 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
         id: selectedPlant.id,
         name: selectedPlant.customName || selectedPlant.name,
         species: selectedPlant.species?.scientific || 'Cucumis sativus',
+        speciesEmoji: selectedPlant.species?.emoji || '🌱',
         location: selectedPlant.location || 'Teras',
         plantedDate: selectedPlant.plantedDate || new Date(Date.now() - 12 * 24 * 60 * 60 * 1000),
         coverPhotoUrl: selectedPlant.photoUrl || (selectedPlant.image !== null && selectedPlant.image) || null,
@@ -117,8 +121,43 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
     }
   }, [messages, isLoading]);
 
+  // Call API to get AI response
+  const callTanyaTanamAPI = async (userMessageContent, currentMessages) => {
+    try {
+      const response = await fetch('/api/tanya-tanam', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: userMessageContent,
+          plantContext: plantData ? {
+            name: plantData.name,
+            species: plantData.species,
+            age: calculateDaysSincePlanted(plantData.plantedDate),
+            location: plantData.location,
+            lastWatered: selectedPlant?.lastWatered || null,
+            lastFertilized: selectedPlant?.lastFertilized || null
+          } : null,
+          chatHistory: currentMessages
+            .filter(m => m.role)
+            .map(m => ({ role: m.role, content: m.content }))
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        return data.message;
+      } else {
+        return 'Waduh, ada masalah koneksi nih. Coba lagi ya!';
+      }
+    } catch (error) {
+      console.error('Tanya Tanam API Error:', error);
+      return 'Waduh, ada masalah koneksi nih. Coba lagi ya!';
+    }
+  };
+
   // Handle suggestion click - auto send the message
-  const handleSuggestionClick = (question) => {
+  const handleSuggestionClick = async (question) => {
     // Hide suggestions
     setShowSuggestions(false);
 
@@ -131,20 +170,21 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
       timestamp: new Date(),
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    const updatedMessages = [...messages, userMessage];
+    setMessages(updatedMessages);
     setIsLoading(true);
 
-    // Simulate AI response
-    setTimeout(() => {
-      const aiMessage = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: mockResponses[Math.floor(Math.random() * mockResponses.length)],
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, aiMessage]);
-      setIsLoading(false);
-    }, 1500);
+    // Call real API
+    const aiResponse = await callTanyaTanamAPI(question, updatedMessages);
+
+    const aiMessage = {
+      id: (Date.now() + 1).toString(),
+      role: 'assistant',
+      content: aiResponse,
+      timestamp: new Date(),
+    };
+    setMessages((prev) => [...prev, aiMessage]);
+    setIsLoading(false);
   };
 
   // Handle image attachment
@@ -178,16 +218,19 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
     // Hide suggestions after first message
     setShowSuggestions(false);
 
+    const messageContent = inputText.trim();
+
     // Create user message
     const userMessage = {
       id: Date.now().toString(),
       role: 'user',
-      content: inputText.trim(),
+      content: messageContent,
       images: attachedImages.map((img) => img.preview),
       timestamp: new Date(),
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    const updatedMessages = [...messages, userMessage];
+    setMessages(updatedMessages);
     setInputText('');
     setAttachedImages([]);
     setIsLoading(true);
@@ -197,17 +240,17 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
       inputRef.current.style.height = 'auto';
     }
 
-    // Simulate AI response
-    setTimeout(() => {
-      const aiMessage = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: mockResponses[Math.floor(Math.random() * mockResponses.length)],
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, aiMessage]);
-      setIsLoading(false);
-    }, 1500);
+    // Call real API
+    const aiResponse = await callTanyaTanamAPI(messageContent, updatedMessages);
+
+    const aiMessage = {
+      id: (Date.now() + 1).toString(),
+      role: 'assistant',
+      content: aiResponse,
+      timestamp: new Date(),
+    };
+    setMessages((prev) => [...prev, aiMessage]);
+    setIsLoading(false);
   };
 
   // Handle key press
@@ -238,22 +281,15 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
         overflow: 'hidden',
       }}
     >
-      {/* Header - Always visible */}
-      <div
-        style={{
-          padding: keyboardHeight > 0 ? '8px 16px' : '16px 24px',
-          backgroundColor: '#FFFFFF',
-          flexShrink: 0,
-          borderBottom: '1px solid #F5F5F5',
-          transition: 'padding 0.15s ease',
-        }}
-      >
+      {/* Header - Matches PlantDetail header layout exactly */}
+      <div style={{ position: 'relative', zIndex: 10, backgroundColor: '#FFFFFF', flexShrink: 0 }}>
+        {/* Navigation Row - Same as PlantDetail */}
         <div
           style={{
-            position: 'relative',
             display: 'flex',
+            justifyContent: 'space-between',
             alignItems: 'center',
-            justifyContent: 'center',
+            padding: '24px',
           }}
         >
           {/* Back Button */}
@@ -261,10 +297,8 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
             onClick={onBack}
             aria-label="Kembali"
             style={{
-              position: 'absolute',
-              left: 0,
-              width: keyboardHeight > 0 ? '32px' : '40px',
-              height: keyboardHeight > 0 ? '32px' : '40px',
+              width: '40px',
+              height: '40px',
               borderRadius: '50%',
               backgroundColor: '#FFFFFF',
               border: '1px solid #E0E0E0',
@@ -272,24 +306,25 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
-              transition: 'all 0.15s ease',
             }}
           >
             <ArrowLeft size={16} weight="bold" color="#2D5016" />
           </button>
 
-          {/* Title */}
+          {/* Title - Centered */}
           <h1
             style={{
               fontFamily: 'var(--font-caveat), Caveat, cursive',
-              fontSize: keyboardHeight > 0 ? '1.25rem' : '1.75rem',
+              fontSize: '1.75rem',
               fontWeight: 600,
               color: '#2D5016',
               margin: 0,
-              transition: 'font-size 0.15s ease',
+              position: 'absolute',
+              left: '50%',
+              transform: 'translateX(-50%)',
             }}
           >
-            Diagnosa Hama
+            Tanya Tanam
           </h1>
 
           {/* History Button */}
@@ -297,10 +332,8 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
             onClick={() => setShowHistoryModal(true)}
             aria-label="Riwayat chat"
             style={{
-              position: 'absolute',
-              right: 0,
-              width: keyboardHeight > 0 ? '32px' : '40px',
-              height: keyboardHeight > 0 ? '32px' : '40px',
+              width: '40px',
+              height: '40px',
               borderRadius: '50%',
               backgroundColor: '#FFFFFF',
               border: '1px solid #E0E0E0',
@@ -308,7 +341,6 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
-              transition: 'all 0.15s ease',
             }}
           >
             <ClockCounterClockwise size={16} weight="regular" color="#666666" />
@@ -413,20 +445,10 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
+                          fontSize: '2rem',
                         }}
                       >
-                        <svg width="32" height="32" viewBox="0 0 60 60" fill="none">
-                          <path
-                            d="M30 52.5C30 52.5 12 42 12 27C12 20.3726 17.3726 15 24 15C26.8328 15 29.4134 15.9876 31.5 17.6459C33.5866 15.9876 36.1672 15 39 15C45.6274 15 51 20.3726 51 27C51 42 33 52.5 30 52.5Z"
-                            fill="#7CB342"
-                          />
-                          <path
-                            d="M30 17.6459V52.5"
-                            stroke="#2D5016"
-                            strokeWidth="3"
-                            strokeLinecap="round"
-                          />
-                        </svg>
+                        {plantData.speciesEmoji}
                       </div>
                     )}
                     <div>
@@ -913,4 +935,4 @@ const DiagnosaHama = ({ plant, plants = [], onBack }) => {
   );
 };
 
-export default DiagnosaHama;
+export default TanyaTanam;
