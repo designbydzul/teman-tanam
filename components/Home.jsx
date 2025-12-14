@@ -145,18 +145,22 @@ const Home = ({ userName }) => {
 
   // Load user profile from Supabase profile or localStorage fallback
   useEffect(() => {
-    // Priority: Supabase profile > localStorage
+    // Always try to get email from user object first (most reliable source)
+    if (user?.email) {
+      setUserEmail(user.email);
+    }
+
+    // Priority: Supabase profile > localStorage for other fields
     if (profile) {
       if (profile.display_name) setCurrentUserName(profile.display_name);
       if (profile.avatar_url) setUserPhoto(profile.avatar_url);
-      if (user?.email) setUserEmail(user.email);
     } else {
       // Fallback to localStorage
       const savedName = localStorage.getItem('temanTanamUserName');
       const savedEmail = localStorage.getItem('temanTanamUserEmail');
       const savedPhoto = localStorage.getItem('temanTanamUserPhoto');
       if (savedName) setCurrentUserName(savedName);
-      if (savedEmail) setUserEmail(savedEmail);
+      if (savedEmail && !user?.email) setUserEmail(savedEmail);
       if (savedPhoto) setUserPhoto(savedPhoto);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
