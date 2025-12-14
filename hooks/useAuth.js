@@ -22,7 +22,7 @@ export function useAuth() {
 
   // Check if user has a profile with display_name (completed onboarding)
   // Note: Empty dependency array to prevent infinite loops - we use refs for state that changes
-  const checkOnboardingStatus = useCallback(async (userId, userEmail, forceRefetch = false) => {
+  const checkOnboardingStatus = useCallback(async (userId, forceRefetch = false) => {
     console.log('[useAuth] checkOnboardingStatus called with userId:', userId);
 
     if (!userId) {
@@ -68,14 +68,13 @@ export function useAuth() {
         return false;
       }
 
-      // No profile found - create one
+      // No profile found - create one (without email since profiles table doesn't have email column)
       if (!data) {
         console.log('[useAuth] No profile found, creating one...');
         const { data: newProfile, error: createError } = await supabase
           .from('profiles')
           .insert({
             id: userId,
-            email: userEmail,
             updated_at: new Date().toISOString(),
           })
           .select()
@@ -162,7 +161,7 @@ export function useAuth() {
           console.log('[useAuth] User is authenticated:', currentSession.user?.email);
           setUser(currentSession.user);
           console.log('[useAuth] About to check onboarding status...');
-          await checkOnboardingStatus(currentSession.user?.id, currentSession.user?.email);
+          await checkOnboardingStatus(currentSession.user?.id);
           console.log('[useAuth] Onboarding status check complete');
         } else {
           console.log('[useAuth] No session found - user not authenticated');
@@ -187,7 +186,7 @@ export function useAuth() {
       if (event === 'SIGNED_IN' && newSession) {
         console.log('[useAuth] User signed in:', newSession.user?.email);
         setUser(newSession.user);
-        await checkOnboardingStatus(newSession.user?.id, newSession.user?.email);
+        await checkOnboardingStatus(newSession.user?.id);
         setLoading(false);
       } else if (event === 'SIGNED_OUT') {
         console.log('[useAuth] User signed out');
@@ -204,7 +203,7 @@ export function useAuth() {
         console.log('[useAuth] Initial session event');
         if (newSession) {
           setUser(newSession.user);
-          await checkOnboardingStatus(newSession.user?.id, newSession.user?.email);
+          await checkOnboardingStatus(newSession.user?.id);
         }
         setLoading(false);
       }
