@@ -295,7 +295,7 @@ const AddPlant = ({ onClose, onSelectSpecies }) => {
                 width: '120px',
                 height: '120px',
                 borderRadius: '50%',
-                backgroundColor: '#F1F8E9',
+                backgroundColor: '#F5F5F5',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -303,9 +303,9 @@ const AddPlant = ({ onClose, onSelectSpecies }) => {
               }}
             >
               <svg width="60" height="60" viewBox="0 0 60 60" fill="none">
-                <circle cx="26" cy="26" r="14" stroke="#7CB342" strokeWidth="4" />
-                <path d="M36 36L48 48" stroke="#7CB342" strokeWidth="4" strokeLinecap="round" />
-                <path d="M20 26H32" stroke="#7CB342" strokeWidth="3" strokeLinecap="round" />
+                <circle cx="26" cy="26" r="14" stroke="#999999" strokeWidth="4" />
+                <path d="M36 36L48 48" stroke="#999999" strokeWidth="4" strokeLinecap="round" />
+                <path d="M20 26H32" stroke="#999999" strokeWidth="3" strokeLinecap="round" />
               </svg>
             </div>
 

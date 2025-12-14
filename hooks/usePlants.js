@@ -13,6 +13,13 @@ import {
 } from '@/lib/offlineStorage';
 import { syncAll } from '@/lib/syncService';
 
+// Helper to validate UUID format
+const isValidUUID = (str) => {
+  if (!str || typeof str !== 'string') return false;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(str);
+};
+
 // Map species names to emojis (since DB doesn't have icon column)
 const SPECIES_EMOJI_MAP = {
   'labuh': '🎃',
@@ -531,6 +538,28 @@ export function usePlants() {
     if (!user?.id) {
       console.error('[usePlants] recordAction: No user ID');
       return { success: false, error: 'User not authenticated' };
+    }
+
+    // Validate plant ID is a valid UUID before sending to Supabase
+    const plantIdStr = String(plantId);
+    if (!isValidUUID(plantIdStr)) {
+      console.warn('[usePlants] recordAction: Invalid UUID for plant_id:', plantId);
+      // For non-UUID plant IDs (created offline), update local state only
+      const today = new Date();
+      setPlants(prev => prev.map(plant => {
+        if (plant.id === plantId) {
+          const updates = { ...plant };
+          if (actionType === 'siram') {
+            updates.lastWatered = today;
+            updates.status = 'Baik Baik Saja';
+          } else if (actionType === 'pupuk') {
+            updates.lastFertilized = today;
+          }
+          return updates;
+        }
+        return plant;
+      }));
+      return { success: true, offline: true, message: 'Action recorded locally for offline plant' };
     }
 
     // Format date as YYYY-MM-DD for the date column type

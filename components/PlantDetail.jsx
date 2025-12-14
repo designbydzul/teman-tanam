@@ -21,6 +21,13 @@ import TanyaTanam from './TanyaTanam';
 import EditPlant from './EditPlant';
 import { supabase } from '@/lib/supabase/client';
 
+// Helper to validate UUID format
+const isValidUUID = (str) => {
+  if (!str || typeof str !== 'string') return false;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(str);
+};
+
 const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction }) => {
   const [activeTab, setActiveTab] = useState('perawatan');
   const [showMenu, setShowMenu] = useState(false);
@@ -120,8 +127,15 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction }) => {
     if (!plantData?.id) return;
 
     // Skip fetching from Supabase for offline/temp plants
-    if (plantData.id.startsWith('temp-')) {
+    if (typeof plantData.id === 'string' && plantData.id.startsWith('temp-')) {
       console.log('[PlantDetail] Skipping fetch for temp plant:', plantData.id);
+      setActionsHistory([]);
+      return;
+    }
+
+    // Skip fetching for non-UUID plant IDs (created offline with numeric IDs)
+    if (!isValidUUID(String(plantData.id))) {
+      console.log('[PlantDetail] Skipping fetch for non-UUID plant ID:', plantData.id);
       setActionsHistory([]);
       return;
     }
@@ -1119,7 +1133,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction }) => {
                   onMouseEnter={(e) => (e.target.style.backgroundColor = '#F5F5F5')}
                   onMouseLeave={(e) => (e.target.style.backgroundColor = '#FFFFFF')}
                 >
-                  <FirstAidKit size={24} weight="duotone" color="#EF4444" />
+                  <ChatCircle size={24} weight="duotone" color="#7CB342" />
                   <span
                     style={{
                       fontFamily: "'Inter', sans-serif",

@@ -24,8 +24,12 @@ import TanyaTanam from './TanyaTanam';
 import OfflineIndicator from './OfflineIndicator';
 import { usePlants } from '@/hooks/usePlants';
 import { useLocations } from '@/hooks/useLocations';
+import { useAuth } from '@/hooks/useAuth';
 
 const Home = ({ userName }) => {
+  // Auth hook - get profile from Supabase
+  const { user, profile } = useAuth();
+
   // Data hooks - fetch real data from Supabase
   const {
     plants: supabasePlants,
@@ -103,6 +107,7 @@ const Home = ({ userName }) => {
   // Delete confirmation modal state
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
   const [plantToDelete, setPlantToDelete] = useState(null);
+  const [plantsToDelete, setPlantsToDelete] = useState([]); // For bulk delete
 
   // Network status state
   const [networkStatus, setNetworkStatus] = useState('online'); // 'online' | 'offline' | 'reconnecting'
@@ -138,15 +143,24 @@ const Home = ({ userName }) => {
     };
   }, []);
 
-  // Load user profile from localStorage
+  // Load user profile from Supabase profile or localStorage fallback
   useEffect(() => {
-    const savedName = localStorage.getItem('temanTanamUserName');
-    const savedEmail = localStorage.getItem('temanTanamUserEmail');
-    const savedPhoto = localStorage.getItem('temanTanamUserPhoto');
-    if (savedName) setCurrentUserName(savedName);
-    if (savedEmail) setUserEmail(savedEmail);
-    if (savedPhoto) setUserPhoto(savedPhoto);
-  }, []);
+    // Priority: Supabase profile > localStorage
+    if (profile) {
+      if (profile.display_name) setCurrentUserName(profile.display_name);
+      if (profile.avatar_url) setUserPhoto(profile.avatar_url);
+      if (user?.email) setUserEmail(user.email);
+    } else {
+      // Fallback to localStorage
+      const savedName = localStorage.getItem('temanTanamUserName');
+      const savedEmail = localStorage.getItem('temanTanamUserEmail');
+      const savedPhoto = localStorage.getItem('temanTanamUserPhoto');
+      if (savedName) setCurrentUserName(savedName);
+      if (savedEmail) setUserEmail(savedEmail);
+      if (savedPhoto) setUserPhoto(savedPhoto);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.display_name, profile?.avatar_url, user?.email]);
 
   // Use locations from Supabase hook
   // supabaseLocationNames already includes "Semua" as the first option
@@ -462,6 +476,33 @@ const Home = ({ userName }) => {
 
   // Handle confirmed delete from modal
   const handleConfirmDelete = async () => {
+    // Bulk delete
+    if (plantsToDelete.length > 0) {
+      let successCount = 0;
+      let failCount = 0;
+
+      for (const plant of plantsToDelete) {
+        const result = await deleteSupabasePlant(plant.id);
+        if (result.success) {
+          successCount++;
+        } else {
+          failCount++;
+        }
+      }
+
+      setShowDeleteConfirmModal(false);
+      setPlantsToDelete([]);
+      exitMultiSelectMode();
+
+      if (failCount === 0) {
+        showActionToastWithMessage(`${successCount} tanaman sudah dihapus`);
+      } else {
+        showActionToastWithMessage(`${successCount} berhasil, ${failCount} gagal dihapus`);
+      }
+      return;
+    }
+
+    // Single delete
     if (plantToDelete) {
       const plantName = plantToDelete.name;
       const result = await deleteSupabasePlant(plantToDelete.id);
@@ -568,7 +609,7 @@ const Home = ({ userName }) => {
       {/* Header */}
       <div
         style={{
-          padding: '20px 24px',
+          paddingTop: '20px',
           backgroundColor: '#FFFFFF',
           flexShrink: 0,
         }}
@@ -580,6 +621,8 @@ const Home = ({ userName }) => {
             justifyContent: 'space-between',
             alignItems: 'center',
             marginBottom: '24px',
+            paddingLeft: '24px',
+            paddingRight: '24px',
           }}
         >
           <h1
@@ -705,6 +748,8 @@ const Home = ({ userName }) => {
           style={{
             position: 'relative',
             marginBottom: '20px',
+            paddingLeft: '24px',
+            paddingRight: '24px',
           }}
         >
           <input
@@ -776,6 +821,9 @@ const Home = ({ userName }) => {
             gap: '12px',
             alignItems: 'center',
             justifyContent: 'space-between',
+            paddingRight: '24px',
+            paddingBottom: '20px',
+            borderBottom: '1px solid #F0F0F0',
           }}
         >
           <div
@@ -785,7 +833,13 @@ const Home = ({ userName }) => {
               alignItems: 'center',
               flex: 1,
               overflowX: 'auto',
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none',
+              WebkitOverflowScrolling: 'touch',
+              paddingBottom: '4px',
+              paddingLeft: '24px',
             }}
+            className="hide-scrollbar"
           >
             {locations.map((location, index) => (
               <button
@@ -842,6 +896,8 @@ const Home = ({ userName }) => {
               transition={{ duration: 0.2 }}
               style={{
                 overflow: 'hidden',
+                paddingLeft: '24px',
+                paddingRight: '24px',
               }}
             >
               <div
@@ -917,6 +973,7 @@ const Home = ({ userName }) => {
         }}
       >
         <div
+          className="plant-grid"
           style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(3, 1fr)',
@@ -1004,7 +1061,7 @@ const Home = ({ userName }) => {
                 width: '120px',
                 height: '120px',
                 borderRadius: '50%',
-                backgroundColor: '#F1F8E9',
+                backgroundColor: '#F5F5F5',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -1014,20 +1071,20 @@ const Home = ({ userName }) => {
               {isSearching || isFilteringLocation ? (
                 // Search/Filter icon for no results
                 <svg width="60" height="60" viewBox="0 0 60 60" fill="none">
-                  <circle cx="26" cy="26" r="14" stroke="#7CB342" strokeWidth="4" />
-                  <path d="M36 36L48 48" stroke="#7CB342" strokeWidth="4" strokeLinecap="round" />
-                  <path d="M20 26H32" stroke="#7CB342" strokeWidth="3" strokeLinecap="round" />
+                  <circle cx="26" cy="26" r="14" stroke="#999999" strokeWidth="4" />
+                  <path d="M36 36L48 48" stroke="#999999" strokeWidth="4" strokeLinecap="round" />
+                  <path d="M20 26H32" stroke="#999999" strokeWidth="3" strokeLinecap="round" />
                 </svg>
               ) : (
                 // Plant icon for no plants added
                 <svg width="60" height="60" viewBox="0 0 60 60" fill="none">
                   <path
                     d="M30 52.5C30 52.5 12 42 12 27C12 20.3726 17.3726 15 24 15C26.8328 15 29.4134 15.9876 31.5 17.6459C33.5866 15.9876 36.1672 15 39 15C45.6274 15 51 20.3726 51 27C51 42 33 52.5 30 52.5Z"
-                    fill="#7CB342"
+                    fill="#CCCCCC"
                   />
                   <path
                     d="M30 17.6459V52.5"
-                    stroke="#2D5016"
+                    stroke="#999999"
                     strokeWidth="3"
                     strokeLinecap="round"
                   />
@@ -1761,104 +1818,6 @@ const Home = ({ userName }) => {
                   </span>
                 </button>
 
-                {/* Tanya Tanam */}
-                <button
-                  onClick={() => {
-                    setShowMoreMenu(false);
-                    // For bulk, we can only use Tanya Tanam if 1 plant is selected
-                    if (selectedPlantIds.size === 1) {
-                      const plantId = Array.from(selectedPlantIds)[0];
-                      const plant = plants.find(p => p.id === plantId);
-                      if (plant) {
-                        setMenuPlant(plant);
-                        setShowTanyaTanamModal(true);
-                      }
-                    } else {
-                      showActionToastWithMessage('Pilih 1 tanaman untuk Tanya Tanam');
-                    }
-                  }}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '16px',
-                    width: '100%',
-                    padding: '16px',
-                    backgroundColor: 'transparent',
-                    border: 'none',
-                    borderRadius: '12px',
-                    cursor: 'pointer',
-                  }}
-                >
-                  <ChatCircleDots size={24} weight="regular" color="#F59E0B" />
-                  <span
-                    style={{
-                      fontFamily: "'Inter', sans-serif",
-                      fontSize: '16px',
-                      fontWeight: 500,
-                      color: '#2C2C2C',
-                    }}
-                  >
-                    Tanya Tanam
-                  </span>
-                </button>
-              </div>
-
-              {/* KONFIGURASI Section */}
-              <div style={{ marginBottom: '24px' }}>
-                <p
-                  style={{
-                    fontFamily: "'Inter', sans-serif",
-                    fontSize: '12px',
-                    fontWeight: 600,
-                    color: '#999999',
-                    margin: '0 0 12px 0',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
-                  }}
-                >
-                  Konfigurasi
-                </p>
-
-                {/* Edit Tanaman */}
-                <button
-                  onClick={() => {
-                    setShowMoreMenu(false);
-                    // For bulk, we can only edit if 1 plant is selected
-                    if (selectedPlantIds.size === 1) {
-                      const plantId = Array.from(selectedPlantIds)[0];
-                      const plant = plants.find(p => p.id === plantId);
-                      if (plant) {
-                        setMenuPlant(plant);
-                        setShowEditPlantModal(true);
-                      }
-                    } else {
-                      showActionToastWithMessage('Pilih 1 tanaman untuk Edit');
-                    }
-                  }}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '16px',
-                    width: '100%',
-                    padding: '16px',
-                    backgroundColor: 'transparent',
-                    border: 'none',
-                    borderRadius: '12px',
-                    cursor: 'pointer',
-                  }}
-                >
-                  <PencilSimple size={24} weight="regular" color="#666666" />
-                  <span
-                    style={{
-                      fontFamily: "'Inter', sans-serif",
-                      fontSize: '16px',
-                      fontWeight: 500,
-                      color: '#2C2C2C',
-                    }}
-                  >
-                    Edit Tanaman
-                  </span>
-                </button>
               </div>
 
               {/* ZONA BERBAHAYA Section */}
@@ -1881,18 +1840,22 @@ const Home = ({ userName }) => {
                 <button
                   onClick={() => {
                     setShowMoreMenu(false);
-                    // For now, show a toast - bulk delete could be added later
                     if (selectedPlantIds.size === 1) {
+                      // Single delete
                       const plantId = Array.from(selectedPlantIds)[0];
                       const plant = plants.find(p => p.id === plantId);
                       if (plant) {
                         setPlantToDelete(plant);
                         setShowDeleteConfirmModal(true);
                       }
-                    } else {
-                      showActionToastWithMessage('Pilih 1 tanaman untuk Hapus');
+                    } else if (selectedPlantIds.size > 1) {
+                      // Bulk delete
+                      const plantsForDelete = plants.filter(p => selectedPlantIds.has(p.id));
+                      setPlantsToDelete(plantsForDelete);
+                      setShowDeleteConfirmModal(true);
                     }
                   }}
+                  disabled={selectedPlantIds.size === 0}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -1925,7 +1888,7 @@ const Home = ({ userName }) => {
 
       {/* Delete Confirmation Modal */}
       <AnimatePresence>
-        {showDeleteConfirmModal && plantToDelete && (
+        {showDeleteConfirmModal && (plantToDelete || plantsToDelete.length > 0) && (
           <>
             {/* Backdrop */}
             <motion.div
@@ -1935,6 +1898,7 @@ const Home = ({ userName }) => {
               onClick={() => {
                 setShowDeleteConfirmModal(false);
                 setPlantToDelete(null);
+                setPlantsToDelete([]);
               }}
               style={{
                 position: 'fixed',
@@ -1947,23 +1911,35 @@ const Home = ({ userName }) => {
               }}
             />
 
-            {/* Modal */}
+            {/* Modal Container - for centering */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
               style={{
                 position: 'fixed',
-                top: '50%',
-                left: '50%',
-                transform: 'translate(-50%, -50%)',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 4001,
+                padding: '24px',
+              }}
+            >
+            <motion.div
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.9 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              style={{
                 backgroundColor: '#FFFFFF',
                 borderRadius: '24px',
                 padding: '24px',
-                width: 'calc(100% - 48px)',
+                width: '100%',
                 maxWidth: '320px',
-                zIndex: 4001,
                 textAlign: 'center',
               }}
             >
@@ -2004,7 +1980,10 @@ const Home = ({ userName }) => {
                   lineHeight: 1.5,
                 }}
               >
-                Kamu yakin mau hapus <strong>{plantToDelete.name}</strong>? Aksi ini tidak bisa dibatalkan.
+                {plantsToDelete.length > 0
+                  ? `Kamu yakin mau hapus ${plantsToDelete.length} tanaman? Aksi ini tidak bisa dibatalkan.`
+                  : <>Kamu yakin mau hapus <strong>{plantToDelete?.name}</strong>? Aksi ini tidak bisa dibatalkan.</>
+                }
               </p>
 
               <div style={{ display: 'flex', gap: '12px' }}>
@@ -2012,6 +1991,7 @@ const Home = ({ userName }) => {
                   onClick={() => {
                     setShowDeleteConfirmModal(false);
                     setPlantToDelete(null);
+                    setPlantsToDelete([]);
                   }}
                   style={{
                     flex: 1,
@@ -2046,6 +2026,7 @@ const Home = ({ userName }) => {
                   Hapus
                 </button>
               </div>
+            </motion.div>
             </motion.div>
           </>
         )}

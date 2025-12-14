@@ -26,6 +26,9 @@ const suggestedQuestions = [
   'Batang nya lunak atau membusuk?',
 ];
 
+// Helper to get chat storage key for a plant
+const getChatStorageKey = (plantId) => `tanyaTanam_chat_${plantId}`;
+
 const TanyaTanam = ({ plant, plants = [], onBack }) => {
   // State
   const [selectedPlant, setSelectedPlant] = useState(plant || null);
@@ -38,6 +41,36 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
   const [inputFocused, setInputFocused] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  // Load chat history from localStorage when plant changes
+  useEffect(() => {
+    if (selectedPlant?.id) {
+      const storageKey = getChatStorageKey(selectedPlant.id);
+      const savedChat = localStorage.getItem(storageKey);
+      if (savedChat) {
+        try {
+          const parsedChat = JSON.parse(savedChat);
+          setMessages(parsedChat);
+          setShowSuggestions(parsedChat.length === 0);
+        } catch (e) {
+          console.error('Failed to parse saved chat:', e);
+          setMessages([]);
+          setShowSuggestions(true);
+        }
+      } else {
+        setMessages([]);
+        setShowSuggestions(true);
+      }
+    }
+  }, [selectedPlant?.id]);
+
+  // Save chat history to localStorage when messages change
+  useEffect(() => {
+    if (selectedPlant?.id && messages.length > 0) {
+      const storageKey = getChatStorageKey(selectedPlant.id);
+      localStorage.setItem(storageKey, JSON.stringify(messages));
+    }
+  }, [messages, selectedPlant?.id]);
 
   // Refs
   const chatAreaRef = useRef(null);
@@ -353,13 +386,14 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
         ref={chatAreaRef}
         style={{
           flex: 1,
-          overflowY: 'auto',
+          overflowY: 'scroll',
           overflowX: 'hidden',
           padding: keyboardHeight > 0 ? '8px 16px' : '16px 24px',
           display: 'flex',
           flexDirection: 'column',
           WebkitOverflowScrolling: 'touch',
           minHeight: 0,
+          touchAction: 'pan-y',
         }}
       >
         {/* Plant Selector Card */}

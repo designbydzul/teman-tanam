@@ -103,17 +103,13 @@ const OfflineIndicator = ({
           exit={{ y: -50, opacity: 0 }}
           transition={{ type: 'spring', stiffness: 300, damping: 30 }}
           style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
             backgroundColor: config.bg,
             padding: '8px 16px',
-            zIndex: 9999,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             gap: '8px',
+            flexShrink: 0,
           }}
         >
           {/* Icon */}

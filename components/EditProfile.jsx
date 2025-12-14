@@ -1,12 +1,16 @@
 import React, { useState, useRef } from 'react';
 import { ArrowLeft, UploadSimple } from '@phosphor-icons/react';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/lib/supabase';
 
 const EditProfile = ({ onBack, userName, userEmail, userPhoto, onSave, onProfileUpdated }) => {
+  const { user, updateProfile } = useAuth();
   const [name, setName] = useState(userName || '');
   const [email, setEmail] = useState(userEmail || '');
   const [photoPreview, setPhotoPreview] = useState(userPhoto || null);
   const [photoFile, setPhotoFile] = useState(null);
   const [focusedInput, setFocusedInput] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
   const fileInputRef = useRef(null);
 
   const handlePhotoChange = (e) => {
@@ -25,36 +29,78 @@ const EditProfile = ({ onBack, userName, userEmail, userPhoto, onSave, onProfile
     fileInputRef.current?.click();
   };
 
-  const handleSave = () => {
-    // Save profile data
-    const profileData = {
-      name: name.trim(),
-      email: email.trim(),
-      photo: photoPreview,
-    };
+  const handleSave = async () => {
+    setIsSaving(true);
 
-    console.log('Saving profile:', { name: profileData.name, email: profileData.email, hasPhoto: !!profileData.photo });
+    try {
+      let photoUrl = photoPreview;
 
-    // Save to localStorage
-    localStorage.setItem('temanTanamUserName', profileData.name);
-    localStorage.setItem('temanTanamUserEmail', profileData.email);
-    if (photoPreview) {
-      localStorage.setItem('temanTanamUserPhoto', photoPreview);
+      // Upload photo to Supabase Storage if there's a new file
+      if (photoFile && user) {
+        const fileExt = photoFile.name.split('.').pop();
+        const fileName = `${user.id}/avatar.${fileExt}`;
+
+        // Upload to avatars bucket
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(fileName, photoFile, {
+            cacheControl: '3600',
+            upsert: true,
+          });
+
+        if (uploadError) {
+          console.error('Error uploading avatar:', uploadError);
+          // Continue with base64 photo if upload fails
+        } else {
+          // Get public URL
+          const { data: { publicUrl } } = supabase.storage
+            .from('avatars')
+            .getPublicUrl(fileName);
+          photoUrl = publicUrl;
+        }
+      }
+
+      // Update profile in Supabase
+      const result = await updateProfile({
+        displayName: name.trim(),
+        photoUrl: photoUrl,
+      });
+
+      if (!result.success) {
+        console.error('Failed to update profile:', result.error);
+        // Still update localStorage as fallback
+      }
+
+      // Save profile data to localStorage as backup
+      const profileData = {
+        name: name.trim(),
+        email: email.trim(),
+        photo: photoUrl,
+      };
+
+      localStorage.setItem('temanTanamUserName', profileData.name);
+      localStorage.setItem('temanTanamUserEmail', profileData.email);
+      if (photoUrl) {
+        localStorage.setItem('temanTanamUserPhoto', photoUrl);
+      }
+
+      // Call onSave callback to update parent state
+      if (onSave) {
+        onSave(profileData);
+      }
+
+      // Callback to show toast
+      if (onProfileUpdated) {
+        onProfileUpdated();
+      }
+
+      // Close after saving
+      onBack();
+    } catch (err) {
+      console.error('Error saving profile:', err);
+    } finally {
+      setIsSaving(false);
     }
-
-    // Call onSave callback to update parent state
-    if (onSave) {
-      console.log('Calling onSave with photo:', !!profileData.photo);
-      onSave(profileData);
-    }
-
-    // Callback to show toast
-    if (onProfileUpdated) {
-      onProfileUpdated();
-    }
-
-    // Close after saving
-    onBack();
   };
 
   const isValid = name.trim().length >= 2;
@@ -227,19 +273,30 @@ const EditProfile = ({ onBack, userName, userEmail, userPhoto, onSave, onProfile
             onChange={(e) => setEmail(e.target.value)}
             onFocus={() => setFocusedInput('email')}
             onBlur={() => setFocusedInput(null)}
+            disabled
             style={{
               width: '100%',
               padding: '16px',
               fontSize: '1rem',
               fontFamily: "'Inter', sans-serif",
-              color: '#2C2C2C',
-              backgroundColor: '#FAFAFA',
-              border: focusedInput === 'email' ? '2px solid #7CB342' : '2px solid transparent',
+              color: '#999999',
+              backgroundColor: '#F5F5F5',
+              border: '2px solid transparent',
               borderRadius: '12px',
               outline: 'none',
-              transition: 'border-color 200ms',
+              cursor: 'not-allowed',
             }}
           />
+          <p
+            style={{
+              fontFamily: "'Inter', sans-serif",
+              fontSize: '12px',
+              color: '#999999',
+              margin: '8px 0 0 0',
+            }}
+          >
+            Email tidak bisa diubah
+          </p>
         </div>
 
         {/* Name Field */}
@@ -290,7 +347,7 @@ const EditProfile = ({ onBack, userName, userEmail, userPhoto, onSave, onProfile
       >
         <button
           onClick={handleSave}
-          disabled={!isValid}
+          disabled={!isValid || isSaving}
           style={{
             width: '100%',
             padding: '16px',
@@ -298,13 +355,13 @@ const EditProfile = ({ onBack, userName, userEmail, userPhoto, onSave, onProfile
             fontFamily: "'Inter', sans-serif",
             fontWeight: 600,
             color: '#FFFFFF',
-            backgroundColor: isValid ? '#7CB342' : '#CCCCCC',
+            backgroundColor: isValid && !isSaving ? '#7CB342' : '#CCCCCC',
             border: 'none',
             borderRadius: '12px',
-            cursor: isValid ? 'pointer' : 'not-allowed',
+            cursor: isValid && !isSaving ? 'pointer' : 'not-allowed',
           }}
         >
-          Simpan Perubahan
+          {isSaving ? 'Menyimpan...' : 'Simpan Perubahan'}
         </button>
       </div>
     </div>

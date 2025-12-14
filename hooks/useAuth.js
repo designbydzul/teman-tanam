@@ -381,6 +381,58 @@ export function useAuth() {
     return false;
   };
 
+  // Update profile (name and photo)
+  const updateProfile = async ({ displayName, photoUrl }) => {
+    if (!user) {
+      return { success: false, error: 'Tidak ada user yang login' };
+    }
+
+    console.log('[useAuth] updateProfile called:', { displayName, hasPhoto: !!photoUrl });
+
+    try {
+      const updateData = {
+        id: user.id,
+        updated_at: new Date().toISOString(),
+      };
+
+      if (displayName !== undefined) {
+        updateData.display_name = displayName;
+      }
+
+      if (photoUrl !== undefined) {
+        updateData.avatar_url = photoUrl;
+      }
+
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .upsert(updateData, { onConflict: 'id' })
+        .select()
+        .single();
+
+      if (profileError) {
+        console.error('[useAuth] Profile update error:', profileError);
+        throw profileError;
+      }
+
+      console.log('[useAuth] Profile updated:', profileData);
+      setProfile(profileData);
+
+      // Update localStorage cache
+      if (displayName) {
+        localStorage.setItem('userName', displayName);
+        localStorage.setItem('temanTanamUserName', displayName);
+      }
+
+      return { success: true, profile: profileData };
+    } catch (err) {
+      console.error('[useAuth] Profile update error:', err);
+      return {
+        success: false,
+        error: err.message || 'Gagal menyimpan profil. Coba lagi.'
+      };
+    }
+  };
+
   return {
     user,
     session,
@@ -393,6 +445,7 @@ export function useAuth() {
     logout,
     completeOnboarding,
     refreshOnboardingStatus,
+    updateProfile,
   };
 }
 
