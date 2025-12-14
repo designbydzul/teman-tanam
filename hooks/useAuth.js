@@ -32,19 +32,11 @@ export function useAuth() {
       return false;
     }
 
-    // Check localStorage cache first for faster response
-    const cachedOnboarding = localStorage.getItem(`onboarding_complete_${userId}`);
-    if (cachedOnboarding === 'true' && !forceRefetch) {
-      console.log('[useAuth] Found cached onboarding status: complete');
-      setHasCompletedOnboarding(true);
-      hasFetchedProfile.current = true;
-      // Return true immediately - no need to fetch
-      return true;
-    }
-
-    // Prevent duplicate fetches for the same user
+    // Prevent duplicate fetches for the same user within the same session
+    // NOTE: We no longer trust localStorage cache alone - we ALWAYS verify with database
+    // on first load to prevent stale cache issues where cache says complete but DB says not
     if (!forceRefetch && hasFetchedProfile.current && currentUserId.current === userId) {
-      console.log('[useAuth] Already fetched profile for this user, skipping');
+      console.log('[useAuth] Already fetched profile for this user this session, skipping');
       // Return current cached value from localStorage or false
       return localStorage.getItem(`onboarding_complete_${userId}`) === 'true';
     }
