@@ -15,15 +15,23 @@ const Onboarding = ({ onComplete }) => {
   const locationOptions = ['Balkon', 'Teras'];
 
   const toggleLocation = (location) => {
-    setLocations((prev) =>
-      prev.includes(location)
+    console.log('[Onboarding] toggleLocation called:', location, 'current:', locations);
+    setLocations((prev) => {
+      const newLocations = prev.includes(location)
         ? prev.filter((l) => l !== location)
-        : [...prev, location]
-    );
+        : [...prev, location];
+      console.log('[Onboarding] locations updated:', newLocations);
+      return newLocations;
+    });
   };
 
   const handleSubmit = () => {
-    if (name.trim().length < 2) return;
+    console.log('[Onboarding] handleSubmit TRIGGERED, name:', name, 'isValid:', name.trim().length >= 2, 'locations:', locations);
+
+    if (name.trim().length < 2) {
+      console.log('[Onboarding] Name too short, returning early');
+      return;
+    }
 
     console.log('[Onboarding] handleSubmit called:', { name, locations });
 
@@ -209,7 +217,11 @@ const Onboarding = ({ onComplete }) => {
       {/* Submit Button - Fixed at bottom */}
       <div style={{ marginTop: 'auto', paddingTop: '32px' }}>
         <motion.button
-          onClick={handleSubmit}
+          type="button"
+          onClick={() => {
+            console.log('[Onboarding] Button clicked! isValid:', isValid, 'name:', name, 'locations:', locations);
+            handleSubmit();
+          }}
           disabled={!isValid}
           whileTap={isValid ? { scale: 0.98 } : {}}
           style={{
