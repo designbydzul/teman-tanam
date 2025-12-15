@@ -38,9 +38,18 @@ const EditPlant = ({ plant, onClose, onSave }) => {
   // Initialize form with plant data
   useEffect(() => {
     if (plant) {
-      const plantedDateStr = plant.plantedDate
-        ? new Date(plant.plantedDate).toISOString().split('T')[0]
-        : '';
+      // Safely parse planted date with validation
+      let plantedDateStr = '';
+      if (plant.plantedDate) {
+        try {
+          const date = new Date(plant.plantedDate);
+          if (!isNaN(date.getTime())) {
+            plantedDateStr = date.toISOString().split('T')[0];
+          }
+        } catch (e) {
+          console.warn('[EditPlant] Invalid planted date:', plant.plantedDate);
+        }
+      }
 
       // Get plant location
       const plantLocation = plant.location || '';

@@ -8,6 +8,7 @@ import {
   TouchSensor,
   useSensor,
   useSensors,
+  DragOverlay,
 } from '@dnd-kit/core';
 import {
   arrayMove,
@@ -22,8 +23,8 @@ import {
   DotsSixVertical,
   Trash,
   Plus,
-  X,
   WifiSlash,
+  MapPin,
 } from '@phosphor-icons/react';
 import { useLocations } from '@/hooks/useLocations';
 
@@ -40,7 +41,8 @@ const SortableLocationCard = ({ location, plantCount, onDelete, isDeleting }) =>
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
+    opacity: isDragging ? 0.3 : 1,
+    zIndex: isDragging ? 1000 : 1,
   };
 
   return (
@@ -55,11 +57,12 @@ const SortableLocationCard = ({ location, plantCount, onDelete, isDeleting }) =>
           alignItems: 'center',
           gap: '16px',
           padding: '16px',
-          backgroundColor: '#FFFFFF',
-          border: 'none',
+          backgroundColor: isDragging ? '#F1F8E9' : '#FFFFFF',
+          border: isDragging ? '2px dashed #7CB342' : 'none',
           borderRadius: '12px',
           marginBottom: '12px',
-          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)',
+          boxShadow: isDragging ? 'none' : '0 1px 3px rgba(0, 0, 0, 0.08)',
+          transition: 'background-color 0.2s, border 0.2s',
         }}
       >
         {/* Drag Handle */}
@@ -67,10 +70,16 @@ const SortableLocationCard = ({ location, plantCount, onDelete, isDeleting }) =>
           {...attributes}
           {...listeners}
           style={{
-            cursor: 'grab',
+            cursor: isDragging ? 'grabbing' : 'grab',
             display: 'flex',
             alignItems: 'center',
-            color: '#999999',
+            justifyContent: 'center',
+            color: isDragging ? '#7CB342' : '#999999',
+            touchAction: 'none',
+            padding: '8px',
+            marginLeft: '-8px',
+            minWidth: '40px',
+            minHeight: '40px',
           }}
         >
           <DotsSixVertical size={24} weight="bold" />
@@ -150,6 +159,7 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [activeId, setActiveId] = useState(null);
 
   // Calculate plant count for a location from actual plants data
   const getPlantCountForLocation = (locationName) => {
@@ -165,13 +175,13 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8,
+        distance: 5,
       },
     }),
     useSensor(TouchSensor, {
       activationConstraint: {
-        delay: 200,
-        tolerance: 8,
+        delay: 100,
+        tolerance: 5,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -179,21 +189,39 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
     })
   );
 
+  const handleDragStart = (event) => {
+    console.log('[LocationSettings] Drag started:', event.active.id);
+    setActiveId(event.active.id);
+  };
+
   const handleDragEnd = async (event) => {
     const { active, over } = event;
+    console.log('[LocationSettings] Drag ended:', { activeId: active.id, overId: over?.id });
+    setActiveId(null);
 
     if (over && active.id !== over.id) {
       const oldIndex = locations.findIndex((item) => item.id === active.id);
       const newIndex = locations.findIndex((item) => item.id === over.id);
       const reorderedLocations = arrayMove(locations, oldIndex, newIndex);
+      console.log('[LocationSettings] Reordering from', oldIndex, 'to', newIndex);
 
       // Update in Supabase
       const result = await reorderLocations(reorderedLocations);
       if (!result.success) {
         console.error('[LocationSettings] Failed to reorder:', result.error);
+      } else {
+        console.log('[LocationSettings] Reorder successful');
       }
     }
   };
+
+  const handleDragCancel = () => {
+    console.log('[LocationSettings] Drag cancelled');
+    setActiveId(null);
+  };
+
+  // Get the active location for DragOverlay
+  const activeLocation = activeId ? locations.find((loc) => loc.id === activeId) : null;
 
   const handleNameChange = (value) => {
     setNewLocationName(value);
@@ -377,7 +405,7 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
       </div>
 
       {/* Content */}
-      <div style={{ padding: '24px' }}>
+      <div style={{ padding: '24px', paddingBottom: '100px', minHeight: 'calc(100vh - 100px)' }}>
         {/* Offline Banner */}
         {!isOnline && (
           <div
@@ -439,9 +467,47 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
 
         {/* Empty State */}
         {!loading && !locationsError && locations.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '40px' }}>
-            <p style={{ color: '#666666', fontFamily: "'Inter', sans-serif" }}>
-              Belum ada lokasi. Tambahkan lokasi pertamamu!
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minHeight: 'calc(100vh - 280px)',
+              textAlign: 'center',
+              padding: '40px 24px',
+            }}
+          >
+            {/* Icon with circle background */}
+            <div
+              style={{
+                width: '120px',
+                height: '120px',
+                borderRadius: '50%',
+                backgroundColor: '#F5F5F5',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: '24px',
+              }}
+            >
+              <MapPin size={64} weight="duotone" color="#999999" />
+            </div>
+
+            {/* Text */}
+            <p
+              style={{
+                fontFamily: "'Inter', sans-serif",
+                fontSize: '1.125rem',
+                fontWeight: 500,
+                color: '#666666',
+                margin: 0,
+                lineHeight: 1.5,
+              }}
+            >
+              Belum ada lokasi.
+              <br />
+              Tambahkan lokasi pertamamu!
             </p>
           </div>
         )}
@@ -451,7 +517,9 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
+            onDragCancel={handleDragCancel}
           >
             <SortableContext
               items={locations.map((loc) => loc.id)}
@@ -467,11 +535,69 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
                 />
               ))}
             </SortableContext>
+
+            {/* Drag Overlay - shows a copy of the dragged item */}
+            <DragOverlay>
+              {activeLocation ? (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '16px',
+                    padding: '16px',
+                    backgroundColor: '#FFFFFF',
+                    border: 'none',
+                    borderRadius: '12px',
+                    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
+                    opacity: 0.95,
+                  }}
+                >
+                  <div
+                    style={{
+                      cursor: 'grabbing',
+                      display: 'flex',
+                      alignItems: 'center',
+                      color: '#7CB342',
+                    }}
+                  >
+                    <DotsSixVertical size={24} weight="bold" />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <h3
+                      style={{
+                        fontFamily: "'Inter', sans-serif",
+                        fontSize: '1rem',
+                        fontWeight: 600,
+                        color: '#2C2C2C',
+                        margin: 0,
+                      }}
+                    >
+                      {activeLocation.name}
+                    </h3>
+                  </div>
+                </div>
+              ) : null}
+            </DragOverlay>
           </DndContext>
         )}
 
-        {/* Add New Location Button */}
-        {!loading && (
+      </div>
+
+      {/* Add New Location Button - Fixed at bottom */}
+      {!loading && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            padding: '16px 24px',
+            paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))',
+            backgroundColor: '#FFFFFF',
+            borderTop: '1px solid #F0F0F0',
+            zIndex: 100,
+          }}
+        >
           <button
             onClick={() => setShowAddModal(true)}
             style={{
@@ -485,7 +611,6 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
               justifyContent: 'center',
               gap: '8px',
               cursor: 'pointer',
-              marginTop: '12px',
             }}
           >
             <Plus size={24} weight="bold" color="#7CB342" />
@@ -500,8 +625,8 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
               Tambah Lokasi Baru
             </span>
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Add Location Modal */}
       <AnimatePresence>
@@ -559,7 +684,14 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
                   opacity: isSubmitting ? 0.5 : 1,
                 }}
               >
-                <X size={20} weight="bold" color="#666666" />
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path
+                    d="M15 5L5 15M5 5l10 10"
+                    stroke="#666666"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                </svg>
               </button>
 
               {/* Modal Title */}
@@ -802,7 +934,14 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
                   opacity: isDeleting ? 0.5 : 1,
                 }}
               >
-                <X size={20} weight="bold" color="#666666" />
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path
+                    d="M15 5L5 15M5 5l10 10"
+                    stroke="#666666"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                </svg>
               </button>
 
               {/* Modal Title */}

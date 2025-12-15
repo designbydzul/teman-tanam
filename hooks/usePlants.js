@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { differenceInDays, isToday, startOfDay } from 'date-fns';
 import { supabase } from '@/lib/supabase/client';
 import { useAuth } from './useAuth';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
@@ -73,20 +74,100 @@ export function usePlants() {
   const [pendingCount, setPendingCount] = useState(0);
   const wasOfflineRef = useRef(!isOnline);
 
-  // Calculate plant status based on last watering
-  const calculateStatus = (lastWateredAt, wateringFrequencyDays = 3) => {
-    if (!lastWateredAt) return 'Perlu disiram';
+  // Calculate care status for watering or fertilizing
+  const calculateCareStatus = (lastActionDate, frequencyDays, actionType = 'siram') => {
+    const actionLabel = actionType === 'siram' ? 'disiram' : 'dipupuk';
+    const needsLabel = actionType === 'siram' ? 'Perlu disiram' : 'Perlu dipupuk';
 
-    const lastWatered = new Date(lastWateredAt);
-    const now = new Date();
-    const daysSinceWatered = Math.floor((now - lastWatered) / (1000 * 60 * 60 * 24));
+    // Default frequency if not specified
+    const frequency = frequencyDays || (actionType === 'siram' ? 3 : 14);
 
-    if (daysSinceWatered >= wateringFrequencyDays) {
-      return 'Perlu disiram';
-    } else if (daysSinceWatered >= wateringFrequencyDays - 1) {
-      return 'Perlu disiram besok';
+    if (!lastActionDate) {
+      return {
+        status: 'needs_action',
+        label: needsLabel,
+        daysUntilNext: 0,
+        daysSinceLast: null,
+        doneToday: false,
+      };
     }
-    return 'Baik Baik Saja';
+
+    const lastAction = new Date(lastActionDate);
+    const today = startOfDay(new Date());
+    const lastActionDay = startOfDay(lastAction);
+
+    const daysSinceLast = differenceInDays(today, lastActionDay);
+    const doneToday = isToday(lastAction);
+    const daysUntilNext = Math.max(0, frequency - daysSinceLast);
+
+    if (doneToday) {
+      return {
+        status: 'done_today',
+        label: `Sudah ${actionLabel} hari ini`,
+        daysUntilNext: frequency,
+        daysSinceLast: 0,
+        doneToday: true,
+      };
+    }
+
+    if (daysSinceLast >= frequency) {
+      return {
+        status: 'needs_action',
+        label: needsLabel,
+        daysUntilNext: 0,
+        daysSinceLast,
+        doneToday: false,
+      };
+    }
+
+    return {
+      status: 'on_schedule',
+      label: `${daysUntilNext} hari lagi`,
+      daysUntilNext,
+      daysSinceLast,
+      doneToday: false,
+    };
+  };
+
+  // Calculate harvest status based on planted_date and days_to_harvest
+  const calculateHarvestStatus = (plantedDate, daysToHarvest, category) => {
+    // Only applicable to harvestable plants (vegetables, fruits, herbs)
+    // Skip ornamental plants
+    const harvestableCategories = ['sayuran', 'buah', 'rempah', 'vegetable', 'fruit', 'herb'];
+    const isHarvestable = category && harvestableCategories.some(cat =>
+      category.toLowerCase().includes(cat)
+    );
+
+    if (!isHarvestable || !daysToHarvest || !plantedDate) {
+      return { isReadyToHarvest: false, daysUntilHarvest: null };
+    }
+
+    const planted = new Date(plantedDate);
+    const today = startOfDay(new Date());
+    const plantedDay = startOfDay(planted);
+    const daysSincePlanted = differenceInDays(today, plantedDay);
+    const daysUntilHarvest = Math.max(0, daysToHarvest - daysSincePlanted);
+
+    return {
+      isReadyToHarvest: daysSincePlanted >= daysToHarvest,
+      daysUntilHarvest,
+      daysSincePlanted,
+    };
+  };
+
+  // Calculate overall plant status (for display on cards)
+  const calculateOverallStatus = (wateringStatus, fertilizingStatus, harvestStatus) => {
+    // Priority: needs_action (watering) > needs_action (fertilizing) > siap dipanen > on_schedule
+    if (wateringStatus.status === 'needs_action') {
+      return { status: 'Perlu disiram', color: '#F57C00' }; // Orange
+    }
+    if (fertilizingStatus.status === 'needs_action') {
+      return { status: 'Perlu dipupuk', color: '#F57C00' }; // Orange
+    }
+    if (harvestStatus?.isReadyToHarvest) {
+      return { status: 'Siap dipanen', color: '#4CAF50' }; // Green (harvest ready)
+    }
+    return { status: 'Terawat', color: '#7CB342' }; // Green
   };
 
   // Transform raw plant data to match the expected format
@@ -96,9 +177,17 @@ export function usePlants() {
       const location = plant.locations;
       const actions = actionsMap[plant.id] || {};
 
-      // Default watering frequency of 3 days since it's not in the schema
-      const wateringFrequency = 3;
-      const status = calculateStatus(actions.siram, wateringFrequency);
+      // Get care schedule from species (with defaults)
+      const wateringFrequencyDays = species?.watering_frequency_days || 3;
+      const fertilizingFrequencyDays = species?.fertilizing_frequency_days || 14;
+      const daysToHarvest = species?.days_to_harvest || null;
+
+      // Calculate care statuses
+      const wateringStatus = calculateCareStatus(actions.siram, wateringFrequencyDays, 'siram');
+      const fertilizingStatus = calculateCareStatus(actions.pupuk, fertilizingFrequencyDays, 'pupuk');
+      const plantedDate = plant.planted_date || plant.created_at;
+      const harvestStatus = calculateHarvestStatus(plantedDate, daysToHarvest, species?.category);
+      const overallStatus = calculateOverallStatus(wateringStatus, fertilizingStatus, harvestStatus);
 
       // Parse species info from notes if available (stored as <!--species:{...}-->)
       let storedSpeciesInfo = null;
@@ -130,7 +219,8 @@ export function usePlants() {
         id: plant.id,
         name: plantName,
         customName: plant.name,
-        status: plant.status || status,
+        status: overallStatus.status,
+        statusColor: overallStatus.color,
         location: location?.name || 'Semua',
         locationId: plant.location_id,
         image: plant.photo_url || null,
@@ -141,13 +231,23 @@ export function usePlants() {
           category: species.category,
           quickTips: species.quick_tips,
           emoji: speciesEmoji,
+          wateringFrequencyDays,
+          fertilizingFrequencyDays,
+          daysToHarvest,
         } : {
           // Provide fallback species object with emoji based on plant name
           emoji: speciesEmoji,
+          wateringFrequencyDays: 3,
+          fertilizingFrequencyDays: 14,
+          daysToHarvest: null,
         },
         plantedDate: plant.planted_date ? new Date(plant.planted_date) : new Date(plant.created_at),
         lastWatered: actions.siram ? new Date(actions.siram) : null,
         lastFertilized: actions.pupuk ? new Date(actions.pupuk) : null,
+        // Care status details
+        wateringStatus,
+        fertilizingStatus,
+        harvestStatus,
         notes: cleanNotes, // Use cleaned notes (without species tag)
         createdAt: new Date(plant.created_at),
         // Offline flags
@@ -194,7 +294,12 @@ export function usePlants() {
       console.log('[usePlants] ONLINE: Fetching plants for user:', user.id);
 
       // Fetch plants with joins
-      const { data: plantsData, error: plantsError } = await supabase
+      // First try with days_to_harvest column, fallback without it if column doesn't exist
+      let plantsData = null;
+      let plantsError = null;
+
+      // Try query with days_to_harvest first
+      const queryWithHarvest = await supabase
         .from('plants')
         .select(`
           *,
@@ -203,7 +308,10 @@ export function usePlants() {
             common_name,
             latin_name,
             category,
-            quick_tips
+            quick_tips,
+            watering_frequency_days,
+            fertilizing_frequency_days,
+            days_to_harvest
           ),
           locations (
             id,
@@ -212,6 +320,38 @@ export function usePlants() {
         `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
+
+      if (queryWithHarvest.error) {
+        // If error (likely column doesn't exist), try without days_to_harvest
+        console.warn('[usePlants] Query with days_to_harvest failed, trying without:', queryWithHarvest.error.message);
+
+        const queryWithoutHarvest = await supabase
+          .from('plants')
+          .select(`
+            *,
+            plant_species (
+              id,
+              common_name,
+              latin_name,
+              category,
+              quick_tips,
+              watering_frequency_days,
+              fertilizing_frequency_days
+            ),
+            locations (
+              id,
+              name
+            )
+          `)
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        plantsData = queryWithoutHarvest.data;
+        plantsError = queryWithoutHarvest.error;
+      } else {
+        plantsData = queryWithHarvest.data;
+        plantsError = queryWithHarvest.error;
+      }
 
       if (plantsError) {
         console.error('[usePlants] Error fetching plants with joins:', plantsError);
@@ -532,8 +672,8 @@ export function usePlants() {
   };
 
   // Record an action (water, fertilize, etc.)
-  const recordAction = async (plantId, actionType, photoBlob = null) => {
-    console.log('[usePlants] recordAction called:', { plantId, actionType, userId: user?.id });
+  const recordAction = async (plantId, actionType, notes = null) => {
+    console.log('[usePlants] recordAction called:', { plantId, actionType, notes, userId: user?.id });
 
     if (!user?.id) {
       console.error('[usePlants] recordAction: No user ID');
@@ -656,6 +796,11 @@ export function usePlants() {
       action_type: actionType,
       action_date: actionDate,
     };
+
+    // Add notes if provided
+    if (notes && notes.trim()) {
+      insertData.notes = notes.trim();
+    }
 
     console.log('[usePlants] recordAction: Inserting data:', insertData);
 

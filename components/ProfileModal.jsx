@@ -96,7 +96,7 @@ const ProfileModal = ({ isOpen, onClose, userName, userEmail, userPhoto, onNavig
                 width: '32px',
                 height: '32px',
                 borderRadius: '50%',
-                backgroundColor: 'transparent',
+                backgroundColor: '#F5F5F5',
                 border: 'none',
                 display: 'flex',
                 alignItems: 'center',
@@ -104,13 +104,12 @@ const ProfileModal = ({ isOpen, onClose, userName, userEmail, userPhoto, onNavig
                 cursor: 'pointer',
               }}
             >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                 <path
-                  d="M18 6L6 18M6 6l12 12"
-                  stroke="#2C2C2C"
+                  d="M15 5L5 15M5 5l10 10"
+                  stroke="#666666"
                   strokeWidth="2"
                   strokeLinecap="round"
-                  strokeLinejoin="round"
                 />
               </svg>
             </button>

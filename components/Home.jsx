@@ -11,6 +11,10 @@ import {
   DotsThreeVertical,
   X,
   ChatCircleDots,
+  Plus,
+  CaretDown,
+  GearSix,
+  Check,
 } from '@phosphor-icons/react';
 import AddPlant from './AddPlant';
 import AddPlantForm from './AddPlantForm';
@@ -38,6 +42,7 @@ const Home = ({ userName }) => {
     refetch: refetchPlants,
     addPlant: addSupabasePlant,
     deletePlant: deleteSupabasePlant,
+    updatePlant: updateSupabasePlant,
     recordAction,
     // Offline support
     isOnline,
@@ -57,6 +62,9 @@ const Home = ({ userName }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState('Semua');
+  const [selectedStatus, setSelectedStatus] = useState('Semua');
+  const [showLocationDropdown, setShowLocationDropdown] = useState(false);
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
 
   // Use Supabase data if available, otherwise fall back to empty array
   const plants = supabasePlants || [];
@@ -230,17 +238,87 @@ const Home = ({ userName }) => {
     }
   };
 
-  // Filter plants based on search and location
+  // Status filter options
+  const statusOptions = [
+    { value: 'Semua', label: 'Semua Status' },
+    { value: 'Perlu disiram', label: 'Perlu disiram' },
+    { value: 'Perlu dipupuk', label: 'Perlu dipupuk' },
+    { value: 'Terawat', label: 'Terawat' },
+    { value: 'Siap dipanen', label: 'Siap dipanen' },
+  ];
+
+  // Filter plants based on search, location, and status
   const filteredPlants = plants.filter((plant) => {
     const matchesSearch = plant.name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesLocation = selectedLocation === 'Semua' || plant.location === selectedLocation;
-    return matchesSearch && matchesLocation;
+
+    // Status filter logic
+    let matchesStatus = true;
+    if (selectedStatus !== 'Semua') {
+      // Match status text (plant.status contains "Perlu disiram", "Perlu dipupuk", "Terawat", etc.)
+      if (selectedStatus === 'Terawat') {
+        // "Terawat" also includes "Baik Baik Saja"
+        matchesStatus = plant.status === 'Terawat' || plant.status === 'Baik Baik Saja';
+      } else {
+        matchesStatus = plant.status === selectedStatus;
+      }
+    }
+
+    return matchesSearch && matchesLocation && matchesStatus;
   });
 
   const showEmptyState = filteredPlants.length === 0;
   const hasNoPlants = plants.length === 0;
   const isSearching = searchQuery.trim().length > 0;
   const isFilteringLocation = selectedLocation !== 'Semua';
+  const isFilteringStatus = selectedStatus !== 'Semua';
+
+  // Search expand state
+  const [showSearchInput, setShowSearchInput] = useState(false);
+
+  // Calculate urgent status counts for summary line
+  const urgentStatusCounts = React.useMemo(() => {
+    const counts = {
+      perluDisiram: 0,
+      perluDipupuk: 0,
+      siapDipanen: 0,
+    };
+
+    plants.forEach(plant => {
+      if (plant.status === 'Perlu disiram') {
+        counts.perluDisiram++;
+      } else if (plant.status === 'Perlu dipupuk') {
+        counts.perluDipupuk++;
+      } else if (plant.status === 'Siap dipanen') {
+        counts.siapDipanen++;
+      }
+    });
+
+    return counts;
+  }, [plants]);
+
+  // Get most urgent status message (priority order: disiram > dipupuk > dipanen)
+  const urgentSummary = React.useMemo(() => {
+    if (urgentStatusCounts.perluDisiram > 0) {
+      return {
+        text: `${urgentStatusCounts.perluDisiram} tanaman perlu disiram`,
+        color: '#F57C00', // Orange
+      };
+    }
+    if (urgentStatusCounts.perluDipupuk > 0) {
+      return {
+        text: `${urgentStatusCounts.perluDipupuk} tanaman perlu dipupuk`,
+        color: '#F57C00', // Orange
+      };
+    }
+    if (urgentStatusCounts.siapDipanen > 0) {
+      return {
+        text: `${urgentStatusCounts.siapDipanen} tanaman siap dipanen`,
+        color: '#4CAF50', // Green
+      };
+    }
+    return null; // No urgent status, hide the line
+  }, [urgentStatusCounts]);
 
   // Multi-select handlers
   const togglePlantSelection = (plantId) => {
@@ -747,148 +825,211 @@ const Home = ({ userName }) => {
           </div>
         </div>
 
-        {/* Search Bar */}
-        <div
-          style={{
-            position: 'relative',
-            marginBottom: '20px',
-            paddingLeft: '24px',
-            paddingRight: '24px',
-          }}
-        >
-          <input
-            type="text"
-            placeholder="Cari tanaman"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onFocus={() => setSearchFocused(true)}
-            onBlur={() => setSearchFocused(false)}
+        {/* Urgent Status Summary Line */}
+        {urgentSummary && !plantsLoading && (
+          <p
             style={{
-              width: '100%',
-              padding: '16px 50px 16px 20px',
-              fontSize: '1rem',
               fontFamily: "'Inter', sans-serif",
-              color: '#666666',
-              backgroundColor: '#FAFAFA',
-              border: searchFocused || searchQuery ? '2px solid #7CB342' : '2px solid transparent',
-              borderRadius: '12px',
-              outline: 'none',
-              transition: 'border-color 200ms',
+              fontSize: '0.9375rem',
+              fontWeight: 500,
+              color: urgentSummary.color,
+              margin: '0 0 16px 0',
+              paddingLeft: '24px',
+              paddingRight: '24px',
             }}
-          />
-          {searchQuery ? (
-            <button
-              onClick={() => setSearchQuery('')}
-              style={{
-                position: 'absolute',
-                right: '12px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                width: '32px',
-                height: '32px',
-                borderRadius: '50%',
-                backgroundColor: '#E0E0E0',
-                border: 'none',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-              }}
-            >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M12 4L4 12M4 4l8 8" stroke="#666666" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-            </button>
-          ) : (
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              style={{
-                position: 'absolute',
-                right: '20px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-              }}
-            >
-              <circle cx="11" cy="11" r="8" stroke="#666666" strokeWidth="2" />
-              <path d="M21 21l-4.35-4.35" stroke="#666666" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-          )}
-        </div>
+          >
+            {urgentSummary.text}
+          </p>
+        )}
 
-        {/* Location Filter Pills */}
+        {/* Filter Dropdowns with Search Icon */}
         <div
           style={{
             display: 'flex',
-            gap: '12px',
+            gap: '8px',
             alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingRight: '24px',
             paddingBottom: '20px',
+            paddingLeft: '24px',
+            paddingRight: '24px',
             borderBottom: '1px solid #F0F0F0',
           }}
         >
-          <div
+          {/* Location Dropdown Button */}
+          <button
+            onClick={() => setShowLocationDropdown(true)}
             style={{
               display: 'flex',
-              gap: '12px',
               alignItems: 'center',
-              flex: 1,
-              overflowX: 'auto',
-              scrollbarWidth: 'none',
-              msOverflowStyle: 'none',
-              WebkitOverflowScrolling: 'touch',
-              paddingBottom: '4px',
-              paddingLeft: '24px',
+              gap: '6px',
+              height: '40px',
+              padding: '0 14px',
+              fontSize: '0.875rem',
+              fontFamily: "'Inter', sans-serif",
+              fontWeight: 500,
+              color: isFilteringLocation ? '#2D5016' : '#666666',
+              backgroundColor: isFilteringLocation ? '#F1F8E9' : '#F5F5F5',
+              border: 'none',
+              borderRadius: '20px',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              whiteSpace: 'nowrap',
             }}
-            className="hide-scrollbar"
           >
-            {locations.map((location, index) => (
-              <button
-                key={`location-${index}-${location}`}
-                onClick={() => setSelectedLocation(location)}
-                style={{
-                  padding: '12px 24px',
-                  fontSize: '1rem',
-                  fontFamily: "'Inter', sans-serif",
-                  fontWeight: 500,
-                  color: selectedLocation === location ? '#2D5016' : '#666666',
-                  backgroundColor: selectedLocation === location ? '#F1F8E9' : 'transparent',
-                  border: 'none',
-                  borderRadius: '24px',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  flexShrink: 0,
-                }}
-              >
-                {location}
-              </button>
-            ))}
-          </div>
+            <span>{selectedLocation === 'Semua' ? 'Semua Lokasi' : selectedLocation}</span>
+            <CaretDown size={14} weight="bold" />
+          </button>
 
-          {/* Add Location Button - navigates to Location Settings */}
+          {/* Status Dropdown Button */}
           <button
-            onClick={() => setShowLocationSettings(true)}
+            onClick={() => setShowStatusDropdown(true)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              height: '40px',
+              padding: '0 14px',
+              fontSize: '0.875rem',
+              fontFamily: "'Inter', sans-serif",
+              fontWeight: 500,
+              color: isFilteringStatus ? '#2D5016' : '#666666',
+              backgroundColor: isFilteringStatus ? '#F1F8E9' : '#F5F5F5',
+              border: 'none',
+              borderRadius: '20px',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <span>{selectedStatus === 'Semua' ? 'Semua Status' : selectedStatus}</span>
+            <CaretDown size={14} weight="bold" />
+          </button>
+
+          {/* Spacer to push search to right */}
+          <div style={{ flex: 1 }} />
+
+          {/* Search Icon Button */}
+          <button
+            onClick={() => setShowSearchInput(true)}
             style={{
               width: '40px',
               height: '40px',
-              borderRadius: '50%',
-              backgroundColor: 'transparent',
+              borderRadius: '20px',
+              backgroundColor: isSearching ? '#F1F8E9' : '#F5F5F5',
               border: 'none',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
-              fontSize: '1.5rem',
-              color: '#666666',
+              transition: 'all 0.2s ease',
               flexShrink: 0,
             }}
           >
-            +
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <circle cx="11" cy="11" r="7" stroke={isSearching ? '#2D5016' : '#666666'} strokeWidth="2.5" />
+              <path d="M20 20l-3.5-3.5" stroke={isSearching ? '#2D5016' : '#666666'} strokeWidth="2.5" strokeLinecap="round" />
+            </svg>
           </button>
         </div>
+
+        {/* Expandable Search Bar */}
+        <AnimatePresence>
+          {showSearchInput && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              style={{
+                overflow: 'hidden',
+                backgroundColor: '#FFFFFF',
+              }}
+            >
+              <div
+                style={{
+                  position: 'relative',
+                  padding: '16px 24px',
+                  borderBottom: '1px solid #F0F0F0',
+                }}
+              >
+                <input
+                  type="text"
+                  placeholder="Cari tanaman..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => setSearchFocused(true)}
+                  onBlur={() => setSearchFocused(false)}
+                  autoFocus
+                  style={{
+                    width: '100%',
+                    padding: '14px 80px 14px 16px',
+                    fontSize: '1rem',
+                    fontFamily: "'Inter', sans-serif",
+                    color: '#2C2C2C',
+                    backgroundColor: '#FAFAFA',
+                    border: searchFocused || searchQuery ? '2px solid #7CB342' : '2px solid #E0E0E0',
+                    borderRadius: '12px',
+                    outline: 'none',
+                    transition: 'border-color 200ms',
+                  }}
+                />
+                {/* Clear and Close buttons */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    right: '36px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    display: 'flex',
+                    gap: '8px',
+                    alignItems: 'center',
+                  }}
+                >
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      style={{
+                        width: '28px',
+                        height: '28px',
+                        borderRadius: '50%',
+                        backgroundColor: '#E0E0E0',
+                        border: 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                        <path d="M11 3L3 11M3 3l8 8" stroke="#666666" strokeWidth="2" strokeLinecap="round" />
+                      </svg>
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      setShowSearchInput(false);
+                      if (!searchQuery) setSearchQuery('');
+                    }}
+                    style={{
+                      width: '28px',
+                      height: '28px',
+                      borderRadius: '50%',
+                      backgroundColor: '#F5F5F5',
+                      border: 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <path d="M11 3L3 11M3 3l8 8" stroke="#666666" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Multi-Select Info Bar - below location tabs, inside header */}
         <AnimatePresence>
@@ -1072,27 +1213,16 @@ const Home = ({ userName }) => {
                 marginBottom: '24px',
               }}
             >
-              {isSearching || isFilteringLocation ? (
-                // Search/Filter icon for no results
+              {isSearching ? (
+                // Search icon for no search results
                 <svg width="60" height="60" viewBox="0 0 60 60" fill="none">
                   <circle cx="26" cy="26" r="14" stroke="#999999" strokeWidth="4" />
                   <path d="M36 36L48 48" stroke="#999999" strokeWidth="4" strokeLinecap="round" />
                   <path d="M20 26H32" stroke="#999999" strokeWidth="3" strokeLinecap="round" />
                 </svg>
               ) : (
-                // Plant icon for no plants added
-                <svg width="60" height="60" viewBox="0 0 60 60" fill="none">
-                  <path
-                    d="M30 52.5C30 52.5 12 42 12 27C12 20.3726 17.3726 15 24 15C26.8328 15 29.4134 15.9876 31.5 17.6459C33.5866 15.9876 36.1672 15 39 15C45.6274 15 51 20.3726 51 27C51 42 33 52.5 30 52.5Z"
-                    fill="#CCCCCC"
-                  />
-                  <path
-                    d="M30 17.6459V52.5"
-                    stroke="#999999"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                  />
-                </svg>
+                // Plant icon for no plants (either empty or filtered by location)
+                <Plant size={60} weight="duotone" color="#999999" />
               )}
             </div>
 
@@ -1126,6 +1256,39 @@ const Home = ({ userName }) => {
                 </>
               )}
             </p>
+
+            {/* Add Plant CTA Button - only show on true empty state */}
+            {!isSearching && !isFilteringLocation && (
+              <motion.button
+                onClick={() => setShowAddPlant(true)}
+                whileTap={{ scale: 0.98 }}
+                style={{
+                  marginTop: '24px',
+                  padding: '14px 28px',
+                  backgroundColor: '#7CB342',
+                  border: 'none',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(124, 179, 66, 0.3)',
+                }}
+              >
+                <Plus size={20} weight="bold" color="#FFFFFF" />
+                <span
+                  style={{
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: '1rem',
+                    fontWeight: 600,
+                    color: '#FFFFFF',
+                  }}
+                >
+                  Tambah Tanaman
+                </span>
+              </motion.button>
+            )}
           </motion.div>
         ) : (
           /* Plant Grid */
@@ -1214,14 +1377,14 @@ const Home = ({ userName }) => {
                   {plant.name}
                 </h3>
 
-                {/* Plant Status */}
+                {/* Plant Status - Dynamic based on care schedule */}
                 <p
                   style={{
                     fontFamily: "'Inter', sans-serif",
                     fontSize: '14px',
-                    fontWeight: 400,
+                    fontWeight: 500,
                     lineHeight: '150%',
-                    color: '#666666',
+                    color: plant.statusColor || '#7CB342',
                     margin: 0,
                     textAlign: 'center',
                     whiteSpace: 'nowrap',
@@ -1424,6 +1587,26 @@ const Home = ({ userName }) => {
           onEdit={handlePlantEdit}
           onDelete={handlePlantDelete}
           onRecordAction={recordAction}
+          onSavePlant={async (updatedPlant) => {
+            // Find location_id from location name
+            const locationObj = supabaseLocations.find(loc => loc.name === updatedPlant.location);
+            const locationId = locationObj?.id;
+
+            // Build update object
+            const updates = {
+              customName: updatedPlant.customName || updatedPlant.name,
+              notes: updatedPlant.notes,
+              photoUrl: updatedPlant.photoUrl,
+            };
+
+            if (locationId) {
+              updates.locationId = locationId;
+            }
+
+            // Save to Supabase
+            const result = await updateSupabasePlant(selectedPlant.id, updates);
+            return result;
+          }}
         />
       )}
 
@@ -1477,12 +1660,34 @@ const Home = ({ userName }) => {
             setShowEditPlantModal(false);
             setMenuPlant(null);
           }}
-          onSave={(updatedPlant) => {
-            // Refetch plants from Supabase after edit
-            refetchPlants();
-            setShowEditPlantModal(false);
-            setMenuPlant(null);
-            showActionToastWithMessage(`${updatedPlant.name || updatedPlant.customName} sudah diperbarui`);
+          onSave={async (updatedPlant) => {
+            // Find location_id from location name
+            const locationObj = supabaseLocations.find(loc => loc.name === updatedPlant.location);
+            const locationId = locationObj?.id;
+
+            // Build update object
+            const updates = {
+              customName: updatedPlant.customName || updatedPlant.name,
+              notes: updatedPlant.notes,
+              photoUrl: updatedPlant.photoUrl,
+            };
+
+            // Only include locationId if we found a valid one
+            if (locationId) {
+              updates.locationId = locationId;
+            }
+
+            // Save to Supabase
+            const result = await updateSupabasePlant(menuPlant.id, updates);
+
+            if (result.success) {
+              setShowEditPlantModal(false);
+              setMenuPlant(null);
+              showActionToastWithMessage(`${updatedPlant.name || updatedPlant.customName} sudah diperbarui`);
+            } else {
+              console.error('[Home] Failed to update plant:', result.error);
+              showActionToastWithMessage('Gagal menyimpan perubahan');
+            }
           }}
         />
       )}
@@ -1727,16 +1932,25 @@ const Home = ({ userName }) => {
                 <button
                   onClick={() => setShowMoreMenu(false)}
                   style={{
-                    background: 'none',
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '50%',
+                    backgroundColor: '#F5F5F5',
                     border: 'none',
-                    padding: '8px',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
                 >
-                  <X size={24} weight="bold" color="#666666" />
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M15 5L5 15M5 5l10 10"
+                      stroke="#666666"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                  </svg>
                 </button>
               </div>
 
@@ -2170,6 +2384,373 @@ const Home = ({ userName }) => {
               </svg>
             </button>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Location Filter Bottom Sheet */}
+      <AnimatePresence>
+        {showLocationDropdown && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowLocationDropdown(false)}
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                zIndex: 5000,
+              }}
+            />
+            {/* Bottom Sheet */}
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              style={{
+                position: 'fixed',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                backgroundColor: '#FFFFFF',
+                borderTopLeftRadius: '24px',
+                borderTopRightRadius: '24px',
+                zIndex: 5001,
+                maxHeight: '70vh',
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              {/* Handle */}
+              <div style={{ display: 'flex', justifyContent: 'center', paddingTop: '12px' }}>
+                <div
+                  style={{
+                    width: '40px',
+                    height: '4px',
+                    backgroundColor: '#E0E0E0',
+                    borderRadius: '2px',
+                  }}
+                />
+              </div>
+
+              {/* Header */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '16px 24px',
+                  borderBottom: '1px solid #F0F0F0',
+                }}
+              >
+                <h3
+                  style={{
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: '1.125rem',
+                    fontWeight: 600,
+                    color: '#2C2C2C',
+                    margin: 0,
+                  }}
+                >
+                  Pilih Lokasi
+                </h3>
+                <button
+                  onClick={() => setShowLocationDropdown(false)}
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '50%',
+                    backgroundColor: '#F5F5F5',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M15 5L5 15M5 5l10 10"
+                      stroke="#666666"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Options List */}
+              <div
+                style={{
+                  overflowY: 'auto',
+                  padding: '8px 0',
+                  flex: 1,
+                }}
+              >
+                {/* Semua Lokasi option */}
+                <button
+                  onClick={() => {
+                    setSelectedLocation('Semua');
+                    setShowLocationDropdown(false);
+                  }}
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '16px 24px',
+                    backgroundColor: selectedLocation === 'Semua' ? '#F1F8E9' : 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.2s',
+                  }}
+                >
+                  <span
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: '1rem',
+                      fontWeight: selectedLocation === 'Semua' ? 600 : 400,
+                      color: selectedLocation === 'Semua' ? '#2D5016' : '#2C2C2C',
+                    }}
+                  >
+                    Semua Lokasi
+                  </span>
+                  {selectedLocation === 'Semua' && (
+                    <Check size={20} weight="bold" color="#7CB342" />
+                  )}
+                </button>
+
+                {/* User's locations */}
+                {locations.filter(loc => loc !== 'Semua').map((location, index) => (
+                  <button
+                    key={`loc-option-${index}-${location}`}
+                    onClick={() => {
+                      setSelectedLocation(location);
+                      setShowLocationDropdown(false);
+                    }}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '16px 24px',
+                      backgroundColor: selectedLocation === location ? '#F1F8E9' : 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      transition: 'background-color 0.2s',
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontFamily: "'Inter', sans-serif",
+                        fontSize: '1rem',
+                        fontWeight: selectedLocation === location ? 600 : 400,
+                        color: selectedLocation === location ? '#2D5016' : '#2C2C2C',
+                      }}
+                    >
+                      {location}
+                    </span>
+                    {selectedLocation === location && (
+                      <Check size={20} weight="bold" color="#7CB342" />
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              {/* Kelola Lokasi Button - Fixed at bottom */}
+              <div
+                style={{
+                  padding: '16px 24px',
+                  paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 16px))',
+                  borderTop: '1px solid #F0F0F0',
+                }}
+              >
+                <button
+                  onClick={() => {
+                    setShowLocationDropdown(false);
+                    setShowLocationSettings(true);
+                  }}
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '14px 24px',
+                    backgroundColor: '#FFFFFF',
+                    border: '1.5px solid #7CB342',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  <span
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: '1rem',
+                      fontWeight: 600,
+                      color: '#2D5016',
+                    }}
+                  >
+                    Kelola Lokasi
+                  </span>
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Status Filter Bottom Sheet */}
+      <AnimatePresence>
+        {showStatusDropdown && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowStatusDropdown(false)}
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                zIndex: 5000,
+              }}
+            />
+            {/* Bottom Sheet */}
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              style={{
+                position: 'fixed',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                backgroundColor: '#FFFFFF',
+                borderTopLeftRadius: '24px',
+                borderTopRightRadius: '24px',
+                zIndex: 5001,
+                maxHeight: '70vh',
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              {/* Handle */}
+              <div style={{ display: 'flex', justifyContent: 'center', paddingTop: '12px' }}>
+                <div
+                  style={{
+                    width: '40px',
+                    height: '4px',
+                    backgroundColor: '#E0E0E0',
+                    borderRadius: '2px',
+                  }}
+                />
+              </div>
+
+              {/* Header */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '16px 24px',
+                  borderBottom: '1px solid #F0F0F0',
+                }}
+              >
+                <h3
+                  style={{
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: '1.125rem',
+                    fontWeight: 600,
+                    color: '#2C2C2C',
+                    margin: 0,
+                  }}
+                >
+                  Pilih Status
+                </h3>
+                <button
+                  onClick={() => setShowStatusDropdown(false)}
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '50%',
+                    backgroundColor: '#F5F5F5',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M15 5L5 15M5 5l10 10"
+                      stroke="#666666"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Options List */}
+              <div
+                style={{
+                  overflowY: 'auto',
+                  padding: '8px 0',
+                  paddingBottom: 'calc(8px + env(safe-area-inset-bottom, 16px))',
+                }}
+              >
+                {statusOptions.map((option, index) => (
+                  <button
+                    key={`status-option-${index}`}
+                    onClick={() => {
+                      setSelectedStatus(option.value);
+                      setShowStatusDropdown(false);
+                    }}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '16px 24px',
+                      backgroundColor: selectedStatus === option.value ? '#F1F8E9' : 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      transition: 'background-color 0.2s',
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontFamily: "'Inter', sans-serif",
+                        fontSize: '1rem',
+                        fontWeight: selectedStatus === option.value ? 600 : 400,
+                        color: selectedStatus === option.value ? '#2D5016' : '#2C2C2C',
+                      }}
+                    >
+                      {option.label}
+                    </span>
+                    {selectedStatus === option.value && (
+                      <Check size={20} weight="bold" color="#7CB342" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
     </div>

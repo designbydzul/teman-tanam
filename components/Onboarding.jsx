@@ -11,10 +11,12 @@ import { motion } from 'framer-motion';
 const Onboarding = ({ onComplete }) => {
   const [name, setName] = useState('');
   const [locations, setLocations] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const locationOptions = ['Balkon', 'Teras'];
 
   const toggleLocation = (location) => {
+    if (isSubmitting) return;
     console.log('[Onboarding] toggleLocation called:', location, 'current:', locations);
     setLocations((prev) => {
       const newLocations = prev.includes(location)
@@ -25,7 +27,13 @@ const Onboarding = ({ onComplete }) => {
     });
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    // Prevent multiple submissions
+    if (isSubmitting) {
+      console.log('[Onboarding] Already submitting, ignoring click');
+      return;
+    }
+
     console.log('[Onboarding] handleSubmit TRIGGERED, name:', name, 'isValid:', name.trim().length >= 2, 'locations:', locations);
 
     if (name.trim().length < 2) {
@@ -33,6 +41,7 @@ const Onboarding = ({ onComplete }) => {
       return;
     }
 
+    setIsSubmitting(true);
     console.log('[Onboarding] handleSubmit called:', { name, locations });
 
     // Save to localStorage for now (later: save to Supabase)
@@ -42,13 +51,19 @@ const Onboarding = ({ onComplete }) => {
     // Call completion callback
     if (onComplete) {
       console.log('[Onboarding] Calling onComplete with:', { name, locations });
-      onComplete({ name, locations });
+      try {
+        await onComplete({ name, locations });
+      } catch (err) {
+        console.error('[Onboarding] onComplete error:', err);
+        setIsSubmitting(false);
+      }
     } else {
       console.warn('[Onboarding] onComplete callback is not defined!');
+      setIsSubmitting(false);
     }
   };
 
-  const isValid = name.trim().length >= 2;
+  const isValid = name.trim().length >= 2 && !isSubmitting;
 
   return (
     <div
@@ -258,7 +273,7 @@ const Onboarding = ({ onComplete }) => {
             }
           }}
         >
-          Selanjutnya
+          {isSubmitting ? 'Menyimpan...' : 'Selanjutnya'}
         </motion.button>
       </div>
 
