@@ -4,7 +4,7 @@ import {
   ArrowLeft,
   CaretDown,
   ClockCounterClockwise,
-  PaperclipHorizontal,
+  Camera,
   PaperPlaneTilt,
   X,
 } from '@phosphor-icons/react';
@@ -19,13 +19,6 @@ const calculateDaysSincePlanted = (plantedDate) => {
   return diffDays;
 };
 
-// Suggested questions
-const suggestedQuestions = [
-  'Kenapa daun nya menguning?',
-  'Kenapa daun nya keriting atau menggulung?',
-  'Batang nya lunak atau membusuk?',
-];
-
 // Helper to get chat storage key for a plant
 const getChatStorageKey = (plantId) => `tanyaTanam_chat_${plantId}`;
 
@@ -37,10 +30,10 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
   const [inputText, setInputText] = useState('');
   const [attachedImages, setAttachedImages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [showSuggestions, setShowSuggestions] = useState(true);
   const [inputFocused, setInputFocused] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [fullscreenImage, setFullscreenImage] = useState(null);
 
   // Load chat history from localStorage when plant changes
   useEffect(() => {
@@ -51,15 +44,12 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
         try {
           const parsedChat = JSON.parse(savedChat);
           setMessages(parsedChat);
-          setShowSuggestions(parsedChat.length === 0);
         } catch (e) {
           console.error('Failed to parse saved chat:', e);
           setMessages([]);
-          setShowSuggestions(true);
         }
       } else {
         setMessages([]);
-        setShowSuggestions(true);
       }
     }
   }, [selectedPlant?.id]);
@@ -189,37 +179,6 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
     }
   };
 
-  // Handle suggestion click - auto send the message
-  const handleSuggestionClick = async (question) => {
-    // Hide suggestions
-    setShowSuggestions(false);
-
-    // Create user message
-    const userMessage = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: question,
-      images: [],
-      timestamp: new Date(),
-    };
-
-    const updatedMessages = [...messages, userMessage];
-    setMessages(updatedMessages);
-    setIsLoading(true);
-
-    // Call real API
-    const aiResponse = await callTanyaTanamAPI(question, updatedMessages);
-
-    const aiMessage = {
-      id: (Date.now() + 1).toString(),
-      role: 'assistant',
-      content: aiResponse,
-      timestamp: new Date(),
-    };
-    setMessages((prev) => [...prev, aiMessage]);
-    setIsLoading(false);
-  };
-
   // Handle image attachment
   const handleAttachImage = (e) => {
     const files = Array.from(e.target.files || []);
@@ -247,9 +206,6 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
   // Send message
   const handleSendMessage = async () => {
     if (!inputText.trim() && attachedImages.length === 0) return;
-
-    // Hide suggestions after first message
-    setShowSuggestions(false);
 
     const messageContent = inputText.trim();
 
@@ -315,7 +271,7 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
       }}
     >
       {/* Header - Matches PlantDetail header layout exactly */}
-      <div style={{ position: 'relative', zIndex: 10, backgroundColor: '#FFFFFF', flexShrink: 0 }}>
+      <div style={{ position: 'relative', zIndex: 10, backgroundColor: '#FFFFFF', flexShrink: 0, borderBottom: '1px solid #E0E0E0' }}>
         {/* Navigation Row - Same as PlantDetail */}
         <div
           style={{
@@ -475,7 +431,7 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
                           width: '64px',
                           height: '64px',
                           borderRadius: '12px',
-                          backgroundColor: '#F1F8E9',
+                          backgroundColor: '#FAFAFA',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -514,44 +470,6 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
           </div>
         )}
 
-        {/* Suggested Questions */}
-        <AnimatePresence>
-          {showSuggestions && messages.length === 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '12px',
-                marginBottom: '24px',
-              }}
-            >
-              {suggestedQuestions.map((question, index) => (
-                <motion.button
-                  key={index}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => handleSuggestionClick(question)}
-                  style={{
-                    padding: '16px 20px',
-                    backgroundColor: '#FFFFFF',
-                    border: '1px solid #E0E0E0',
-                    borderRadius: '24px',
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                    fontFamily: "'Inter', sans-serif",
-                    fontSize: '14px',
-                    color: '#2C2C2C',
-                  }}
-                >
-                  {question}
-                </motion.button>
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
-
         {/* Messages */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {messages.map((message) => (
@@ -561,59 +479,65 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
               animate={{ opacity: 1, y: 0 }}
               style={{
                 display: 'flex',
-                justifyContent: message.role === 'user' ? 'flex-end' : 'flex-start',
+                flexDirection: 'column',
+                alignItems: message.role === 'user' ? 'flex-end' : 'flex-start',
+                gap: '8px',
               }}
             >
-              <div
-                style={{
-                  maxWidth: '80%',
-                  padding: '16px',
-                  backgroundColor: message.role === 'user' ? '#FFF9E6' : 'transparent',
-                  borderRadius: '16px',
-                  border: message.role === 'user' ? '1px solid #F5F0D0' : 'none',
-                }}
-              >
-                {/* Attached Images */}
-                {message.images && message.images.length > 0 && (
-                  <div
-                    style={{
-                      display: 'flex',
-                      gap: '8px',
-                      marginBottom: '12px',
-                      flexWrap: 'wrap',
-                    }}
-                  >
-                    {message.images.map((img, idx) => (
-                      <img
-                        key={idx}
-                        src={img}
-                        alt={`Attachment ${idx + 1}`}
-                        style={{
-                          width: '60px',
-                          height: '60px',
-                          borderRadius: '8px',
-                          objectFit: 'contain',
-                          backgroundColor: '#F5F5F5',
-                        }}
-                      />
-                    ))}
-                  </div>
-                )}
-
-                {/* Message Content */}
-                <p
+              {/* Attached Images - Outside bubble */}
+              {message.images && message.images.length > 0 && (
+                <div
                   style={{
-                    fontFamily: "'Inter', sans-serif",
-                    fontSize: '14px',
-                    lineHeight: 1.6,
-                    color: '#2C2C2C',
-                    margin: 0,
-                    whiteSpace: 'pre-wrap',
+                    display: 'flex',
+                    gap: '8px',
+                    flexWrap: 'wrap',
+                    justifyContent: message.role === 'user' ? 'flex-end' : 'flex-start',
                   }}
                 >
-                  {message.content}
-                </p>
-              </div>
+                  {message.images.map((img, idx) => (
+                    <img
+                      key={idx}
+                      src={img}
+                      alt={`Attachment ${idx + 1}`}
+                      onClick={() => setFullscreenImage(img)}
+                      style={{
+                        width: '120px',
+                        height: '120px',
+                        borderRadius: '12px',
+                        objectFit: 'cover',
+                        backgroundColor: '#F5F5F5',
+                        cursor: 'pointer',
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Message Content - In bubble */}
+              {message.content && (
+                <div
+                  style={{
+                    maxWidth: '80%',
+                    padding: '12px 16px',
+                    backgroundColor: message.role === 'user' ? '#FFF9E6' : 'transparent',
+                    borderRadius: '16px',
+                    border: message.role === 'user' ? '1px solid #F5F0D0' : 'none',
+                  }}
+                >
+                  <p
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: '14px',
+                      lineHeight: 1.6,
+                      color: '#2C2C2C',
+                      margin: 0,
+                      whiteSpace: 'pre-wrap',
+                    }}
+                  >
+                    {message.content}
+                  </p>
+                </div>
+              )}
             </motion.div>
           ))}
 
@@ -785,7 +709,7 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
                 marginBottom: '2px',
               }}
             >
-              <PaperclipHorizontal size={24} weight="regular" color="#666666" />
+              <Camera size={24} weight="regular" color="#666666" />
             </button>
 
             {/* Text Input - Expandable Textarea */}
@@ -961,6 +885,71 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
                   Oke, Mengerti
                 </button>
               </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Fullscreen Image Viewer */}
+      <AnimatePresence>
+        {fullscreenImage && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setFullscreenImage(null)}
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0, 0, 0, 0.95)',
+                zIndex: 5000,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              {/* Close Button */}
+              <button
+                onClick={() => setFullscreenImage(null)}
+                style={{
+                  position: 'absolute',
+                  top: '20px',
+                  right: '20px',
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '50%',
+                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                  border: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  zIndex: 5001,
+                }}
+              >
+                <X size={24} weight="bold" color="#FFFFFF" />
+              </button>
+
+              {/* Image */}
+              <motion.img
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.8, opacity: 0 }}
+                src={fullscreenImage}
+                alt="Fullscreen view"
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  maxWidth: '95vw',
+                  maxHeight: '90vh',
+                  objectFit: 'contain',
+                  borderRadius: '8px',
+                }}
+              />
             </motion.div>
           </>
         )}

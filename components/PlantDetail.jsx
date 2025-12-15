@@ -7,7 +7,6 @@ import {
   Leaf,
   FirstAidKit,
   Camera,
-  CaretDown,
   ArrowLeft,
   DotsThree,
   PencilSimple,
@@ -21,6 +20,8 @@ import {
   Plus,
   Image as ImageIcon,
   ArrowCounterClockwise,
+  Gear,
+  ChatDots,
 } from '@phosphor-icons/react';
 import TanyaTanam from './TanyaTanam';
 import EditPlant from './EditPlant';
@@ -36,7 +37,6 @@ const isValidUUID = (str) => {
 const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePlant }) => {
   const [activeTab, setActiveTab] = useState('perawatan');
   const [showMenu, setShowMenu] = useState(false);
-  const [quickTipsExpanded, setQuickTipsExpanded] = useState(false);
   const [showImagePreview, setShowImagePreview] = useState(false);
   const [showTanyaTanam, setShowTanyaTanam] = useState(false);
   const [showEditPlant, setShowEditPlant] = useState(false);
@@ -67,6 +67,21 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
   const [fertilizingPhotoPreview, setFertilizingPhotoPreview] = useState(null);
   const [isSubmittingAction, setIsSubmittingAction] = useState(false);
   const fertilizingPhotoInputRef = useRef(null);
+
+  // Pruning drawer state
+  const [showPruningDrawer, setShowPruningDrawer] = useState(false);
+  const [pruningNotes, setPruningNotes] = useState('');
+  const [pruningPhoto, setPruningPhoto] = useState(null);
+  const [pruningPhotoPreview, setPruningPhotoPreview] = useState(null);
+  const pruningPhotoInputRef = useRef(null);
+
+  // Other action drawer state
+  const [showOtherActionDrawer, setShowOtherActionDrawer] = useState(false);
+  const [otherActionName, setOtherActionName] = useState('');
+  const [otherActionNotes, setOtherActionNotes] = useState('');
+  const [otherActionPhoto, setOtherActionPhoto] = useState(null);
+  const [otherActionPhotoPreview, setOtherActionPhotoPreview] = useState(null);
+  const otherActionPhotoInputRef = useRef(null);
 
   // History detail drawer state
   const [showHistoryDetailDrawer, setShowHistoryDetailDrawer] = useState(false);
@@ -133,9 +148,41 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
     (new Date() - new Date(plantData.plantedDate)) / (1000 * 60 * 60 * 24)
   );
 
-  // Get care schedule from species (with defaults)
-  const wateringFrequencyDays = sourcePlant?.species?.wateringFrequencyDays || 3;
-  const fertilizingFrequencyDays = sourcePlant?.species?.fertilizingFrequencyDays || 14;
+  // Get care schedule from species (null if not available)
+  const wateringFrequencyDays = sourcePlant?.species?.wateringFrequencyDays || null;
+  const fertilizingFrequencyDays = sourcePlant?.species?.fertilizingFrequencyDays || null;
+
+  // Helper function to get subtitle text and color for action cards
+  const getActionSubtitle = (daysSince, frequencyDays, actionType) => {
+    const pastTense = actionType === 'water' ? 'Disiram' : 'Dipupuk';
+    const needsText = actionType === 'water' ? 'Perlu disiram' : 'Perlu dipupuk';
+    const neverText = actionType === 'water' ? 'Belum pernah disiram' : 'Belum pernah dipupuk';
+    const justNowText = actionType === 'water' ? 'Baru saja disiram' : 'Baru saja dipupuk';
+    const yesterdayText = actionType === 'water' ? 'Disiram kemarin' : 'Dipupuk kemarin';
+
+    // Never done
+    if (daysSince === null || daysSince === undefined) {
+      return { text: neverText, color: '#666666' };
+    }
+
+    // Done today
+    if (daysSince === 0) {
+      return { text: justNowText, color: '#666666' };
+    }
+
+    // Done yesterday
+    if (daysSince === 1) {
+      return { text: yesterdayText, color: '#666666' };
+    }
+
+    // Check if overdue (only if frequency data exists)
+    if (frequencyDays !== null && daysSince >= frequencyDays) {
+      return { text: needsText, color: '#F59E0B' };
+    }
+
+    // X days ago
+    return { text: `${pastTense} ${daysSince} hari lalu`, color: '#666666' };
+  };
 
   // Calculate care status based on last action dates (considering overrides)
   const calculateLocalCareStatus = (lastActionDate, frequencyDays, actionType) => {
@@ -144,7 +191,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
 
     if (!lastActionDate) {
       return {
-        status: 'needs_action',
+        status: frequencyDays !== null ? 'needs_action' : 'unknown',
         label: needsLabel,
         daysUntilNext: 0,
         daysSinceLast: null,
@@ -158,7 +205,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
 
     const daysSinceLast = differenceInDays(today, lastActionDay);
     const doneToday = isToday(lastAction);
-    const daysUntilNext = Math.max(0, frequencyDays - daysSinceLast);
+    const daysUntilNext = frequencyDays !== null ? Math.max(0, frequencyDays - daysSinceLast) : null;
 
     if (doneToday) {
       return {
@@ -170,7 +217,8 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
       };
     }
 
-    if (daysSinceLast >= frequencyDays) {
+    // Only mark as needs_action if we have frequency data
+    if (frequencyDays !== null && daysSinceLast >= frequencyDays) {
       return {
         status: 'needs_action',
         label: needsLabel,
@@ -182,7 +230,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
 
     return {
       status: 'on_schedule',
-      label: `${daysUntilNext} hari lagi`,
+      label: daysUntilNext !== null ? `${daysUntilNext} hari lagi` : `${daysSinceLast} hari lalu`,
       daysUntilNext,
       daysSinceLast,
       doneToday: false,
@@ -295,7 +343,8 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
       case 'panen':
         return 'Panen';
       default:
-        return actionType;
+        // Capitalize first letter for custom actions
+        return actionType.charAt(0).toUpperCase() + actionType.slice(1);
     }
   };
 
@@ -356,7 +405,8 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
       case 'add':
         return <Plant size={20} weight="regular" color="#666666" />;
       default:
-        return <Drop size={20} weight="regular" color="#666666" />;
+        // Custom actions show a generic icon
+        return <DotsThree size={20} weight="bold" color="#666666" />;
     }
   };
 
@@ -440,6 +490,15 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
     if (!isValidUUID(String(plantData.id))) {
       console.log('[PlantDetail] Skipping delete for non-UUID plant ID');
       setActionToastMessage('Tidak dapat membatalkan aksi untuk tanaman offline');
+      setShowActionToast(true);
+      setTimeout(() => setShowActionToast(false), 3000);
+      return { success: false };
+    }
+
+    // Skip if offline
+    if (!navigator.onLine) {
+      console.log('[PlantDetail] Skipping delete - device is offline');
+      setActionToastMessage('Tidak dapat membatalkan aksi saat offline');
       setShowActionToast(true);
       setTimeout(() => setShowActionToast(false), 3000);
       return { success: false };
@@ -562,6 +621,89 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
     setShowFertilizingDrawer(true);
   };
 
+  // Handle pruning photo selection
+  const handlePruningPhotoSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setPruningPhoto(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPruningPhotoPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Handle pruning submit
+  const handlePruningSubmit = async () => {
+    setIsSubmittingAction(true);
+
+    try {
+      const result = await handleActionLog('pangkas', { notes: pruningNotes });
+
+      if (result?.success) {
+        setPruningNotes('');
+        setPruningPhoto(null);
+        setPruningPhotoPreview(null);
+        setShowPruningDrawer(false);
+      }
+    } finally {
+      setIsSubmittingAction(false);
+    }
+  };
+
+  // Handle pruning card tap - always show drawer
+  const handlePruningCardTap = () => {
+    setShowPruningDrawer(true);
+  };
+
+  // Handle other action photo selection
+  const handleOtherActionPhotoSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setOtherActionPhoto(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setOtherActionPhotoPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Handle other action submit
+  const handleOtherActionSubmit = async () => {
+    if (!otherActionName.trim()) {
+      setActionToastMessage('Nama aksi harus diisi');
+      setShowActionToast(true);
+      setTimeout(() => setShowActionToast(false), 3000);
+      return;
+    }
+
+    setIsSubmittingAction(true);
+
+    try {
+      // Use the action name as a custom action type
+      const customActionType = otherActionName.trim().toLowerCase();
+      const combinedNotes = otherActionNotes ? `${otherActionName}: ${otherActionNotes}` : otherActionName;
+      const result = await handleActionLog(customActionType, { notes: combinedNotes });
+
+      if (result?.success) {
+        setOtherActionName('');
+        setOtherActionNotes('');
+        setOtherActionPhoto(null);
+        setOtherActionPhotoPreview(null);
+        setShowOtherActionDrawer(false);
+      }
+    } finally {
+      setIsSubmittingAction(false);
+    }
+  };
+
+  // Handle other action card tap - always show drawer
+  const handleOtherActionCardTap = () => {
+    setShowOtherActionDrawer(true);
+  };
+
   // Delete a specific history action by ID
   const handleDeleteHistoryAction = async (actionId) => {
     if (!actionId) {
@@ -653,15 +795,16 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
     >
       {/* Sticky Header Section */}
       <div style={{ position: 'relative', zIndex: 10, backgroundColor: '#FFFFFF' }}>
-        {/* Header with Navigation */}
+        {/* Header with Navigation - Back, Image Center, Settings */}
         <div
           style={{
             display: 'flex',
             justifyContent: 'space-between',
-            alignItems: 'center',
+            alignItems: 'flex-start',
             padding: '24px',
           }}
         >
+          {/* Back Button */}
           <button
             onClick={onBack}
             style={{
@@ -674,13 +817,49 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
+              flexShrink: 0,
             }}
           >
-            <ArrowLeft size={16} weight="bold" color="#2D5016" />
+            <ArrowLeft size={20} weight="bold" color="#2C2C2C" />
           </button>
 
+          {/* Center Plant Image */}
+          <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+            {plantData.photoUrl && !imageLoadError ? (
+              <img
+                src={plantData.photoUrl}
+                alt={plantData.customName}
+                onClick={() => setShowImagePreview(true)}
+                onError={() => setImageLoadError(true)}
+                style={{
+                  width: '150px',
+                  height: '150px',
+                  objectFit: 'cover',
+                  borderRadius: '16px',
+                  cursor: 'pointer',
+                }}
+              />
+            ) : (
+              <div
+                style={{
+                  width: '150px',
+                  height: '150px',
+                  borderRadius: '16px',
+                  backgroundColor: '#FAFAFA',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '4rem',
+                }}
+              >
+                {plantData.species?.emoji || '🌱'}
+              </div>
+            )}
+          </div>
+
+          {/* Settings Button - Opens Edit Plant */}
           <button
-            onClick={() => setShowMenu(true)}
+            onClick={() => setShowEditPlant(true)}
             style={{
               width: '40px',
               height: '40px',
@@ -691,143 +870,111 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
+              flexShrink: 0,
             }}
           >
-            <DotsThree size={16} weight="bold" color="#2D5016" />
+            <Gear size={20} weight="bold" color="#2C2C2C" />
           </button>
         </div>
 
-        {/* Plant Info with Thumbnail */}
-        <div style={{ padding: '0 24px' }}>
-          <div
+        {/* Plant Info - Centered */}
+        <div style={{ padding: '0 16px', textAlign: 'center', marginBottom: '24px' }}>
+          {/* Plant Name */}
+          <h1
             style={{
-              display: 'flex',
-              gap: '16px',
-              alignItems: 'flex-start',
+              fontFamily: 'var(--font-caveat), Caveat, cursive',
+              fontSize: '1.75rem',
+              fontWeight: 600,
+              color: '#2D5016',
+              margin: '16px 0 4px 0',
             }}
           >
-            {/* Plant Thumbnail - Clickable */}
-            {plantData.photoUrl && !imageLoadError ? (
-              <img
-                src={plantData.photoUrl}
-                alt={plantData.customName}
-                onClick={() => setShowImagePreview(true)}
-                onError={() => setImageLoadError(true)}
-                style={{
-                  width: '140px',
-                  height: '140px',
-                  objectFit: 'cover',
-                  borderRadius: '24px',
-                  flexShrink: 0,
-                  cursor: 'pointer',
-                }}
-              />
-            ) : (
-              <div
-                style={{
-                  width: '140px',
-                  height: '140px',
-                  borderRadius: '24px',
-                  backgroundColor: '#F1F8E9',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '4rem',
-                  flexShrink: 0,
-                }}
-              >
-                {plantData.species?.emoji || '🌱'}
-              </div>
-            )}
+            {plantData.customName}
+          </h1>
 
-            {/* Plant Details */}
-            <div style={{ flex: 1 }}>
-              <h1
-                style={{
-                  fontFamily: 'var(--font-caveat), Caveat, cursive',
-                  fontSize: '1.75rem',
-                  fontWeight: 600,
-                  color: '#2D5016',
-                  margin: 0,
-                }}
-              >
-                {plantData.customName}
-              </h1>
-              <p
-                style={{
-                  fontFamily: "'Inter', sans-serif",
-                  fontSize: '1rem',
-                  color: '#666666',
-                  margin: '4px 0 8px 0',
-                }}
-              >
-                {plantData.species.scientific}
-              </p>
-              <p
-                style={{
-                  fontFamily: "'Inter', sans-serif",
-                  fontSize: '14px',
-                  color: '#666666',
-                  margin: 0,
-                }}
-              >
-                {plantData.location} • {daysSincePlanted} hari sejak ditanam{plantData.notes ? ` • ${plantData.notes}` : ''}
-              </p>
-            </div>
-          </div>
-
-          {/* Tab Navigation */}
-          <div
+          {/* Metadata Row */}
+          <p
             style={{
-              display: 'flex',
-              gap: '0',
-              marginTop: '24px',
+              fontFamily: "'Inter', sans-serif",
+              fontSize: '14px',
+              color: '#666666',
+              margin: '0 0 4px 0',
             }}
           >
-            <button
-              onClick={() => setActiveTab('perawatan')}
+            {plantData.location} • {daysSincePlanted} hari sejak ditanam • {plantData.species?.scientific || 'Cucumis sativus'}
+          </p>
+
+          {/* Notes - Only show if exists */}
+          {plantData.notes && (
+            <p
               style={{
-                flex: 1,
-                padding: '12px 24px',
-                fontSize: '1rem',
                 fontFamily: "'Inter', sans-serif",
-                fontWeight: activeTab === 'perawatan' ? 500 : 400,
-                color: activeTab === 'perawatan' ? '#2D5016' : '#666666',
-                backgroundColor: activeTab === 'perawatan' ? '#F1F8E9' : 'transparent',
-                border: 'none',
-                borderRadius: '24px',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
+                fontSize: '14px',
+                color: '#666666',
+                margin: '4px 0 0 0',
               }}
             >
-              Perawatan
-            </button>
-            <button
-              onClick={() => setActiveTab('riwayat')}
-              style={{
-                flex: 1,
-                padding: '12px 24px',
-                fontSize: '1rem',
-                fontFamily: "'Inter', sans-serif",
-                fontWeight: activeTab === 'riwayat' ? 500 : 400,
-                color: activeTab === 'riwayat' ? '#2D5016' : '#666666',
-                backgroundColor: activeTab === 'riwayat' ? '#F1F8E9' : 'transparent',
-                border: 'none',
-                borderRadius: '24px',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-              }}
-            >
-              Riwayat
-            </button>
-          </div>
+              {plantData.notes}
+            </p>
+          )}
+
+        </div>
+
+        {/* Tab Navigation */}
+        <div
+          style={{
+            display: 'flex',
+            margin: '0 16px',
+            backgroundColor: '#F5F5F5',
+            borderRadius: '12px',
+            padding: '4px',
+          }}
+        >
+          <button
+            onClick={() => setActiveTab('perawatan')}
+            style={{
+              flex: 1,
+              padding: '10px 24px',
+              fontSize: '1rem',
+              fontFamily: "'Inter', sans-serif",
+              fontWeight: activeTab === 'perawatan' ? 500 : 400,
+              color: activeTab === 'perawatan' ? '#7CB342' : '#666666',
+              backgroundColor: activeTab === 'perawatan' ? '#FFFFFF' : 'transparent',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              textAlign: 'center',
+            }}
+          >
+            Perawatan
+          </button>
+          <button
+            onClick={() => setActiveTab('riwayat')}
+            style={{
+              flex: 1,
+              padding: '10px 24px',
+              fontSize: '1rem',
+              fontFamily: "'Inter', sans-serif",
+              fontWeight: activeTab === 'riwayat' ? 500 : 400,
+              color: activeTab === 'riwayat' ? '#7CB342' : '#666666',
+              backgroundColor: activeTab === 'riwayat' ? '#FFFFFF' : 'transparent',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              textAlign: 'center',
+            }}
+          >
+            Riwayat
+          </button>
         </div>
       </div>
 
       {/* Scrollable Tab Content */}
       <div style={{
         position: 'absolute',
-        top: '323px',
+        top: '340px',
         left: 0,
         right: 0,
         bottom: 0,
@@ -836,45 +983,61 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
         touchAction: 'pan-y',
       }}>
         {activeTab === 'perawatan' ? (
-          <div style={{ padding: '0 24px 100px 24px' }}>
+          <div style={{ padding: '16px 16px 120px 16px' }}>
               {/* Section Header */}
               <p
                 style={{
                   fontFamily: "'Inter', sans-serif",
                   fontSize: '14px',
+                  fontWeight: 400,
                   color: '#666666',
-                  marginBottom: '16px',
+                  margin: '16px 0 12px 0',
                 }}
               >
-                Yang perlu anda lakukan
+                Yang dapat anda lakukan
               </p>
 
-              {/* Action Cards */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {/* Penyiraman */}
+              {/* 2x2 Action Cards Grid */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, 1fr)',
+                gap: '12px',
+              }}>
+                {/* Penyiraman Card */}
                 <div
                   onClick={handleWateringCardTap}
                   style={{
-                    backgroundColor: wateringStatus.doneToday ? '#F0FDF4' : '#FFFFFF',
-                    borderRadius: '16px',
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '12px',
                     padding: '16px',
-                    border: wateringStatus.doneToday ? '1px solid #86EFAC' : wateringStatus.status === 'needs_action' ? '2px solid #F57C00' : '1px solid #E0E0E0',
-                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
+                    border: '1px solid #E0E0E0',
                     cursor: 'pointer',
-                    transition: 'background-color 0.2s ease',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '12px',
                   }}
                 >
-                  <div style={{ flex: 1 }}>
+                  <div
+                    style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '50%',
+                      backgroundColor: '#F5F5F5',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Drop size={24} weight="regular" color="#666666" />
+                  </div>
+                  <div>
                     <h3
                       style={{
                         fontFamily: "'Inter', sans-serif",
                         fontSize: '1rem',
-                        fontWeight: 500,
+                        fontWeight: 600,
                         color: '#2C2C2C',
-                        margin: 0,
+                        margin: '0 0 4px 0',
                       }}
                     >
                       Penyiraman
@@ -883,68 +1046,53 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                       style={{
                         fontFamily: "'Inter', sans-serif",
                         fontSize: '14px',
-                        fontWeight: 400,
-                        color: wateringStatus.doneToday ? '#16A34A' : wateringStatus.status === 'needs_action' ? '#F57C00' : '#666666',
-                        margin: '4px 0 0 0',
+                        color: getActionSubtitle(daysSinceWatered, wateringFrequencyDays, 'water').color,
+                        margin: 0,
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
                       }}
                     >
-                      {wateringStatus.doneToday
-                        ? 'Sudah disiram hari ini'
-                        : wateringStatus.status === 'needs_action'
-                          ? daysSinceWatered === null
-                            ? 'Perlu disiram • Belum pernah disiram'
-                            : `Perlu disiram • Terakhir: ${daysSinceWatered} hari lalu`
-                          : daysSinceWatered === null
-                            ? `${wateringStatus.label}`
-                            : `${wateringStatus.label} • Terakhir: ${daysSinceWatered} hari lalu`
-                      }
+                      {getActionSubtitle(daysSinceWatered, wateringFrequencyDays, 'water').text}
                     </p>
-                  </div>
-
-                  <div
-                    style={{
-                      width: '48px',
-                      height: '48px',
-                      borderRadius: '50%',
-                      backgroundColor: wateringStatus.doneToday ? '#DCFCE7' : '#EFF6FF',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                    }}
-                  >
-                    {wateringStatus.doneToday ? (
-                      <CheckCircle size={24} weight="fill" color="#16A34A" />
-                    ) : (
-                      <Drop size={24} weight="duotone" color="#3B82F6" />
-                    )}
                   </div>
                 </div>
 
-                {/* Pemupukan */}
+                {/* Pemupukan Card */}
                 <div
                   onClick={handleFertilizingCardTap}
                   style={{
-                    backgroundColor: fertilizingStatus.doneToday ? '#F0FDF4' : '#FFFFFF',
-                    borderRadius: '16px',
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '12px',
                     padding: '16px',
-                    border: fertilizingStatus.doneToday ? '1px solid #86EFAC' : fertilizingStatus.status === 'needs_action' ? '2px solid #F57C00' : '1px solid #E0E0E0',
-                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
+                    border: '1px solid #E0E0E0',
                     cursor: 'pointer',
-                    transition: 'background-color 0.2s ease',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '12px',
                   }}
                 >
-                  <div style={{ flex: 1 }}>
+                  <div
+                    style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '50%',
+                      backgroundColor: '#F5F5F5',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Leaf size={24} weight="regular" color="#666666" />
+                  </div>
+                  <div>
                     <h3
                       style={{
                         fontFamily: "'Inter', sans-serif",
                         fontSize: '1rem',
-                        fontWeight: 500,
+                        fontWeight: 600,
                         color: '#2C2C2C',
-                        margin: 0,
+                        margin: '0 0 4px 0',
                       }}
                     >
                       Pemupukan
@@ -953,184 +1101,154 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                       style={{
                         fontFamily: "'Inter', sans-serif",
                         fontSize: '14px',
-                        fontWeight: 400,
-                        color: fertilizingStatus.doneToday ? '#16A34A' : fertilizingStatus.status === 'needs_action' ? '#F57C00' : '#666666',
-                        margin: '4px 0 0 0',
+                        color: getActionSubtitle(daysSinceFertilized, fertilizingFrequencyDays, 'fertilize').color,
+                        margin: 0,
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
                       }}
                     >
-                      {fertilizingStatus.doneToday
-                        ? 'Sudah dipupuk hari ini'
-                        : fertilizingStatus.status === 'needs_action'
-                          ? daysSinceFertilized === null
-                            ? 'Perlu dipupuk • Belum pernah dipupuk'
-                            : `Perlu dipupuk • Terakhir: ${daysSinceFertilized} hari lalu`
-                          : daysSinceFertilized === null
-                            ? `${fertilizingStatus.label}`
-                            : `${fertilizingStatus.label} • Terakhir: ${daysSinceFertilized} hari lalu`
-                      }
+                      {getActionSubtitle(daysSinceFertilized, fertilizingFrequencyDays, 'fertilize').text}
                     </p>
                   </div>
-
-                  <div
-                    style={{
-                      width: '48px',
-                      height: '48px',
-                      borderRadius: '50%',
-                      backgroundColor: fertilizingStatus.doneToday ? '#DCFCE7' : '#F0FDF4',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                    }}
-                  >
-                    {fertilizingStatus.doneToday ? (
-                      <CheckCircle size={24} weight="fill" color="#16A34A" />
-                    ) : (
-                      <Leaf size={24} weight="duotone" color="#16A34A" />
-                    )}
-                  </div>
                 </div>
-              </div>
 
-              {/* Quick Tips */}
-              <div
-                style={{
-                  backgroundColor: '#FAFAFA',
-                  borderRadius: '16px',
-                  padding: '16px',
-                  border: '1px solid #E0E0E0',
-                  marginTop: '24px',
-                  cursor: 'pointer',
-                }}
-                onClick={() => setQuickTipsExpanded(!quickTipsExpanded)}
-              >
+                {/* Pemangkasan Card */}
                 <div
+                  onClick={handlePruningCardTap}
                   style={{
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '12px',
+                    padding: '16px',
+                    border: '1px solid #E0E0E0',
+                    cursor: 'pointer',
                     display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
+                    flexDirection: 'column',
+                    gap: '12px',
                   }}
                 >
-                  <h3
-                    style={{
-                      fontFamily: "'Inter', sans-serif",
-                      fontSize: '1rem',
-                      fontWeight: 500,
-                      color: '#2C2C2C',
-                      margin: 0,
-                    }}
-                  >
-                    Quick Tips
-                  </h3>
                   <div
                     style={{
-                      transform: quickTipsExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                      transition: 'transform 0.2s ease',
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '50%',
+                      backgroundColor: '#F5F5F5',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                     }}
                   >
-                    <CaretDown size={20} weight="bold" color="#666666" />
+                    <Scissors size={24} weight="regular" color="#666666" />
                   </div>
-                </div>
-
-                <AnimatePresence>
-                  {quickTipsExpanded && (
-                    <motion.p
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
+                  <div>
+                    <h3
+                      style={{
+                        fontFamily: "'Inter', sans-serif",
+                        fontSize: '1rem',
+                        fontWeight: 600,
+                        color: '#2C2C2C',
+                        margin: '0 0 4px 0',
+                      }}
+                    >
+                      Pemangkasan
+                    </h3>
+                    <p
                       style={{
                         fontFamily: "'Inter', sans-serif",
                         fontSize: '14px',
-                        color: '#4A4A4A',
-                        lineHeight: 1.6,
-                        marginTop: '12px',
-                        marginBottom: 0,
+                        color: '#666666',
+                        margin: 0,
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
                       }}
                     >
-                      {plantData.quickTips}
-                    </motion.p>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              {/* Tanya Tanam Section */}
-              <p
-                style={{
-                  fontFamily: "'Inter', sans-serif",
-                  fontSize: '14px',
-                  color: '#666666',
-                  marginTop: '24px',
-                  marginBottom: '12px',
-                }}
-              >
-                Ngobrol sama {plantData.customName} yuk
-              </p>
-
-              <div
-                style={{
-                  backgroundColor: '#FFFFFF',
-                  borderRadius: '16px',
-                  padding: '16px',
-                  border: '1px solid #E0E0E0',
-                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  cursor: 'pointer',
-                }}
-                onClick={() => handleMenuAction('diagnose')}
-              >
-                <div style={{ flex: 1 }}>
-                  <h3
-                    style={{
-                      fontFamily: "'Inter', sans-serif",
-                      fontSize: '1rem',
-                      fontWeight: 500,
-                      color: '#2C2C2C',
-                      margin: 0,
-                    }}
-                  >
-                    Tanya Tanam
-                  </h3>
+                      Pangkas daun tanaman
+                    </p>
+                  </div>
                 </div>
 
-                <button
+                {/* Aksi Lainya Card */}
+                <div
+                  onClick={handleOtherActionCardTap}
                   style={{
-                    width: '48px',
-                    height: '48px',
-                    borderRadius: '50%',
-                    backgroundColor: '#F5F5F5',
-                    border: 'none',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '12px',
+                    padding: '16px',
+                    border: '1px solid #E0E0E0',
                     cursor: 'pointer',
-                    flexShrink: 0,
-                    transition: 'background-color 0.2s ease',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '12px',
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#E5E5E5')}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#F5F5F5')}
                 >
-                  <ChatCircle size={24} weight="bold" color="#4B5563" />
-                </button>
+                  <div
+                    style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '50%',
+                      backgroundColor: '#F5F5F5',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <DotsThree size={24} weight="bold" color="#666666" />
+                  </div>
+                  <div>
+                    <h3
+                      style={{
+                        fontFamily: "'Inter', sans-serif",
+                        fontSize: '1rem',
+                        fontWeight: 600,
+                        color: '#2C2C2C',
+                        margin: '0 0 4px 0',
+                      }}
+                    >
+                      Aksi Lainya
+                    </h3>
+                    <p
+                      style={{
+                        fontFamily: "'Inter', sans-serif",
+                        fontSize: '14px',
+                        color: '#666666',
+                        margin: 0,
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                    >
+                      Catat aksi lainya
+                    </p>
+                  </div>
+                </div>
               </div>
+
           </div>
         ) : (
-          <div style={{ padding: '0 24px 100px 24px' }}>
+          <div style={{ padding: '16px 16px 24px 16px', minHeight: 'calc(100vh - 400px)' }}>
               {/* Loading State */}
               {actionsLoading ? (
-                <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  minHeight: 'calc(100vh - 450px)',
+                }}>
                   <p style={{ fontFamily: "'Inter', sans-serif", color: '#666666' }}>
                     Memuat riwayat...
                   </p>
                 </div>
               ) : timeline.length === 0 ? (
                 /* Empty State */
-                <div style={{ textAlign: 'center', padding: '60px 0' }}>
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  minHeight: 'calc(100vh - 450px)',
+                  textAlign: 'center',
+                }}>
                   <div
                     style={{
                       width: '80px',
@@ -1140,7 +1258,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      margin: '0 auto 16px',
+                      marginBottom: '16px',
                     }}
                   >
                     <Drop size={40} weight="regular" color="#CCCCCC" />
@@ -1177,7 +1295,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                         fontSize: '1rem',
                         fontWeight: 700,
                         color: '#2C2C2C',
-                        marginTop: groupIndex > 0 ? '32px' : '0',
+                        marginTop: groupIndex > 0 ? '32px' : '16px',
                         marginBottom: '12px',
                       }}
                     >
@@ -1270,6 +1388,76 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
           </div>
         )}
       </div>
+
+      {/* Sticky Tanya Tanam Section - Fixed at Bottom - Only show on Perawatan tab */}
+      {activeTab === 'perawatan' && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            padding: '16px',
+            paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))',
+            backgroundColor: '#FFFFFF',
+            boxShadow: '0 -2px 10px rgba(0, 0, 0, 0.05)',
+            zIndex: 100,
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: '12px',
+              padding: '16px',
+              border: '1px solid #E0E0E0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              cursor: 'pointer',
+            }}
+            onClick={() => handleMenuAction('diagnose')}
+          >
+            <div>
+              <h3
+                style={{
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '1rem',
+                  fontWeight: 600,
+                  color: '#2C2C2C',
+                  margin: '0 0 4px 0',
+                }}
+              >
+                Tanya Tanam
+              </h3>
+              <p
+                style={{
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '14px',
+                  color: '#666666',
+                  margin: 0,
+                }}
+              >
+                Ngobrol dengan {plantData.customName}
+              </p>
+            </div>
+
+            <div
+              style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '50%',
+                backgroundColor: '#F5F5F5',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <ChatDots size={24} weight="regular" color="#666666" />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Menu Modal */}
       <AnimatePresence>
@@ -1658,6 +1846,12 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
               // Fallback if no save callback provided
               setCurrentPlantData(updatedPlant);
               setShowEditPlant(false);
+            }
+          }}
+          onDelete={(plantToDelete) => {
+            setShowEditPlant(false);
+            if (onDelete) {
+              onDelete(plantToDelete?.id);
             }
           }}
         />
@@ -2309,6 +2503,445 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                   </span>
                 </button>
               )}
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Pruning Drawer */}
+      <AnimatePresence>
+        {showPruningDrawer && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => {
+                setShowPruningDrawer(false);
+                setPruningNotes('');
+                setPruningPhoto(null);
+                setPruningPhotoPreview(null);
+              }}
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                zIndex: 5000,
+              }}
+            />
+
+            {/* Drawer */}
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              style={{
+                position: 'fixed',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                backgroundColor: '#FFFFFF',
+                borderRadius: '24px 24px 0 0',
+                padding: '24px',
+                paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 0px))',
+                maxHeight: '80vh',
+                overflowY: 'auto',
+                zIndex: 5001,
+              }}
+            >
+              {/* Header */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: '20px',
+                }}
+              >
+                <h2
+                  style={{
+                    fontFamily: 'var(--font-caveat), Caveat, cursive',
+                    fontSize: '1.75rem',
+                    fontWeight: 600,
+                    color: '#2D5016',
+                    margin: 0,
+                  }}
+                >
+                  Catat Pemangkasan
+                </h2>
+                <button
+                  onClick={() => {
+                    setShowPruningDrawer(false);
+                    setPruningNotes('');
+                    setPruningPhoto(null);
+                    setPruningPhotoPreview(null);
+                  }}
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '50%',
+                    backgroundColor: '#F5F5F5',
+                    border: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M15 5L5 15M5 5l10 10"
+                      stroke="#666666"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Photo Upload */}
+              <input
+                type="file"
+                accept="image/*"
+                ref={pruningPhotoInputRef}
+                onChange={handlePruningPhotoSelect}
+                style={{ display: 'none' }}
+              />
+
+              <div
+                onClick={() => pruningPhotoInputRef.current?.click()}
+                style={{
+                  width: '100%',
+                  height: pruningPhotoPreview ? '200px' : '120px',
+                  border: '2px dashed #E0E0E0',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  cursor: 'pointer',
+                  marginBottom: '16px',
+                  overflow: 'hidden',
+                  backgroundColor: '#FAFAFA',
+                }}
+              >
+                {pruningPhotoPreview ? (
+                  <img
+                    src={pruningPhotoPreview}
+                    alt="Preview"
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                    }}
+                  />
+                ) : (
+                  <>
+                    <Camera size={32} weight="duotone" color="#999999" />
+                    <span
+                      style={{
+                        fontFamily: "'Inter', sans-serif",
+                        fontSize: '14px',
+                        color: '#999999',
+                      }}
+                    >
+                      Tambah foto (opsional)
+                    </span>
+                  </>
+                )}
+              </div>
+
+              {/* Notes Textarea */}
+              <textarea
+                value={pruningNotes}
+                onChange={(e) => setPruningNotes(e.target.value)}
+                placeholder="Bagian yang dipangkas, alasan, catatan lainnya..."
+                style={{
+                  width: '100%',
+                  minHeight: '100px',
+                  padding: '16px',
+                  fontSize: '1rem',
+                  fontFamily: "'Inter', sans-serif",
+                  color: '#2C2C2C',
+                  backgroundColor: '#FAFAFA',
+                  border: '2px solid transparent',
+                  borderRadius: '12px',
+                  resize: 'vertical',
+                  marginBottom: '20px',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+                onFocus={(e) => e.target.style.border = '2px solid #7CB342'}
+                onBlur={(e) => e.target.style.border = '2px solid transparent'}
+              />
+
+              {/* Submit Button */}
+              <button
+                onClick={handlePruningSubmit}
+                disabled={isSubmittingAction}
+                style={{
+                  width: '100%',
+                  padding: '16px',
+                  backgroundColor: isSubmittingAction ? '#A5D6A7' : '#7CB342',
+                  border: 'none',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  cursor: isSubmittingAction ? 'default' : 'pointer',
+                }}
+              >
+                <Scissors size={20} weight="bold" color="#FFFFFF" />
+                <span
+                  style={{
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: '1rem',
+                    fontWeight: 600,
+                    color: '#FFFFFF',
+                  }}
+                >
+                  {isSubmittingAction ? 'Menyimpan...' : 'Simpan'}
+                </span>
+              </button>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Other Action Drawer */}
+      <AnimatePresence>
+        {showOtherActionDrawer && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => {
+                setShowOtherActionDrawer(false);
+                setOtherActionName('');
+                setOtherActionNotes('');
+                setOtherActionPhoto(null);
+                setOtherActionPhotoPreview(null);
+              }}
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                zIndex: 5000,
+              }}
+            />
+
+            {/* Drawer */}
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              style={{
+                position: 'fixed',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                backgroundColor: '#FFFFFF',
+                borderRadius: '24px 24px 0 0',
+                padding: '24px',
+                paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 0px))',
+                maxHeight: '80vh',
+                overflowY: 'auto',
+                zIndex: 5001,
+              }}
+            >
+              {/* Header */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: '20px',
+                }}
+              >
+                <h2
+                  style={{
+                    fontFamily: 'var(--font-caveat), Caveat, cursive',
+                    fontSize: '1.75rem',
+                    fontWeight: 600,
+                    color: '#2D5016',
+                    margin: 0,
+                  }}
+                >
+                  Aksi Lainya
+                </h2>
+                <button
+                  onClick={() => {
+                    setShowOtherActionDrawer(false);
+                    setOtherActionName('');
+                    setOtherActionNotes('');
+                    setOtherActionPhoto(null);
+                    setOtherActionPhotoPreview(null);
+                  }}
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '50%',
+                    backgroundColor: '#F5F5F5',
+                    border: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M15 5L5 15M5 5l10 10"
+                      stroke="#666666"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Action Name Input */}
+              <input
+                type="text"
+                value={otherActionName}
+                onChange={(e) => setOtherActionName(e.target.value)}
+                placeholder="Nama aksi (wajib)"
+                style={{
+                  width: '100%',
+                  padding: '16px',
+                  fontSize: '1rem',
+                  fontFamily: "'Inter', sans-serif",
+                  color: '#2C2C2C',
+                  backgroundColor: '#FAFAFA',
+                  border: '2px solid transparent',
+                  borderRadius: '12px',
+                  marginBottom: '16px',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+                onFocus={(e) => e.target.style.border = '2px solid #7CB342'}
+                onBlur={(e) => e.target.style.border = '2px solid transparent'}
+              />
+
+              {/* Photo Upload */}
+              <input
+                type="file"
+                accept="image/*"
+                ref={otherActionPhotoInputRef}
+                onChange={handleOtherActionPhotoSelect}
+                style={{ display: 'none' }}
+              />
+
+              <div
+                onClick={() => otherActionPhotoInputRef.current?.click()}
+                style={{
+                  width: '100%',
+                  height: otherActionPhotoPreview ? '200px' : '120px',
+                  border: '2px dashed #E0E0E0',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  cursor: 'pointer',
+                  marginBottom: '16px',
+                  overflow: 'hidden',
+                  backgroundColor: '#FAFAFA',
+                }}
+              >
+                {otherActionPhotoPreview ? (
+                  <img
+                    src={otherActionPhotoPreview}
+                    alt="Preview"
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                    }}
+                  />
+                ) : (
+                  <>
+                    <Camera size={32} weight="duotone" color="#999999" />
+                    <span
+                      style={{
+                        fontFamily: "'Inter', sans-serif",
+                        fontSize: '14px',
+                        color: '#999999',
+                      }}
+                    >
+                      Tambah foto (opsional)
+                    </span>
+                  </>
+                )}
+              </div>
+
+              {/* Notes Textarea */}
+              <textarea
+                value={otherActionNotes}
+                onChange={(e) => setOtherActionNotes(e.target.value)}
+                placeholder="Deskripsi atau catatan (opsional)"
+                style={{
+                  width: '100%',
+                  minHeight: '100px',
+                  padding: '16px',
+                  fontSize: '1rem',
+                  fontFamily: "'Inter', sans-serif",
+                  color: '#2C2C2C',
+                  backgroundColor: '#FAFAFA',
+                  border: '2px solid transparent',
+                  borderRadius: '12px',
+                  resize: 'vertical',
+                  marginBottom: '20px',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+                onFocus={(e) => e.target.style.border = '2px solid #7CB342'}
+                onBlur={(e) => e.target.style.border = '2px solid transparent'}
+              />
+
+              {/* Submit Button */}
+              <button
+                onClick={handleOtherActionSubmit}
+                disabled={isSubmittingAction || !otherActionName.trim()}
+                style={{
+                  width: '100%',
+                  padding: '16px',
+                  backgroundColor: isSubmittingAction || !otherActionName.trim() ? '#A5D6A7' : '#7CB342',
+                  border: 'none',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  cursor: isSubmittingAction || !otherActionName.trim() ? 'default' : 'pointer',
+                }}
+              >
+                <Plus size={20} weight="bold" color="#FFFFFF" />
+                <span
+                  style={{
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: '1rem',
+                    fontWeight: 600,
+                    color: '#FFFFFF',
+                  }}
+                >
+                  {isSubmittingAction ? 'Menyimpan...' : 'Simpan'}
+                </span>
+              </button>
             </motion.div>
           </>
         )}

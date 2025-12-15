@@ -1,9 +1,9 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User } from '@phosphor-icons/react';
+import { User, ChartBar } from '@phosphor-icons/react';
 import { auth } from '@/lib/supabase';
 
-const ProfileModal = ({ isOpen, onClose, userName, userEmail, userPhoto, onNavigate, onLogout }) => {
+const ProfileModal = ({ isOpen, onClose, userName, userEmail, userPhoto, onNavigate, onLogout, showStats, onToggleStats }) => {
   console.log('ProfileModal render - userPhoto:', !!userPhoto);
 
   const handleMenuAction = async (action) => {
@@ -356,6 +356,63 @@ const ProfileModal = ({ isOpen, onClose, userName, userEmail, userPhoto, onNavig
                   Tutorial
                 </span>
               </button>
+
+              {/* Tampilkan Statistik Toggle */}
+              <div
+                style={{
+                  width: '100%',
+                  padding: '16px',
+                  backgroundColor: '#FFFFFF',
+                  border: '1px solid #E0E0E0',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <ChartBar size={24} weight="regular" color="#2C2C2C" />
+                  <span
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: '1rem',
+                      fontWeight: 500,
+                      color: '#2C2C2C',
+                    }}
+                  >
+                    Tampilkan Statistik
+                  </span>
+                </div>
+                {/* Toggle Switch */}
+                <button
+                  onClick={() => onToggleStats && onToggleStats(!showStats)}
+                  style={{
+                    width: '48px',
+                    height: '28px',
+                    borderRadius: '14px',
+                    backgroundColor: showStats ? '#7CB342' : '#E0E0E0',
+                    border: 'none',
+                    cursor: 'pointer',
+                    position: 'relative',
+                    transition: 'background-color 0.2s ease',
+                    padding: 0,
+                  }}
+                >
+                  <div
+                    style={{
+                      width: '22px',
+                      height: '22px',
+                      borderRadius: '50%',
+                      backgroundColor: '#FFFFFF',
+                      position: 'absolute',
+                      top: '3px',
+                      left: showStats ? '23px' : '3px',
+                      transition: 'left 0.2s ease',
+                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.2)',
+                    }}
+                  />
+                </button>
+              </div>
 
               {/* Keluar (Logout) */}
               <button

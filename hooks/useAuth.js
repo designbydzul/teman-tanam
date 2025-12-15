@@ -43,26 +43,35 @@ export function useAuth() {
 
     currentUserId.current = userId;
 
-    // Use AbortController for proper timeout handling
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000); // Reduced from 15s to 5s
+    // Use timeout instead of AbortController to avoid browser console errors
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Profile fetch timeout')), 5000);
+    });
 
     try {
       console.log('[useAuth] Fetching profile from Supabase...');
 
-      const { data, error } = await supabase
+      const fetchPromise = supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .maybeSingle()
-        .abortSignal(controller.signal);
+        .maybeSingle();
 
-      clearTimeout(timeoutId);
+      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
 
       console.log('[useAuth] Profile fetch result:', { data, error: error?.message, errorCode: error?.code });
 
-      if (error) {
-        console.error('[useAuth] Profile check error:', error);
+      // Check if there's a real error (not just an empty object)
+      const hasError = error && (error.message || error.code || Object.keys(error).length > 0);
+      if (hasError) {
+        // Log error with more details since Supabase errors may not serialize well
+        console.error('[useAuth] Profile check error:', {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint,
+          name: error.name,
+        });
         setHasCompletedOnboarding(false);
         setProfile(null);
         return false;
@@ -114,19 +123,24 @@ export function useAuth() {
         return false;
       }
     } catch (err) {
-      clearTimeout(timeoutId);
+      // Silently handle timeout errors
+      const isTimeoutError = err.message?.includes('timeout') || err.message?.includes('abort');
 
-      // On error (including timeout/abort), check localStorage cache before assuming not onboarded
+      // On error (including timeout), check localStorage cache before assuming not onboarded
       const cachedStatus = localStorage.getItem(`onboarding_complete_${userId}`);
       if (cachedStatus === 'true') {
         // Don't log error if we have a cached fallback - this is expected behavior
-        console.log('[useAuth] Profile fetch failed but using cached onboarding status');
+        if (!isTimeoutError) {
+          console.log('[useAuth] Profile fetch failed but using cached onboarding status');
+        }
         setHasCompletedOnboarding(true);
         hasFetchedProfile.current = true;
         return true;
       }
-      // Only log error if we have no fallback
-      console.warn('[useAuth] Profile fetch failed and no cached status:', err.message);
+      // Only log error if we have no fallback and it's not a timeout
+      if (!isTimeoutError) {
+        console.warn('[useAuth] Profile fetch failed and no cached status:', err.message);
+      }
       setHasCompletedOnboarding(false);
       setProfile(null);
       hasFetchedProfile.current = true; // Mark as fetched even on error to prevent loops

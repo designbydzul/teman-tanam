@@ -15,6 +15,7 @@ import {
   CaretDown,
   GearSix,
   Check,
+  Basket,
 } from '@phosphor-icons/react';
 import AddPlant from './AddPlant';
 import AddPlantForm from './AddPlantForm';
@@ -29,6 +30,7 @@ import OfflineIndicator from './OfflineIndicator';
 import { usePlants } from '@/hooks/usePlants';
 import { useLocations } from '@/hooks/useLocations';
 import { useAuth } from '@/hooks/useAuth';
+import { colors, radius, typography } from '@/styles/theme';
 
 const Home = ({ userName }) => {
   // Auth hook - get profile from Supabase
@@ -83,6 +85,15 @@ const Home = ({ userName }) => {
 
   // Profile Modal state
   const [showProfileModal, setShowProfileModal] = useState(false);
+
+  // Stats visibility preference (stored in localStorage)
+  const [showHomeStats, setShowHomeStats] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('showHomeStats');
+      return saved !== null ? JSON.parse(saved) : true; // Default: show stats
+    }
+    return true;
+  });
 
   // Location Settings state
   const [showLocationSettings, setShowLocationSettings] = useState(false);
@@ -319,6 +330,21 @@ const Home = ({ userName }) => {
     }
     return null; // No urgent status, hide the line
   }, [urgentStatusCounts]);
+
+  // Stats cards calculation
+  const statsData = React.useMemo(() => {
+    const totalPlants = plants.length;
+    const needsWatering = urgentStatusCounts.perluDisiram;
+    const needsFertilizing = urgentStatusCounts.perluDipupuk;
+    const readyToHarvest = urgentStatusCounts.siapDipanen;
+
+    return [
+      { label: 'Tanaman', value: totalPlants, Icon: Plant },
+      { label: 'Penyiraman', value: needsWatering, Icon: Drop },
+      { label: 'Pemupukan', value: needsFertilizing, Icon: Leaf },
+      { label: 'Siap Panen', value: readyToHarvest, Icon: Basket },
+    ];
+  }, [plants.length, urgentStatusCounts]);
 
   // Multi-select handlers
   const togglePlantSelection = (plantId) => {
@@ -653,6 +679,12 @@ const Home = ({ userName }) => {
     // TODO: Add other navigation actions (help-community, tutorial, logout)
   };
 
+  // Handle stats toggle from ProfileModal
+  const handleToggleStats = (value) => {
+    setShowHomeStats(value);
+    localStorage.setItem('showHomeStats', JSON.stringify(value));
+  };
+
   // Handle profile save
   const handleProfileSave = (profileData) => {
     console.log('handleProfileSave received:', { name: profileData.name, email: profileData.email, hasPhoto: !!profileData.photo });
@@ -825,21 +857,69 @@ const Home = ({ userName }) => {
           </div>
         </div>
 
-        {/* Urgent Status Summary Line */}
-        {urgentSummary && !plantsLoading && (
-          <p
+        {/* Stats Cards Row */}
+        {!plantsLoading && showHomeStats && (
+          <div
             style={{
-              fontFamily: "'Inter', sans-serif",
-              fontSize: '0.9375rem',
-              fontWeight: 500,
-              color: urgentSummary.color,
-              margin: '0 0 16px 0',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(4, 1fr)',
+              gap: '8px',
               paddingLeft: '24px',
               paddingRight: '24px',
+              marginBottom: '16px',
             }}
           >
-            {urgentSummary.text}
-          </p>
+            {statsData.map((stat, index) => (
+              <div
+                key={stat.label}
+                style={{
+                  padding: '10px',
+                  backgroundColor: colors.white,
+                  border: `1px solid ${colors.gray200}`,
+                  borderRadius: radius.lg,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '2px',
+                  minWidth: 0,
+                  overflow: 'hidden',
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: typography.fontFamily,
+                    fontSize: '11px',
+                    fontWeight: typography.fontWeight.normal,
+                    color: colors.gray600,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  {stat.label}
+                </span>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '12px',
+                  }}
+                >
+                  <span
+                    style={{
+                      fontFamily: typography.fontFamily,
+                      fontSize: typography.fontSize['2xl'],
+                      fontWeight: typography.fontWeight.bold,
+                      color: colors.gray800,
+                    }}
+                  >
+                    {stat.value}
+                  </span>
+                  <stat.Icon size={20} weight="regular" color={colors.gray400} />
+                </div>
+              </div>
+            ))}
+          </div>
         )}
 
         {/* Filter Dropdowns with Search Icon */}
@@ -862,14 +942,14 @@ const Home = ({ userName }) => {
               alignItems: 'center',
               gap: '6px',
               height: '40px',
-              padding: '0 14px',
-              fontSize: '0.875rem',
-              fontFamily: "'Inter', sans-serif",
-              fontWeight: 500,
-              color: isFilteringLocation ? '#2D5016' : '#666666',
-              backgroundColor: isFilteringLocation ? '#F1F8E9' : '#F5F5F5',
-              border: 'none',
-              borderRadius: '20px',
+              padding: '0 16px',
+              fontSize: typography.fontSize.sm,
+              fontFamily: typography.fontFamily,
+              fontWeight: typography.fontWeight.medium,
+              color: isFilteringLocation ? colors.greenForest : colors.gray800,
+              backgroundColor: isFilteringLocation ? colors.greenLight : colors.white,
+              border: `1px solid ${isFilteringLocation ? colors.greenFresh : colors.gray200}`,
+              borderRadius: radius.lg,
               cursor: 'pointer',
               transition: 'all 0.2s ease',
               whiteSpace: 'nowrap',
@@ -887,14 +967,14 @@ const Home = ({ userName }) => {
               alignItems: 'center',
               gap: '6px',
               height: '40px',
-              padding: '0 14px',
-              fontSize: '0.875rem',
-              fontFamily: "'Inter', sans-serif",
-              fontWeight: 500,
-              color: isFilteringStatus ? '#2D5016' : '#666666',
-              backgroundColor: isFilteringStatus ? '#F1F8E9' : '#F5F5F5',
-              border: 'none',
-              borderRadius: '20px',
+              padding: '0 16px',
+              fontSize: typography.fontSize.sm,
+              fontFamily: typography.fontFamily,
+              fontWeight: typography.fontWeight.medium,
+              color: isFilteringStatus ? colors.greenForest : colors.gray800,
+              backgroundColor: isFilteringStatus ? colors.greenLight : colors.white,
+              border: `1px solid ${isFilteringStatus ? colors.greenFresh : colors.gray200}`,
+              borderRadius: radius.lg,
               cursor: 'pointer',
               transition: 'all 0.2s ease',
               whiteSpace: 'nowrap',
@@ -907,15 +987,15 @@ const Home = ({ userName }) => {
           {/* Spacer to push search to right */}
           <div style={{ flex: 1 }} />
 
-          {/* Search Icon Button */}
+          {/* Search Icon Button - Toggle search input */}
           <button
-            onClick={() => setShowSearchInput(true)}
+            onClick={() => setShowSearchInput(!showSearchInput)}
             style={{
               width: '40px',
               height: '40px',
-              borderRadius: '20px',
-              backgroundColor: isSearching ? '#F1F8E9' : '#F5F5F5',
-              border: 'none',
+              borderRadius: radius.lg,
+              backgroundColor: showSearchInput || isSearching ? colors.greenLight : colors.white,
+              border: `1px solid ${showSearchInput || isSearching ? colors.greenFresh : colors.gray200}`,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -925,8 +1005,8 @@ const Home = ({ userName }) => {
             }}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <circle cx="11" cy="11" r="7" stroke={isSearching ? '#2D5016' : '#666666'} strokeWidth="2.5" />
-              <path d="M20 20l-3.5-3.5" stroke={isSearching ? '#2D5016' : '#666666'} strokeWidth="2.5" strokeLinecap="round" />
+              <circle cx="11" cy="11" r="7" stroke={showSearchInput || isSearching ? colors.greenForest : colors.gray600} strokeWidth="2.5" />
+              <path d="M20 20l-3.5-3.5" stroke={showSearchInput || isSearching ? colors.greenForest : colors.gray600} strokeWidth="2.5" strokeLinecap="round" />
             </svg>
           </button>
         </div>
@@ -972,60 +1052,35 @@ const Home = ({ userName }) => {
                     transition: 'border-color 200ms',
                   }}
                 />
-                {/* Clear and Close buttons */}
-                <div
+                {/* Single X button - clears text if present, closes search if empty */}
+                <button
+                  onClick={() => {
+                    if (searchQuery) {
+                      setSearchQuery('');
+                    } else {
+                      setShowSearchInput(false);
+                    }
+                  }}
                   style={{
                     position: 'absolute',
                     right: '36px',
                     top: '50%',
                     transform: 'translateY(-50%)',
+                    width: '28px',
+                    height: '28px',
+                    borderRadius: '50%',
+                    backgroundColor: colors.gray200,
+                    border: 'none',
                     display: 'flex',
-                    gap: '8px',
                     alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
                   }}
                 >
-                  {searchQuery && (
-                    <button
-                      onClick={() => setSearchQuery('')}
-                      style={{
-                        width: '28px',
-                        height: '28px',
-                        borderRadius: '50%',
-                        backgroundColor: '#E0E0E0',
-                        border: 'none',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                        <path d="M11 3L3 11M3 3l8 8" stroke="#666666" strokeWidth="2" strokeLinecap="round" />
-                      </svg>
-                    </button>
-                  )}
-                  <button
-                    onClick={() => {
-                      setShowSearchInput(false);
-                      if (!searchQuery) setSearchQuery('');
-                    }}
-                    style={{
-                      width: '28px',
-                      height: '28px',
-                      borderRadius: '50%',
-                      backgroundColor: '#F5F5F5',
-                      border: 'none',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                      <path d="M11 3L3 11M3 3l8 8" stroke="#666666" strokeWidth="2" strokeLinecap="round" />
-                    </svg>
-                  </button>
-                </div>
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M11 3L3 11M3 3l8 8" stroke={colors.gray600} strokeWidth="2" strokeLinecap="round" />
+                  </svg>
+                </button>
               </div>
             </motion.div>
           )}
@@ -1052,14 +1107,14 @@ const Home = ({ userName }) => {
                   justifyContent: 'space-between',
                 }}
               >
-                {/* Cancel Button - Red pill style */}
+                {/* Cancel Button - Red style */}
                 <button
                   onClick={exitMultiSelectMode}
                   style={{
                     padding: '8px 20px',
                     backgroundColor: '#FEE2E2',
                     border: 'none',
-                    borderRadius: '20px',
+                    borderRadius: radius.md,
                     cursor: 'pointer',
                     fontFamily: "'Inter', sans-serif",
                     fontSize: '14px',
@@ -1082,14 +1137,14 @@ const Home = ({ userName }) => {
                   {selectedPlantIds.size} dipilih
                 </span>
 
-                {/* Select All Button - Gray pill style */}
+                {/* Select All Button - Gray style */}
                 <button
                   onClick={selectedPlantIds.size === filteredPlants.length ? () => setSelectedPlantIds(new Set()) : selectAllPlants}
                   style={{
                     padding: '8px 20px',
                     backgroundColor: '#F5F5F5',
                     border: 'none',
-                    borderRadius: '20px',
+                    borderRadius: radius.md,
                     cursor: 'pointer',
                     fontFamily: "'Inter', sans-serif",
                     fontSize: '14px',
@@ -1122,7 +1177,7 @@ const Home = ({ userName }) => {
           style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: '24px 16px',
+            gap: '16px 12px',
             padding: '16px 24px',
             paddingBottom: '100px',
           }}
@@ -1144,8 +1199,8 @@ const Home = ({ userName }) => {
                   style={{
                     width: '100%',
                     aspectRatio: '1',
-                    borderRadius: '24px',
-                    backgroundColor: '#F1F8E9',
+                    borderRadius: radius.xl,
+                    backgroundColor: colors.gray100,
                     marginBottom: '8px',
                     animation: 'pulse 1.5s ease-in-out infinite',
                   }}
@@ -1155,8 +1210,8 @@ const Home = ({ userName }) => {
                   style={{
                     width: '80%',
                     height: '16px',
-                    borderRadius: '8px',
-                    backgroundColor: '#E8F5E9',
+                    borderRadius: radius.md,
+                    backgroundColor: colors.gray200,
                     marginBottom: '4px',
                     animation: 'pulse 1.5s ease-in-out infinite',
                   }}
@@ -1166,8 +1221,8 @@ const Home = ({ userName }) => {
                   style={{
                     width: '60%',
                     height: '14px',
-                    borderRadius: '7px',
-                    backgroundColor: '#F5F5F5',
+                    borderRadius: radius.md,
+                    backgroundColor: colors.gray100,
                     animation: 'pulse 1.5s ease-in-out infinite',
                   }}
                 />
@@ -1240,54 +1295,56 @@ const Home = ({ userName }) => {
                 <>
                   Tidak ada hasil untuk
                   <br />
-                  "{searchQuery}"
+                  &quot;{searchQuery}&quot;
                 </>
-              ) : isFilteringLocation ? (
-                <>
-                  Belum ada tanaman
-                  <br />
-                  di {selectedLocation}
-                </>
+              ) : hasNoPlants ? (
+                'Belum ada tanaman'
               ) : (
-                <>
-                  Belum ada tanaman
-                  <br />
-                  ditambahkan
-                </>
+                'Tidak ada tanaman yang cocok'
               )}
             </p>
 
-            {/* Add Plant CTA Button - only show on true empty state */}
-            {!isSearching && !isFilteringLocation && (
-              <motion.button
-                onClick={() => setShowAddPlant(true)}
-                whileTap={{ scale: 0.98 }}
+            {/* Subtext based on context */}
+            <p
+              style={{
+                marginTop: '8px',
+                fontFamily: "'Inter', sans-serif",
+                fontSize: '14px',
+                color: '#666666',
+                textAlign: 'center',
+                margin: 0,
+                marginTop: '8px',
+              }}
+            >
+              {hasNoPlants && !isSearching
+                ? 'Ketuk + untuk menambah tanaman pertamamu'
+                : 'Coba ubah filter atau tambah tanaman baru'}
+            </p>
+
+            {/* Reset Filter button - only show when filtering and plants exist */}
+            {!hasNoPlants && (isFilteringLocation || isFilteringStatus || isSearching) && (
+              <button
+                onClick={() => {
+                  setSelectedLocation('Semua');
+                  setSelectedStatus('Semua');
+                  setSearchQuery('');
+                  setShowSearchInput(false);
+                }}
                 style={{
-                  marginTop: '24px',
-                  padding: '14px 28px',
-                  backgroundColor: '#7CB342',
-                  border: 'none',
-                  borderRadius: '12px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
+                  marginTop: '16px',
+                  padding: '10px 20px',
+                  backgroundColor: '#FFFFFF',
+                  border: '1px solid #E0E0E0',
+                  borderRadius: radius.md,
                   cursor: 'pointer',
-                  boxShadow: '0 4px 12px rgba(124, 179, 66, 0.3)',
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  color: '#666666',
                 }}
               >
-                <Plus size={20} weight="bold" color="#FFFFFF" />
-                <span
-                  style={{
-                    fontFamily: "'Inter', sans-serif",
-                    fontSize: '1rem',
-                    fontWeight: 600,
-                    color: '#FFFFFF',
-                  }}
-                >
-                  Tambah Tanaman
-                </span>
-              </motion.button>
+                Reset Filter
+              </button>
             )}
           </motion.div>
         ) : (
@@ -1323,15 +1380,15 @@ const Home = ({ userName }) => {
                   style={{
                     width: '100%',
                     aspectRatio: '1',
-                    borderRadius: '24px',
+                    borderRadius: radius.xl,
                     overflow: 'hidden',
                     marginBottom: '8px',
-                    backgroundColor: '#F1F8E9',
+                    backgroundColor: colors.gray100,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     position: 'relative',
-                    border: isMultiSelectMode && selectedPlantIds.has(plant.id) ? '3px solid #7CB342' : '3px solid transparent',
+                    border: isMultiSelectMode && selectedPlantIds.has(plant.id) ? `3px solid ${colors.greenFresh}` : '3px solid transparent',
                     transition: 'border-color 0.2s ease',
                   }}
                 >
@@ -1360,12 +1417,12 @@ const Home = ({ userName }) => {
                 {/* Plant Name */}
                 <h3
                   style={{
-                    fontFamily: "'Inter', sans-serif",
-                    fontSize: '16px',
-                    fontWeight: 600,
-                    lineHeight: '150%',
-                    color: '#2C2C2C',
-                    margin: '0 0 4px 0',
+                    fontFamily: typography.fontFamily,
+                    fontSize: typography.fontSize.sm,
+                    fontWeight: typography.fontWeight.semibold,
+                    lineHeight: typography.lineHeight.normal,
+                    color: colors.greenForest,
+                    margin: '0 0 2px 0',
                     textAlign: 'center',
                     whiteSpace: 'nowrap',
                     overflow: 'hidden',
@@ -1380,11 +1437,11 @@ const Home = ({ userName }) => {
                 {/* Plant Status - Dynamic based on care schedule */}
                 <p
                   style={{
-                    fontFamily: "'Inter', sans-serif",
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    lineHeight: '150%',
-                    color: plant.statusColor || '#7CB342',
+                    fontFamily: typography.fontFamily,
+                    fontSize: typography.fontSize.xs,
+                    fontWeight: typography.fontWeight.normal,
+                    lineHeight: typography.lineHeight.normal,
+                    color: plant.statusColor || colors.gray600,
                     margin: 0,
                     textAlign: 'center',
                     whiteSpace: 'nowrap',
@@ -1438,7 +1495,7 @@ const Home = ({ userName }) => {
                 padding: '12px 24px',
                 backgroundColor: '#FFFFFF',
                 border: '1.5px solid #E5E5E5',
-                borderRadius: '28px',
+                borderRadius: radius.md,
                 cursor: selectedPlantIds.size > 0 && !isBulkActioning ? 'pointer' : 'not-allowed',
                 fontFamily: "'Inter', sans-serif",
                 fontSize: '15px',
@@ -1468,7 +1525,7 @@ const Home = ({ userName }) => {
                 padding: '12px 24px',
                 backgroundColor: '#FFFFFF',
                 border: '1.5px solid #E5E5E5',
-                borderRadius: '28px',
+                borderRadius: radius.md,
                 cursor: selectedPlantIds.size > 0 && !isBulkActioning ? 'pointer' : 'not-allowed',
                 fontFamily: "'Inter', sans-serif",
                 fontSize: '15px',
@@ -1618,6 +1675,8 @@ const Home = ({ userName }) => {
         userEmail={userEmail}
         userPhoto={userPhoto}
         onNavigate={handleProfileNavigation}
+        showStats={showHomeStats}
+        onToggleStats={handleToggleStats}
       />
 
       {/* Location Settings */}
@@ -2579,27 +2638,19 @@ const Home = ({ userName }) => {
                   }}
                   style={{
                     width: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
                     padding: '14px 24px',
-                    backgroundColor: '#FFFFFF',
-                    border: '1.5px solid #7CB342',
-                    borderRadius: '12px',
+                    fontSize: '1rem',
+                    fontFamily: "'Inter', sans-serif",
+                    fontWeight: 600,
+                    color: colors.greenFresh,
+                    backgroundColor: colors.white,
+                    border: `2px solid ${colors.greenFresh}`,
+                    borderRadius: radius.lg,
                     cursor: 'pointer',
                     transition: 'all 0.2s ease',
                   }}
                 >
-                  <span
-                    style={{
-                      fontFamily: "'Inter', sans-serif",
-                      fontSize: '1rem',
-                      fontWeight: 600,
-                      color: '#2D5016',
-                    }}
-                  >
-                    Kelola Lokasi
-                  </span>
+                  Atur Lokasi Tanam
                 </button>
               </div>
             </motion.div>

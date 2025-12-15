@@ -11,6 +11,7 @@ export const colors = {
   // Primary Colors
   greenFresh: '#7CB342',
   greenForest: '#2D5016',
+  greenLight: '#F1F8E9', // Light green for active/selected states
   brownEarth: '#8B4513',
   blueSky: '#87CEEB',
   yellowSun: '#FFD54F',

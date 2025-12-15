@@ -713,16 +713,6 @@ export function usePlants() {
 
         const tempId = generateTempId();
 
-        // Convert photo to base64 if present
-        let offlinePhoto = null;
-        if (photoBlob) {
-          try {
-            offlinePhoto = await blobToBase64(photoBlob);
-          } catch (e) {
-            console.warn('[usePlants] Failed to convert action photo to base64:', e);
-          }
-        }
-
         const actionData = {
           id: tempId,
           plant_id: plantId,
@@ -737,10 +727,7 @@ export function usePlants() {
         const queueItem = addToSyncQueue({
           type: 'action',
           action: 'create',
-          data: {
-            ...actionData,
-            offlinePhoto: offlinePhoto,
-          },
+          data: actionData,
         });
 
         console.log('[usePlants] OFFLINE: Added action to sync queue:', queueItem);

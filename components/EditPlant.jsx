@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import LocationSettings from './LocationSettings';
 import { useLocations } from '@/hooks/useLocations';
 
-const EditPlant = ({ plant, onClose, onSave }) => {
+const EditPlant = ({ plant, onClose, onSave, onDelete }) => {
   const [formData, setFormData] = useState({
     customName: '',
     location: '',
@@ -18,6 +18,7 @@ const EditPlant = ({ plant, onClose, onSave }) => {
   const [showLocationInput, setShowLocationInput] = useState(false);
   const [focusedInput, setFocusedInput] = useState(null);
   const [showLocationSettings, setShowLocationSettings] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const dateInputRef = useRef(null);
 
   // Get locations from Supabase via useLocations hook
@@ -231,16 +232,6 @@ const EditPlant = ({ plant, onClose, onSave }) => {
               >
                 Edit Tanaman
               </h2>
-              <p
-                style={{
-                  fontFamily: "'Inter', sans-serif",
-                  fontSize: '14px',
-                  color: '#666666',
-                  margin: '4px 0 0 0',
-                }}
-              >
-                {plant?.species?.scientific || 'Tanaman'}
-              </p>
             </div>
           </div>
 
@@ -521,6 +512,42 @@ const EditPlant = ({ plant, onClose, onSave }) => {
                   </label>
                 )}
               </div>
+
+              {/* Delete Plant Button */}
+              {onDelete && (
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  style={{
+                    width: '100%',
+                    padding: '16px',
+                    marginTop: '32px',
+                    fontSize: '1rem',
+                    fontFamily: "'Inter', sans-serif",
+                    fontWeight: 500,
+                    color: '#DC2626',
+                    backgroundColor: '#FEF2F2',
+                    border: '1px solid #FEE2E2',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                  }}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14zM10 11v6M14 11v6"
+                      stroke="#DC2626"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  Hapus Tanaman
+                </button>
+              )}
             </form>
           </div>
 
@@ -570,6 +597,144 @@ const EditPlant = ({ plant, onClose, onSave }) => {
           }}
         />
       )}
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {showDeleteConfirm && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              key="delete-confirm-backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowDeleteConfirm(false)}
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                zIndex: 4000,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              {/* Modal */}
+              <motion.div
+                key="delete-confirm-modal"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '16px',
+                  padding: '24px',
+                  margin: '24px',
+                  maxWidth: '320px',
+                  width: '100%',
+                  textAlign: 'center',
+                }}
+              >
+                {/* Icon */}
+                <div
+                  style={{
+                    width: '64px',
+                    height: '64px',
+                    borderRadius: '50%',
+                    backgroundColor: '#FEF2F2',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    margin: '0 auto 16px',
+                  }}
+                >
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14zM10 11v6M14 11v6"
+                      stroke="#DC2626"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+
+                {/* Title */}
+                <h3
+                  style={{
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: '1.125rem',
+                    fontWeight: 600,
+                    color: '#2C2C2C',
+                    margin: '0 0 8px 0',
+                  }}
+                >
+                  Hapus Tanaman?
+                </h3>
+
+                {/* Description */}
+                <p
+                  style={{
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: '14px',
+                    color: '#666666',
+                    margin: '0 0 24px 0',
+                    lineHeight: 1.5,
+                  }}
+                >
+                  Tanaman "{formData.customName || plant?.customName || 'ini'}" akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.
+                </p>
+
+                {/* Buttons */}
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <button
+                    onClick={() => setShowDeleteConfirm(false)}
+                    style={{
+                      flex: 1,
+                      padding: '14px 16px',
+                      fontSize: '1rem',
+                      fontFamily: "'Inter', sans-serif",
+                      fontWeight: 500,
+                      color: '#666666',
+                      backgroundColor: '#F5F5F5',
+                      border: 'none',
+                      borderRadius: '12px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Batal
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowDeleteConfirm(false);
+                      onDelete(plant);
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: '14px 16px',
+                      fontSize: '1rem',
+                      fontFamily: "'Inter', sans-serif",
+                      fontWeight: 500,
+                      color: '#FFFFFF',
+                      backgroundColor: '#DC2626',
+                      border: 'none',
+                      borderRadius: '12px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Hapus
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </AnimatePresence>
   );
 };
