@@ -13,74 +13,60 @@ import {
   getSyncQueueCount,
 } from '@/lib/offlineStorage';
 import { syncAll } from '@/lib/syncService';
+import { createDebugger } from '@/lib/debug';
+import {
+  ACTION_TYPES,
+  PLANT_STATUS,
+  STATUS_COLORS,
+  HARVESTABLE_CATEGORIES,
+  DEFAULT_CARE_FREQUENCY,
+  CACHE_KEYS,
+  TIMEOUTS,
+  getSpeciesEmoji,
+  isValidUUID,
+} from '@/lib/constants';
+import type {
+  Plant,
+  PlantRaw,
+  CareStatus,
+  HarvestStatus,
+  AddPlantData,
+  UpdatePlantData,
+  UsePlantsReturn,
+} from '@/types';
 
-// Helper to validate UUID format
-const isValidUUID = (str) => {
-  if (!str || typeof str !== 'string') return false;
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  return uuidRegex.test(str);
-};
+const debug = createDebugger('usePlants');
 
-// Map species names to emojis (since DB doesn't have icon column)
-const SPECIES_EMOJI_MAP = {
-  'labuh': '🎃',
-  'kentang': '🥔',
-  'wortel': '🥕',
-  'brokoli': '🥦',
-  'kacang hijau': '🫘',
-  'paprika': '🫑',
-  'bawang merah': '🧅',
-  'bayam': '🥬',
-  'kembang kol': '🥬',
-  'tomat': '🍅',
-  'kubis': '🥬',
-  'terong': '🍆',
-  'cabai': '🌶️',
-  'jagung': '🌽',
-  'selada': '🥗',
-  'mentimun': '🥒',
-  'timun': '🥒',
-  'bawang putih': '🧄',
-  'labu siam': '🥒',
-  'kangkung': '🥬',
-  'sawi': '🥬',
-  'seledri': '🥬',
-};
+type ActionType = typeof ACTION_TYPES[keyof typeof ACTION_TYPES];
 
-// Get emoji for species by name (case insensitive)
-const getSpeciesEmoji = (speciesName) => {
-  if (!speciesName) return '🌱';
-  const normalized = speciesName.toLowerCase().trim();
-  return SPECIES_EMOJI_MAP[normalized] || '🌱';
-};
+// Actions map type
+type ActionsMap = Record<string, Record<string, string>>;
 
 /**
  * usePlants Hook
  *
  * Fetches and manages user's plants from Supabase.
- * - Joins with plant_species for species info
- * - Joins with locations for location name
- * - Gets last action date for status calculation
  */
-const PLANTS_CACHE_KEY = 'plants';
-
-export function usePlants() {
+export function usePlants(): UsePlantsReturn {
   const { user } = useAuth();
   const { isOnline } = useOnlineStatus();
-  const [plants, setPlants] = useState([]);
+  const [plants, setPlants] = useState<Plant[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [syncStatus, setSyncStatus] = useState('idle'); // 'idle' | 'syncing' | 'success' | 'error'
+  const [error, setError] = useState<string | null>(null);
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
   const [pendingCount, setPendingCount] = useState(0);
   const wasOfflineRef = useRef(!isOnline);
 
   // Calculate care status for watering or fertilizing
-  const calculateCareStatus = (lastActionDate, frequencyDays, actionType = 'siram') => {
-    const actionLabel = actionType === 'siram' ? 'disiram' : 'dipupuk';
-    const needsLabel = actionType === 'siram' ? 'Perlu disiram' : 'Perlu dipupuk';
+  const calculateCareStatus = (
+    lastActionDate: string | null | undefined,
+    frequencyDays: number | null | undefined,
+    actionType: ActionType = ACTION_TYPES.WATER
+  ): CareStatus => {
+    const actionLabel = actionType === ACTION_TYPES.WATER ? 'disiram' : 'dipupuk';
+    const needsLabel = actionType === ACTION_TYPES.WATER ? PLANT_STATUS.NEEDS_WATERING : PLANT_STATUS.NEEDS_FERTILIZING;
 
-    // Default frequency if not specified
-    const frequency = frequencyDays || (actionType === 'siram' ? 3 : 14);
+    const frequency = frequencyDays || (actionType === ACTION_TYPES.WATER ? DEFAULT_CARE_FREQUENCY.WATERING : DEFAULT_CARE_FREQUENCY.FERTILIZING);
 
     if (!lastActionDate) {
       return {
@@ -129,12 +115,13 @@ export function usePlants() {
     };
   };
 
-  // Calculate harvest status based on planted_date and days_to_harvest
-  const calculateHarvestStatus = (plantedDate, daysToHarvest, category) => {
-    // Only applicable to harvestable plants (vegetables, fruits, herbs)
-    // Skip ornamental plants
-    const harvestableCategories = ['sayuran', 'buah', 'rempah', 'vegetable', 'fruit', 'herb'];
-    const isHarvestable = category && harvestableCategories.some(cat =>
+  // Calculate harvest status
+  const calculateHarvestStatus = (
+    plantedDate: string | null | undefined,
+    daysToHarvest: number | null | undefined,
+    category: string | null | undefined
+  ): HarvestStatus => {
+    const isHarvestable = category && HARVESTABLE_CATEGORIES.some(cat =>
       category.toLowerCase().includes(cat)
     );
 
@@ -155,56 +142,61 @@ export function usePlants() {
     };
   };
 
-  // Calculate overall plant status (for display on cards)
-  const calculateOverallStatus = (wateringStatus, fertilizingStatus, harvestStatus) => {
-    // Priority: needs_action (watering) > needs_action (fertilizing) > siap dipanen > on_schedule
+  // Calculate overall plant status
+  const calculateOverallStatus = (
+    wateringStatus: CareStatus,
+    fertilizingStatus: CareStatus,
+    harvestStatus: HarvestStatus
+  ): { status: string; color: string } => {
     if (wateringStatus.status === 'needs_action') {
-      return { status: 'Perlu disiram', color: '#F57C00' }; // Orange
+      return { status: PLANT_STATUS.NEEDS_WATERING, color: STATUS_COLORS[PLANT_STATUS.NEEDS_WATERING] };
     }
     if (fertilizingStatus.status === 'needs_action') {
-      return { status: 'Perlu dipupuk', color: '#F57C00' }; // Orange
+      return { status: PLANT_STATUS.NEEDS_FERTILIZING, color: STATUS_COLORS[PLANT_STATUS.NEEDS_FERTILIZING] };
     }
     if (harvestStatus?.isReadyToHarvest) {
-      return { status: 'Siap dipanen', color: '#4CAF50' }; // Green (harvest ready)
+      return { status: PLANT_STATUS.READY_TO_HARVEST, color: STATUS_COLORS[PLANT_STATUS.READY_TO_HARVEST] };
     }
-    return { status: 'Terawat', color: '#7CB342' }; // Green
+    return { status: PLANT_STATUS.HEALTHY, color: STATUS_COLORS[PLANT_STATUS.HEALTHY] };
   };
 
   // Transform raw plant data to match the expected format
-  const transformPlantData = useCallback((plantsData, actionsMap = {}) => {
+  const transformPlantData = useCallback((plantsData: PlantRaw[], actionsMap: ActionsMap = {}): Plant[] => {
     return (plantsData || []).map(plant => {
       const species = plant.plant_species;
       const location = plant.locations;
       const actions = actionsMap[plant.id] || {};
 
-      // Get care schedule from species (with defaults)
-      const wateringFrequencyDays = species?.watering_frequency_days || 3;
-      const fertilizingFrequencyDays = species?.fertilizing_frequency_days || 14;
+      // Species defaults
+      const speciesWateringDays = species?.watering_frequency_days || DEFAULT_CARE_FREQUENCY.WATERING;
+      const speciesFertilizingDays = species?.fertilizing_frequency_days || DEFAULT_CARE_FREQUENCY.FERTILIZING;
       const daysToHarvest = species?.days_to_harvest || null;
 
-      // Calculate care statuses
-      const wateringStatus = calculateCareStatus(actions.siram, wateringFrequencyDays, 'siram');
-      const fertilizingStatus = calculateCareStatus(actions.pupuk, fertilizingFrequencyDays, 'pupuk');
+      // Use custom frequency if set, otherwise use species default
+      const wateringFrequencyDays = plant.custom_watering_days ?? speciesWateringDays;
+      const fertilizingFrequencyDays = plant.custom_fertilizing_days ?? speciesFertilizingDays;
+
+      const wateringStatus = calculateCareStatus(actions[ACTION_TYPES.WATER], wateringFrequencyDays, ACTION_TYPES.WATER);
+      const fertilizingStatus = calculateCareStatus(actions[ACTION_TYPES.FERTILIZE], fertilizingFrequencyDays, ACTION_TYPES.FERTILIZE);
       const plantedDate = plant.planted_date || plant.created_at;
       const harvestStatus = calculateHarvestStatus(plantedDate, daysToHarvest, species?.category);
       const overallStatus = calculateOverallStatus(wateringStatus, fertilizingStatus, harvestStatus);
 
-      // Parse species info from notes if available (stored as <!--species:{...}-->)
-      let storedSpeciesInfo = null;
+      // Parse species info from notes if available
+      let storedSpeciesInfo: { speciesEmoji?: string; speciesName?: string } | null = null;
       let cleanNotes = plant.notes || '';
       const speciesMatch = cleanNotes.match(/<!--species:(\{.*?\})-->/);
       if (speciesMatch) {
         try {
           storedSpeciesInfo = JSON.parse(speciesMatch[1]);
-          cleanNotes = cleanNotes.replace(speciesMatch[0], ''); // Remove species tag from notes
-        } catch (e) {
-          console.warn('[usePlants] Failed to parse stored species info:', e);
+          cleanNotes = cleanNotes.replace(speciesMatch[0], '');
+        } catch {
+          debug.warn('Failed to parse stored species info');
         }
       }
 
-      // Get emoji - priority: stored emoji > species from DB > plant name lookup
       const plantName = plant.name || species?.common_name || 'Tanaman';
-      let speciesEmoji;
+      let speciesEmoji: string;
       if (storedSpeciesInfo?.speciesEmoji) {
         speciesEmoji = storedSpeciesInfo.speciesEmoji;
       } else if (species) {
@@ -231,33 +223,33 @@ export function usePlants() {
           category: species.category,
           quickTips: species.quick_tips,
           emoji: speciesEmoji,
-          wateringFrequencyDays,
-          fertilizingFrequencyDays,
+          wateringFrequencyDays: speciesWateringDays,
+          fertilizingFrequencyDays: speciesFertilizingDays,
           daysToHarvest,
         } : {
-          // Provide fallback species object with emoji based on plant name
           emoji: speciesEmoji,
-          wateringFrequencyDays: 3,
-          fertilizingFrequencyDays: 14,
+          wateringFrequencyDays: DEFAULT_CARE_FREQUENCY.WATERING,
+          fertilizingFrequencyDays: DEFAULT_CARE_FREQUENCY.FERTILIZING,
           daysToHarvest: null,
         },
+        // Custom frequencies (null = use species default)
+        customWateringDays: plant.custom_watering_days ?? null,
+        customFertilizingDays: plant.custom_fertilizing_days ?? null,
         plantedDate: plant.planted_date ? new Date(plant.planted_date) : new Date(plant.created_at),
-        lastWatered: actions.siram ? new Date(actions.siram) : null,
-        lastFertilized: actions.pupuk ? new Date(actions.pupuk) : null,
-        // Care status details
+        lastWatered: actions[ACTION_TYPES.WATER] ? new Date(actions[ACTION_TYPES.WATER]) : null,
+        lastFertilized: actions[ACTION_TYPES.FERTILIZE] ? new Date(actions[ACTION_TYPES.FERTILIZE]) : null,
         wateringStatus,
         fertilizingStatus,
         harvestStatus,
-        notes: cleanNotes, // Use cleaned notes (without species tag)
+        notes: cleanNotes,
         createdAt: new Date(plant.created_at),
-        // Offline flags
         isOffline: plant.isOffline || false,
         pendingSync: plant.pendingSync || false,
       };
     });
   }, []);
 
-  // Fetch plants from Supabase (online) or cache (offline)
+  // Fetch plants from Supabase or cache
   const fetchPlants = useCallback(async () => {
     if (!user?.id) {
       setPlants([]);
@@ -267,22 +259,20 @@ export function usePlants() {
 
     setLoading(true);
     setError(null);
-
-    // Update pending count
     setPendingCount(getSyncQueueCount());
 
     try {
       // OFFLINE MODE: Load from cache
       if (!isOnline) {
-        console.log('[usePlants] OFFLINE: Loading from cache');
-        const cached = getFromCache(PLANTS_CACHE_KEY);
+        debug.log('OFFLINE: Loading from cache');
+        const cached = getFromCache(CACHE_KEYS.PLANTS);
 
         if (cached?.data) {
-          console.log('[usePlants] OFFLINE: Found cached plants:', cached.data.length);
-          setPlants(cached.data);
+          debug.log('OFFLINE: Found cached plants:', cached.data.length);
+          setPlants(cached.data as Plant[]);
           setError(null);
         } else {
-          console.log('[usePlants] OFFLINE: No cached data available');
+          debug.log('OFFLINE: No cached data available');
           setPlants([]);
           setError('Tidak ada data tersimpan. Hubungkan ke internet untuk memuat tanaman.');
         }
@@ -291,14 +281,11 @@ export function usePlants() {
       }
 
       // ONLINE MODE: Fetch from Supabase
-      console.log('[usePlants] ONLINE: Fetching plants for user:', user.id);
+      debug.log('ONLINE: Fetching plants for user:', user.id);
 
       // Fetch plants with joins
-      // First try with days_to_harvest column, fallback without it if column doesn't exist
-      let plantsData = null;
-      let plantsError = null;
+      let plantsData: PlantRaw[] | null = null;
 
-      // Try query with days_to_harvest first
       const queryWithHarvest = await supabase
         .from('plants')
         .select(`
@@ -322,8 +309,7 @@ export function usePlants() {
         .order('created_at', { ascending: false });
 
       if (queryWithHarvest.error) {
-        // If error (likely column doesn't exist), try without days_to_harvest
-        console.warn('[usePlants] Query with days_to_harvest failed, trying without:', queryWithHarvest.error.message);
+        debug.warn('Query with days_to_harvest failed, trying without:', queryWithHarvest.error.message);
 
         const queryWithoutHarvest = await supabase
           .from('plants')
@@ -346,24 +332,17 @@ export function usePlants() {
           .eq('user_id', user.id)
           .order('created_at', { ascending: false });
 
-        plantsData = queryWithoutHarvest.data;
-        plantsError = queryWithoutHarvest.error;
+        if (queryWithoutHarvest.error) throw queryWithoutHarvest.error;
+        plantsData = queryWithoutHarvest.data as PlantRaw[];
       } else {
-        plantsData = queryWithHarvest.data;
-        plantsError = queryWithHarvest.error;
+        plantsData = queryWithHarvest.data as PlantRaw[];
       }
 
-      if (plantsError) {
-        console.error('[usePlants] Error fetching plants with joins:', plantsError);
-        throw plantsError;
-      }
-
-      console.log('[usePlants] Raw plants data with joins:', plantsData);
-      console.log('[usePlants] Plants count:', plantsData?.length);
+      debug.log('Plants count:', plantsData?.length);
 
       // Fetch last actions for each plant
       const plantIds = plantsData?.map(p => p.id) || [];
-      let actionsMap = {};
+      const actionsMap: ActionsMap = {};
 
       if (plantIds.length > 0) {
         const { data: actionsData, error: actionsError } = await supabase
@@ -373,9 +352,8 @@ export function usePlants() {
           .order('action_date', { ascending: false });
 
         if (actionsError) {
-          console.warn('[usePlants] Error fetching actions:', actionsError);
+          debug.warn('Error fetching actions:', actionsError);
         } else if (actionsData) {
-          // Group actions by plant_id and get the latest of each type
           actionsData.forEach(action => {
             if (!actionsMap[action.plant_id]) {
               actionsMap[action.plant_id] = {};
@@ -387,27 +365,25 @@ export function usePlants() {
         }
       }
 
-      // Transform data
-      const transformedPlants = transformPlantData(plantsData, actionsMap);
-
-      console.log('[usePlants] Transformed plants:', transformedPlants);
+      const transformedPlants = transformPlantData(plantsData || [], actionsMap);
+      debug.log('Transformed plants:', transformedPlants.length);
       setPlants(transformedPlants);
 
       // Save to cache for offline use
-      saveToCache(PLANTS_CACHE_KEY, transformedPlants);
-      console.log('[usePlants] Saved plants to cache');
+      saveToCache(CACHE_KEYS.PLANTS, transformedPlants);
+      debug.log('Saved plants to cache');
 
     } catch (err) {
-      console.error('[usePlants] Error:', err);
+      const error = err as Error;
+      debug.error('Error:', error);
 
-      // Try to load from cache as fallback
-      const cached = getFromCache(PLANTS_CACHE_KEY);
+      const cached = getFromCache(CACHE_KEYS.PLANTS);
       if (cached?.data) {
-        console.log('[usePlants] Using cached data as fallback');
-        setPlants(cached.data);
+        debug.log('Using cached data as fallback');
+        setPlants(cached.data as Plant[]);
         setError('Menggunakan data tersimpan. Gagal memuat data terbaru.');
       } else {
-        setError(err.message || 'Gagal memuat tanaman');
+        setError(error.message || 'Gagal memuat tanaman');
       }
     } finally {
       setLoading(false);
@@ -420,7 +396,7 @@ export function usePlants() {
   }, [fetchPlants]);
 
   // Upload photo to Supabase Storage
-  const uploadPhoto = async (photoBlob, plantId) => {
+  const uploadPhoto = async (photoBlob: Blob, plantId: string): Promise<string | null> => {
     if (!photoBlob || !user?.id) {
       return null;
     }
@@ -429,8 +405,7 @@ export function usePlants() {
       const timestamp = Date.now();
       const filePath = `${user.id}/${plantId}/${timestamp}.jpg`;
 
-      console.log('[usePlants] uploadPhoto: Uploading to path:', filePath);
-      console.log('[usePlants] uploadPhoto: Blob size:', (photoBlob.size / 1024).toFixed(1), 'KB');
+      debug.log('uploadPhoto: Uploading to path:', filePath);
 
       const { data, error } = await supabase.storage
         .from('plant-photos')
@@ -440,44 +415,41 @@ export function usePlants() {
         });
 
       if (error) {
-        console.error('[usePlants] uploadPhoto: Upload error:', error);
+        debug.error('uploadPhoto: Upload error:', error);
         throw error;
       }
 
-      console.log('[usePlants] uploadPhoto: Upload success:', data);
+      debug.log('uploadPhoto: Upload success');
 
-      // Get public URL
       const { data: urlData } = supabase.storage
         .from('plant-photos')
         .getPublicUrl(filePath);
 
-      console.log('[usePlants] uploadPhoto: Public URL:', urlData.publicUrl);
-
       return urlData.publicUrl;
     } catch (err) {
-      console.error('[usePlants] uploadPhoto: Error:', err);
+      debug.error('uploadPhoto: Error:', err);
       return null;
     }
   };
 
   // Convert blob to base64 for offline storage
-  const blobToBase64 = async (blob) => {
+  const blobToBase64 = async (blob: Blob): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result);
+      reader.onloadend = () => resolve(reader.result as string);
       reader.onerror = reject;
       reader.readAsDataURL(blob);
     });
   };
 
   // Add a new plant
-  const addPlant = async (plantData) => {
+  const addPlant = async (plantData: AddPlantData) => {
     if (!user?.id) {
-      console.error('[usePlants] addPlant: No user ID');
+      debug.error('addPlant: No user ID');
       return { success: false, error: 'User not authenticated' };
     }
 
-    // Store species info in notes as JSON if species name provided
+    // Store species info in notes
     let notesWithSpecies = plantData.notes || '';
     if (plantData.speciesName) {
       const speciesInfo = JSON.stringify({
@@ -487,32 +459,30 @@ export function usePlants() {
       notesWithSpecies = `<!--species:${speciesInfo}-->${notesWithSpecies}`;
     }
 
-    // OFFLINE MODE: Save locally and queue for sync
+    // OFFLINE MODE
     if (!isOnline) {
       try {
-        console.log('[usePlants] OFFLINE: Adding plant locally');
+        debug.log('OFFLINE: Adding plant locally');
 
         const tempId = generateTempId();
         const now = new Date();
 
-        // Convert photo to base64 if present
-        let offlinePhoto = null;
+        let offlinePhoto: string | null = null;
         if (plantData.photoBlob) {
           try {
             offlinePhoto = await blobToBase64(plantData.photoBlob);
-          } catch (e) {
-            console.warn('[usePlants] Failed to convert photo to base64:', e);
+          } catch {
+            debug.warn('Failed to convert photo to base64');
           }
         }
 
-        // Create local plant data
         const localPlant = {
           id: tempId,
           user_id: user.id,
           species_id: plantData.speciesId || null,
           location_id: plantData.locationId || null,
           name: plantData.customName || plantData.name,
-          photo_url: offlinePhoto, // Use base64 for local display
+          photo_url: offlinePhoto,
           planted_date: plantData.plantedDate || now.toISOString(),
           notes: notesWithSpecies || null,
           status: 'active',
@@ -521,8 +491,7 @@ export function usePlants() {
           pendingSync: true,
         };
 
-        // Add to sync queue
-        const queueItem = addToSyncQueue({
+        addToSyncQueue({
           type: 'plant',
           action: 'create',
           data: {
@@ -531,41 +500,36 @@ export function usePlants() {
           },
         });
 
-        console.log('[usePlants] OFFLINE: Added to sync queue:', queueItem);
-
-        // Update local state immediately
-        const transformedPlant = transformPlantData([localPlant])[0];
+        const transformedPlant = transformPlantData([localPlant as unknown as PlantRaw])[0];
         setPlants(prev => [transformedPlant, ...prev]);
 
-        // Update cache
-        const cached = getFromCache(PLANTS_CACHE_KEY);
-        const updatedPlants = [transformedPlant, ...(cached?.data || [])];
-        saveToCache(PLANTS_CACHE_KEY, updatedPlants);
-
-        // Update pending count
+        const cached = getFromCache(CACHE_KEYS.PLANTS);
+        const updatedPlants = [transformedPlant, ...(cached?.data as Plant[] || [])];
+        saveToCache(CACHE_KEYS.PLANTS, updatedPlants);
         setPendingCount(getSyncQueueCount());
 
         return { success: true, plant: localPlant, offline: true };
       } catch (err) {
-        console.error('[usePlants] OFFLINE addPlant error:', err);
-        return { success: false, error: err.message };
+        const error = err as Error;
+        debug.error('OFFLINE addPlant error:', error);
+        return { success: false, error: error.message };
       }
     }
 
-    // ONLINE MODE: Insert to Supabase
+    // ONLINE MODE
     try {
       const insertData = {
         user_id: user.id,
         species_id: plantData.speciesId || null,
         location_id: plantData.locationId || null,
         name: plantData.customName || plantData.name,
-        photo_url: null,
+        photo_url: null as string | null,
         planted_date: plantData.plantedDate || new Date().toISOString(),
         notes: notesWithSpecies || null,
         status: 'active',
       };
 
-      console.log('[usePlants] addPlant: Inserting data:', insertData);
+      debug.log('addPlant: Inserting data');
 
       const { data, error } = await supabase
         .from('plants')
@@ -573,49 +537,39 @@ export function usePlants() {
         .select()
         .single();
 
-      console.log('[usePlants] addPlant: Supabase response:', { data, error });
-
       if (error) {
-        console.error('[usePlants] addPlant: INSERT ERROR:', error);
+        debug.error('addPlant: INSERT ERROR:', error);
         throw error;
       }
 
-      console.log('[usePlants] addPlant: SUCCESS - Plant inserted:', data);
+      debug.log('addPlant: SUCCESS');
 
-      // If there's a photo, upload it and update the plant
+      // Upload photo if present
       if (plantData.photoBlob) {
-        console.log('[usePlants] addPlant: Uploading photo...');
+        debug.log('addPlant: Uploading photo...');
         const photoUrl = await uploadPhoto(plantData.photoBlob, data.id);
 
         if (photoUrl) {
-          console.log('[usePlants] addPlant: Updating plant with photo URL:', photoUrl);
-          const { error: updateError } = await supabase
+          await supabase
             .from('plants')
             .update({ photo_url: photoUrl })
             .eq('id', data.id);
-
-          if (updateError) {
-            console.error('[usePlants] addPlant: Photo URL update error:', updateError);
-          } else {
-            console.log('[usePlants] addPlant: Photo URL saved successfully');
-          }
         }
       }
 
-      // Refetch to get the complete plant data with joins
       await fetchPlants();
-
       return { success: true, plant: data };
     } catch (err) {
-      console.error('[usePlants] Error adding plant:', err);
-      return { success: false, error: err.message };
+      const error = err as Error;
+      debug.error('Error adding plant:', error);
+      return { success: false, error: error.message };
     }
   };
 
   // Update a plant
-  const updatePlant = async (plantId, updates) => {
+  const updatePlant = async (plantId: string, updates: UpdatePlantData) => {
     try {
-      const updateData = {
+      const updateData: Record<string, unknown> = {
         updated_at: new Date().toISOString(),
       };
 
@@ -634,6 +588,13 @@ export function usePlants() {
       if (updates.status !== undefined) {
         updateData.status = updates.status;
       }
+      // Custom care frequencies (null to reset to species default)
+      if (updates.customWateringDays !== undefined) {
+        updateData.custom_watering_days = updates.customWateringDays;
+      }
+      if (updates.customFertilizingDays !== undefined) {
+        updateData.custom_fertilizing_days = updates.customFertilizingDays;
+      }
 
       const { data, error } = await supabase
         .from('plants')
@@ -647,13 +608,14 @@ export function usePlants() {
       await fetchPlants();
       return { success: true, plant: data };
     } catch (err) {
-      console.error('[usePlants] Error updating plant:', err);
-      return { success: false, error: err.message };
+      const error = err as Error;
+      debug.error('Error updating plant:', error);
+      return { success: false, error: error.message };
     }
   };
 
   // Delete a plant
-  const deletePlant = async (plantId) => {
+  const deletePlant = async (plantId: string) => {
     try {
       const { error } = await supabase
         .from('plants')
@@ -662,57 +624,58 @@ export function usePlants() {
 
       if (error) throw error;
 
-      // Update local state immediately
       setPlants(prev => prev.filter(p => p.id !== plantId));
       return { success: true };
     } catch (err) {
-      console.error('[usePlants] Error deleting plant:', err);
-      return { success: false, error: err.message };
+      const error = err as Error;
+      debug.error('Error deleting plant:', error);
+      return { success: false, error: error.message };
     }
   };
 
-  // Record an action (water, fertilize, etc.)
-  const recordAction = async (plantId, actionType, notes = null) => {
-    console.log('[usePlants] recordAction called:', { plantId, actionType, notes, userId: user?.id });
+  // Record an action (water, fertilize, prune, etc.)
+  const recordAction = async (
+    plantId: string,
+    actionType: ActionType,
+    notes: string | null = null,
+    photoFile: File | null = null
+  ) => {
+    debug.log('recordAction called:', { plantId, actionType, notes, hasPhoto: !!photoFile });
 
     if (!user?.id) {
-      console.error('[usePlants] recordAction: No user ID');
+      debug.error('recordAction: No user ID');
       return { success: false, error: 'User not authenticated' };
     }
 
-    // Validate plant ID is a valid UUID before sending to Supabase
     const plantIdStr = String(plantId);
     if (!isValidUUID(plantIdStr)) {
-      console.warn('[usePlants] recordAction: Invalid UUID for plant_id:', plantId);
-      // For non-UUID plant IDs (created offline), update local state only
+      debug.warn('recordAction: Invalid UUID for plant_id:', plantId);
       const today = new Date();
       setPlants(prev => prev.map(plant => {
         if (plant.id === plantId) {
           const updates = { ...plant };
-          if (actionType === 'siram') {
+          if (actionType === ACTION_TYPES.WATER) {
             updates.lastWatered = today;
-            updates.status = 'Baik Baik Saja';
-          } else if (actionType === 'pupuk') {
+            updates.status = PLANT_STATUS.HEALTHY;
+          } else if (actionType === ACTION_TYPES.FERTILIZE) {
             updates.lastFertilized = today;
           }
           return updates;
         }
         return plant;
       }));
-      return { success: true, offline: true, message: 'Action recorded locally for offline plant' };
+      return { success: true, offline: true };
     }
 
-    // Format date as YYYY-MM-DD for the date column type
     const today = new Date();
     const actionDate = today.toISOString().split('T')[0];
 
-    // OFFLINE MODE: Save locally and queue for sync
+    // OFFLINE MODE
     if (!isOnline) {
       try {
-        console.log('[usePlants] OFFLINE: Recording action locally');
+        debug.log('OFFLINE: Recording action locally');
 
         const tempId = generateTempId();
-
         const actionData = {
           id: tempId,
           plant_id: plantId,
@@ -723,23 +686,19 @@ export function usePlants() {
           pendingSync: true,
         };
 
-        // Add to sync queue
-        const queueItem = addToSyncQueue({
+        addToSyncQueue({
           type: 'action',
           action: 'create',
           data: actionData,
         });
 
-        console.log('[usePlants] OFFLINE: Added action to sync queue:', queueItem);
-
-        // Update local plant state to reflect the action
         setPlants(prev => prev.map(plant => {
           if (plant.id === plantId) {
             const updates = { ...plant };
-            if (actionType === 'siram') {
+            if (actionType === ACTION_TYPES.WATER) {
               updates.lastWatered = new Date(actionDate);
-              updates.status = 'Baik Baik Saja';
-            } else if (actionType === 'pupuk') {
+              updates.status = PLANT_STATUS.HEALTHY;
+            } else if (actionType === ACTION_TYPES.FERTILIZE) {
               updates.lastFertilized = new Date(actionDate);
             }
             return updates;
@@ -747,49 +706,76 @@ export function usePlants() {
           return plant;
         }));
 
-        // Update cache with new plant states
-        const cached = getFromCache(PLANTS_CACHE_KEY);
+        const cached = getFromCache(CACHE_KEYS.PLANTS);
         if (cached?.data) {
-          const updatedCache = cached.data.map(plant => {
+          const updatedCache = (cached.data as Plant[]).map(plant => {
             if (plant.id === plantId) {
               const updates = { ...plant };
-              if (actionType === 'siram') {
+              if (actionType === ACTION_TYPES.WATER) {
                 updates.lastWatered = new Date(actionDate);
-                updates.status = 'Baik Baik Saja';
-              } else if (actionType === 'pupuk') {
+                updates.status = PLANT_STATUS.HEALTHY;
+              } else if (actionType === ACTION_TYPES.FERTILIZE) {
                 updates.lastFertilized = new Date(actionDate);
               }
               return updates;
             }
             return plant;
           });
-          saveToCache(PLANTS_CACHE_KEY, updatedCache);
+          saveToCache(CACHE_KEYS.PLANTS, updatedCache);
         }
 
-        // Update pending count
         setPendingCount(getSyncQueueCount());
-
         return { success: true, action: actionData, offline: true };
       } catch (err) {
-        console.error('[usePlants] OFFLINE recordAction error:', err);
-        return { success: false, error: err.message };
+        const error = err as Error;
+        debug.error('OFFLINE recordAction error:', error);
+        return { success: false, error: error.message };
       }
     }
 
-    // ONLINE MODE: Insert to Supabase
-    const insertData = {
+    // ONLINE MODE
+    const insertData: Record<string, unknown> = {
       plant_id: plantId,
       user_id: user.id,
       action_type: actionType,
       action_date: actionDate,
     };
 
-    // Add notes if provided
     if (notes && notes.trim()) {
       insertData.notes = notes.trim();
     }
 
-    console.log('[usePlants] recordAction: Inserting data:', insertData);
+    // Upload photo if provided
+    if (photoFile) {
+      try {
+        const fileExt = photoFile.name.split('.').pop() || 'jpg';
+        const fileName = `${user.id}/${plantId}/${actionType}_${Date.now()}.${fileExt}`;
+
+        debug.log('recordAction: Uploading photo to storage');
+        const { error: uploadError } = await supabase.storage
+          .from('action-photos')
+          .upload(fileName, photoFile, {
+            cacheControl: '3600',
+            upsert: false,
+          });
+
+        if (uploadError) {
+          debug.error('recordAction: Photo upload error:', uploadError);
+          // Continue without photo if upload fails
+        } else {
+          const { data: { publicUrl } } = supabase.storage
+            .from('action-photos')
+            .getPublicUrl(fileName);
+          insertData.photo_url = publicUrl;
+          debug.log('recordAction: Photo uploaded:', publicUrl);
+        }
+      } catch (photoErr) {
+        debug.error('recordAction: Photo upload exception:', photoErr);
+        // Continue without photo
+      }
+    }
+
+    debug.log('recordAction: Inserting data');
 
     try {
       const { data, error } = await supabase
@@ -798,39 +784,35 @@ export function usePlants() {
         .select()
         .single();
 
-      console.log('[usePlants] recordAction: Supabase response:', { data, error });
-
       if (error) {
-        console.error('[usePlants] recordAction: INSERT ERROR:', error);
+        debug.error('recordAction: INSERT ERROR:', error);
         throw error;
       }
 
-      console.log('[usePlants] recordAction: SUCCESS - Action recorded:', data);
-
-      // Refetch to update statuses
+      debug.log('recordAction: SUCCESS');
       await fetchPlants();
-
       return { success: true, action: data };
     } catch (err) {
-      console.error('[usePlants] Error recording action:', err);
-      return { success: false, error: err.message };
+      const error = err as Error;
+      debug.error('Error recording action:', error);
+      return { success: false, error: error.message };
     }
   };
 
   // Sync pending items to Supabase
   const syncNow = async () => {
     if (!isOnline) {
-      console.log('[usePlants] syncNow: Cannot sync while offline');
-      return { success: false, error: 'No internet connection' };
+      debug.log('syncNow: Cannot sync while offline');
+      return { success: false, synced: 0, failed: 0, errors: [{ error: 'No internet connection' }] };
     }
 
     const queueCount = getSyncQueueCount();
     if (queueCount === 0) {
-      console.log('[usePlants] syncNow: No items to sync');
+      debug.log('syncNow: No items to sync');
       return { success: true, synced: 0, failed: 0, errors: [] };
     }
 
-    console.log('[usePlants] syncNow: Starting sync of', queueCount, 'items');
+    debug.log('syncNow: Starting sync of items', { queueCount });
     setSyncStatus('syncing');
 
     try {
@@ -838,48 +820,42 @@ export function usePlants() {
 
       if (result.success) {
         setSyncStatus('success');
-        console.log('[usePlants] syncNow: Sync completed successfully');
-
-        // Refresh plants from Supabase to get real IDs and updated data
+        debug.log('syncNow: Sync completed successfully');
         await fetchPlants();
       } else {
         setSyncStatus('error');
-        console.warn('[usePlants] syncNow: Sync completed with errors:', result.errors);
+        debug.warn('syncNow: Sync completed with errors:', result.errors);
       }
 
-      // Update pending count
       setPendingCount(getSyncQueueCount());
 
-      // Reset status after a delay
       setTimeout(() => {
         setSyncStatus('idle');
-      }, 3000);
+      }, TIMEOUTS.SYNC_STATUS_RESET);
 
       return result;
     } catch (err) {
-      console.error('[usePlants] syncNow error:', err);
+      const error = err as Error;
+      debug.error('syncNow error:', error);
       setSyncStatus('error');
 
       setTimeout(() => {
         setSyncStatus('idle');
-      }, 3000);
+      }, TIMEOUTS.SYNC_STATUS_RESET);
 
-      return { success: false, synced: 0, failed: 0, errors: [{ error: err.message }] };
+      return { success: false, synced: 0, failed: 0, errors: [{ error: error.message }] };
     }
   };
 
   // Auto-sync when coming back online
   useEffect(() => {
-    // Check if we just came back online
     if (isOnline && wasOfflineRef.current) {
       const queueCount = getSyncQueueCount();
       if (queueCount > 0) {
-        console.log('[usePlants] Back online with', queueCount, 'pending items. Auto-syncing...');
+        debug.log('Back online with pending items. Auto-syncing...', { queueCount });
         syncNow();
       }
     }
-
-    // Update ref for next check
     wasOfflineRef.current = !isOnline;
   }, [isOnline]);
 
@@ -897,7 +873,6 @@ export function usePlants() {
     updatePlant,
     deletePlant,
     recordAction,
-    // Offline support
     isOnline,
     syncStatus,
     pendingCount,

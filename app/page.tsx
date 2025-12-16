@@ -5,7 +5,11 @@ import Splash from '../components/Splash';
 import Login from '../components/Login';
 import Onboarding from '../components/Onboarding';
 import Home from '../components/Home';
+import ErrorBoundary from '../components/ErrorBoundary';
 import { useAuth } from '@/hooks/useAuth';
+import { createDebugger } from '@/lib/debug';
+
+const debug = createDebugger('Page');
 
 export default function Page() {
   const [showSplash, setShowSplash] = useState(true);
@@ -24,7 +28,7 @@ export default function Page() {
 
   // Debug auth state changes
   useEffect(() => {
-    console.log('[Page] Auth state:', {
+    debug.log('Auth state:', {
       showSplash,
       isCheckingAuth,
       isAuthenticated,
@@ -37,7 +41,7 @@ export default function Page() {
 
   // Debug when hasCompletedOnboarding changes
   useEffect(() => {
-    console.log('[Page] hasCompletedOnboarding changed to:', hasCompletedOnboarding);
+    debug.log('hasCompletedOnboarding changed to:', hasCompletedOnboarding);
   }, [hasCompletedOnboarding]);
 
   useEffect(() => {
@@ -60,19 +64,19 @@ export default function Page() {
 
   // Handle splash screen completion
   const handleSplashComplete = () => {
-    console.log('[Page] Splash complete');
+    debug.log('Splash complete');
     setShowSplash(false);
   };
 
   // Handle login completion (for manual override/testing)
   const handleLogin = () => {
-    console.log('[Page] handleLogin called');
+    debug.log('handleLogin called');
     // Auth state will be updated automatically by useAuth hook
   };
 
   // Handle onboarding completion
   const handleOnboardingComplete = async ({ name, locations }: { name: string; locations: string[] }) => {
-    console.log('[Page] Onboarding complete:', { name, locations });
+    debug.log('Onboarding complete:', { name, locations });
     // Save to Supabase via the hook
     const result = await completeOnboarding(name, locations);
     if (result.success) {
@@ -93,21 +97,33 @@ export default function Page() {
 
   // Show splash/loading if still checking auth (after splash animation)
   if (isCheckingAuth) {
-    console.log('[Page] Still checking auth...');
+    debug.log('Still checking auth...');
     return <Splash onComplete={() => {}} />;
   }
 
   // Show login screen if not logged in
   if (!isAuthenticated) {
-    return <Login onLogin={handleLogin} />;
+    return (
+      <ErrorBoundary>
+        <Login onLogin={handleLogin} />
+      </ErrorBoundary>
+    );
   }
 
   // Show onboarding if logged in but hasn't completed onboarding
   // hasCompletedOnboarding is true only when profile has display_name
   if (!hasCompletedOnboarding) {
-    return <Onboarding onComplete={handleOnboardingComplete} />;
+    return (
+      <ErrorBoundary>
+        <Onboarding onComplete={handleOnboardingComplete} />
+      </ErrorBoundary>
+    );
   }
 
   // Show the Home component
-  return <Home userName={userName || 'Teman'} />;
+  return (
+    <ErrorBoundary>
+      <Home userName={userName || 'Teman'} />
+    </ErrorBoundary>
+  );
 }

@@ -27,6 +27,7 @@ import EditProfile from './EditProfile';
 import EditPlant from './EditPlant';
 import TanyaTanam from './TanyaTanam';
 import OfflineIndicator from './OfflineIndicator';
+import BulkFertilizeModal from './BulkFertilizeModal';
 import { usePlants } from '@/hooks/usePlants';
 import { useLocations } from '@/hooks/useLocations';
 import { useAuth } from '@/hooks/useAuth';
@@ -34,7 +35,7 @@ import { colors, radius, typography } from '@/styles/theme';
 
 const Home = ({ userName }) => {
   // Auth hook - get profile from Supabase
-  const { user, profile } = useAuth();
+  const { user, profile, updateShowStatistics, updateEmailNotifications } = useAuth();
 
   // Data hooks - fetch real data from Supabase
   const {
@@ -86,7 +87,7 @@ const Home = ({ userName }) => {
   // Profile Modal state
   const [showProfileModal, setShowProfileModal] = useState(false);
 
-  // Stats visibility preference (stored in localStorage)
+  // Stats visibility preference (synced with database, localStorage as fallback)
   const [showHomeStats, setShowHomeStats] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('showHomeStats');
@@ -94,6 +95,15 @@ const Home = ({ userName }) => {
     }
     return true;
   });
+
+  // Sync showHomeStats with profile from database when it loads
+  useEffect(() => {
+    if (profile?.show_statistics !== undefined) {
+      setShowHomeStats(profile.show_statistics);
+      // Also update localStorage to keep it in sync
+      localStorage.setItem('showHomeStats', JSON.stringify(profile.show_statistics));
+    }
+  }, [profile?.show_statistics]);
 
   // Location Settings state
   const [showLocationSettings, setShowLocationSettings] = useState(false);
@@ -116,6 +126,9 @@ const Home = ({ userName }) => {
   const [showBulkActionConfirm, setShowBulkActionConfirm] = useState(false);
   const [bulkActionType, setBulkActionType] = useState(null); // 'siram' | 'pupuk'
   const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const [alreadyWateredToday, setAlreadyWateredToday] = useState([]); // Plants already watered today
+  const [alreadyFertilizedToday, setAlreadyFertilizedToday] = useState([]); // Plants already fertilized today
+  const [showBulkFertilizeModal, setShowBulkFertilizeModal] = useState(false); // Fertilize modal with photo/notes
 
   // Edit plant from menu
   const [showEditPlantModal, setShowEditPlantModal] = useState(false);
@@ -372,14 +385,40 @@ const Home = ({ userName }) => {
     setSelectedPlantIds(new Set());
   };
 
+  // Helper to check if a date is today
+  const isToday = (date) => {
+    if (!date) return false;
+    const today = new Date();
+    const checkDate = new Date(date);
+    return today.getFullYear() === checkDate.getFullYear() &&
+           today.getMonth() === checkDate.getMonth() &&
+           today.getDate() === checkDate.getDate();
+  };
+
   // Show confirmation modal before bulk action
   const showBulkActionConfirmation = (actionType) => {
     if (selectedPlantIds.size === 0) {
       showActionToastWithMessage('Pilih tanaman terlebih dahulu');
       return;
     }
-    setBulkActionType(actionType);
-    setShowBulkActionConfirm(true);
+
+    // Get selected plants
+    const selectedPlants = plants.filter(p => selectedPlantIds.has(p.id));
+
+    if (actionType === 'siram') {
+      // Check for plants already watered today
+      const wateredToday = selectedPlants.filter(p => isToday(p.lastWatered));
+      setAlreadyWateredToday(wateredToday);
+      setBulkActionType(actionType);
+      setShowBulkActionConfirm(true);
+    } else if (actionType === 'pupuk') {
+      // Check for plants already fertilized today
+      const fertilizedToday = selectedPlants.filter(p => isToday(p.lastFertilized));
+      setAlreadyFertilizedToday(fertilizedToday);
+      // Open fertilize modal instead of confirmation
+      setBulkActionType(actionType);
+      setShowBulkFertilizeModal(true);
+    }
   };
 
   // Execute bulk action after confirmation
@@ -420,7 +459,45 @@ const Home = ({ userName }) => {
 
   const cancelBulkAction = () => {
     setShowBulkActionConfirm(false);
+    setShowBulkFertilizeModal(false);
     setBulkActionType(null);
+    setAlreadyWateredToday([]);
+    setAlreadyFertilizedToday([]);
+  };
+
+  // Execute bulk fertilize with notes and photo
+  const executeBulkFertilize = async ({ notes, photoFile }) => {
+    if (selectedPlantIds.size === 0) return;
+
+    setIsBulkActioning(true);
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const plantId of selectedPlantIds) {
+      // Only pass photo for first plant to avoid duplicate uploads
+      const result = await recordAction(plantId, 'pupuk', notes || null, successCount === 0 ? photoFile : null);
+      if (result.success) {
+        successCount++;
+      } else {
+        failCount++;
+      }
+    }
+
+    setIsBulkActioning(false);
+    setShowBulkFertilizeModal(false);
+
+    // Show result toast
+    if (failCount === 0) {
+      showActionToastWithMessage(`${successCount} tanaman sudah dipupuk!`);
+    } else {
+      showActionToastWithMessage(`${successCount} berhasil, ${failCount} gagal dipupuk`);
+    }
+
+    // Exit multi-select mode and cleanup
+    setBulkActionType(null);
+    setAlreadyFertilizedToday([]);
+    exitMultiSelectMode();
   };
 
   // Add Plant flow handlers
@@ -679,10 +756,13 @@ const Home = ({ userName }) => {
     // TODO: Add other navigation actions (help-community, tutorial, logout)
   };
 
-  // Handle stats toggle from ProfileModal
-  const handleToggleStats = (value) => {
+  // Handle stats toggle from ProfileModal - save to database and localStorage
+  const handleToggleStats = async (value) => {
+    // Update local state immediately for responsive UI
     setShowHomeStats(value);
-    localStorage.setItem('showHomeStats', JSON.stringify(value));
+
+    // Save to database (also updates localStorage as fallback)
+    await updateShowStatistics(value);
   };
 
   // Handle profile save
@@ -1677,6 +1757,9 @@ const Home = ({ userName }) => {
         onNavigate={handleProfileNavigation}
         showStats={showHomeStats}
         onToggleStats={handleToggleStats}
+        emailNotifications={profile?.email_notifications || false}
+        emailFrequency={profile?.email_frequency || 'none'}
+        onUpdateEmailNotifications={updateEmailNotifications}
       />
 
       {/* Location Settings */}
@@ -1870,7 +1953,7 @@ const Home = ({ userName }) => {
                   fontFamily: "'Inter', sans-serif",
                   fontSize: '14px',
                   color: '#666666',
-                  margin: '0 0 28px 0',
+                  margin: '0 0 12px 0',
                   lineHeight: '1.5',
                 }}
               >
@@ -1878,6 +1961,48 @@ const Home = ({ userName }) => {
                   ? `${selectedPlantIds.size} tanaman akan dicatat sudah disiram hari ini.`
                   : `${selectedPlantIds.size} tanaman akan dicatat sudah diberi pupuk hari ini.`}
               </p>
+
+              {/* Warning for plants already watered today */}
+              {bulkActionType === 'siram' && alreadyWateredToday.length > 0 && (
+                <div
+                  style={{
+                    backgroundColor: '#FEF3C7',
+                    border: '1px solid #F59E0B',
+                    borderRadius: '12px',
+                    padding: '12px 16px',
+                    margin: '0 0 20px 0',
+                    textAlign: 'left',
+                  }}
+                >
+                  <p
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      color: '#B45309',
+                      margin: '0 0 4px 0',
+                    }}
+                  >
+                    ⚠️ {alreadyWateredToday.length} tanaman sudah disiram hari ini:
+                  </p>
+                  <p
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: '12px',
+                      color: '#92400E',
+                      margin: 0,
+                      lineHeight: '1.4',
+                    }}
+                  >
+                    {alreadyWateredToday.map(p => p.name).join(', ')}
+                  </p>
+                </div>
+              )}
+
+              {/* Spacer when no warning */}
+              {!(bulkActionType === 'siram' && alreadyWateredToday.length > 0) && (
+                <div style={{ marginBottom: '16px' }} />
+              )}
 
               {/* Buttons */}
               <div
@@ -1928,6 +2053,16 @@ const Home = ({ userName }) => {
           </>
         )}
       </AnimatePresence>
+
+      {/* Bulk Fertilize Modal with photo/notes */}
+      <BulkFertilizeModal
+        isOpen={showBulkFertilizeModal}
+        onClose={cancelBulkAction}
+        onSubmit={executeBulkFertilize}
+        selectedCount={selectedPlantIds.size}
+        alreadyFertilizedToday={alreadyFertilizedToday}
+        isProcessing={isBulkActioning}
+      />
 
       {/* More Menu Drawer */}
       <AnimatePresence>

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import LocationSettings from './LocationSettings';
 import { useLocations } from '@/hooks/useLocations';
+import { Drop, Leaf, ArrowCounterClockwise } from '@phosphor-icons/react';
 
 const EditPlant = ({ plant, onClose, onSave, onDelete }) => {
   const [formData, setFormData] = useState({
@@ -12,6 +13,8 @@ const EditPlant = ({ plant, onClose, onSave, onDelete }) => {
     customDate: '',
     notes: '',
     photo: null,
+    customWateringDays: '',
+    customFertilizingDays: '',
   });
 
   const [photoPreview, setPhotoPreview] = useState(null);
@@ -66,6 +69,8 @@ const EditPlant = ({ plant, onClose, onSave, onDelete }) => {
         customDate: plantedDateStr,
         notes: plant.notes || '',
         photo: null,
+        customWateringDays: plant.customWateringDays !== null ? String(plant.customWateringDays) : '',
+        customFertilizingDays: plant.customFertilizingDays !== null ? String(plant.customFertilizingDays) : '',
       });
 
       setPhotoPreview(plant.photoUrl || plant.photoPreview || plant.image || null);
@@ -126,6 +131,14 @@ const EditPlant = ({ plant, onClose, onSave, onDelete }) => {
     if (isValid) {
       const finalLocation = formData.location;
 
+      // Parse custom frequencies (empty string = null = use default)
+      const customWateringDays = formData.customWateringDays.trim()
+        ? parseInt(formData.customWateringDays, 10)
+        : null;
+      const customFertilizingDays = formData.customFertilizingDays.trim()
+        ? parseInt(formData.customFertilizingDays, 10)
+        : null;
+
       onSave({
         ...plant,
         customName: formData.customName.trim() || plant.customName || plant.name,
@@ -135,6 +148,8 @@ const EditPlant = ({ plant, onClose, onSave, onDelete }) => {
         notes: formData.notes,
         photoUrl: photoPreview,
         photoPreview: photoPreview,
+        customWateringDays,
+        customFertilizingDays,
       });
     }
   };
@@ -423,6 +438,241 @@ const EditPlant = ({ plant, onClose, onSave, onDelete }) => {
                 />
               </div>
 
+              {/* Frekuensi Perawatan Section */}
+              <div style={{ marginBottom: '24px' }}>
+                <label
+                  style={{
+                    display: 'block',
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    color: '#2C2C2C',
+                    marginBottom: '4px',
+                  }}
+                >
+                  Frekuensi Perawatan
+                </label>
+                <p
+                  style={{
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: '13px',
+                    color: '#666666',
+                    margin: '0 0 16px 0',
+                  }}
+                >
+                  Sesuaikan dengan kondisi tanaman kamu
+                </p>
+
+                {/* Watering Frequency */}
+                <div
+                  style={{
+                    backgroundColor: '#FAFAFA',
+                    borderRadius: '12px',
+                    padding: '16px',
+                    marginBottom: '12px',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                    <div
+                      style={{
+                        width: '36px',
+                        height: '36px',
+                        borderRadius: '50%',
+                        backgroundColor: '#E3F2FD',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Drop size={20} weight="fill" color="#2196F3" />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <label
+                        style={{
+                          display: 'block',
+                          fontFamily: "'Inter', sans-serif",
+                          fontSize: '14px',
+                          fontWeight: 500,
+                          color: '#2C2C2C',
+                        }}
+                      >
+                        Siram setiap
+                      </label>
+                      <span
+                        style={{
+                          fontFamily: "'Inter', sans-serif",
+                          fontSize: '12px',
+                          color: '#999999',
+                        }}
+                      >
+                        Default: {plant?.species?.wateringFrequencyDays || 3} hari
+                      </span>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <input
+                      type="number"
+                      min="1"
+                      max="30"
+                      placeholder={String(plant?.species?.wateringFrequencyDays || 3)}
+                      value={formData.customWateringDays}
+                      onChange={(e) => setFormData({ ...formData, customWateringDays: e.target.value })}
+                      onFocus={() => setFocusedInput('watering')}
+                      onBlur={() => setFocusedInput(null)}
+                      style={{
+                        width: '80px',
+                        padding: '12px 16px',
+                        fontSize: '1rem',
+                        fontFamily: "'Inter', sans-serif",
+                        color: '#2C2C2C',
+                        backgroundColor: '#FFFFFF',
+                        border: focusedInput === 'watering' ? '2px solid #2196F3' : '2px solid #E0E0E0',
+                        borderRadius: '8px',
+                        outline: 'none',
+                        textAlign: 'center',
+                        transition: 'border-color 200ms',
+                      }}
+                    />
+                    <span
+                      style={{
+                        fontFamily: "'Inter', sans-serif",
+                        fontSize: '14px',
+                        color: '#666666',
+                      }}
+                    >
+                      hari
+                    </span>
+                    {formData.customWateringDays && (
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, customWateringDays: '' })}
+                        style={{
+                          marginLeft: 'auto',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          padding: '8px 12px',
+                          backgroundColor: 'transparent',
+                          border: '1px solid #E0E0E0',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          fontFamily: "'Inter', sans-serif",
+                          fontSize: '12px',
+                          color: '#666666',
+                        }}
+                      >
+                        <ArrowCounterClockwise size={14} weight="bold" />
+                        Reset
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Fertilizing Frequency */}
+                <div
+                  style={{
+                    backgroundColor: '#FAFAFA',
+                    borderRadius: '12px',
+                    padding: '16px',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                    <div
+                      style={{
+                        width: '36px',
+                        height: '36px',
+                        borderRadius: '50%',
+                        backgroundColor: '#F1F8E9',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Leaf size={20} weight="fill" color="#7CB342" />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <label
+                        style={{
+                          display: 'block',
+                          fontFamily: "'Inter', sans-serif",
+                          fontSize: '14px',
+                          fontWeight: 500,
+                          color: '#2C2C2C',
+                        }}
+                      >
+                        Pupuk setiap
+                      </label>
+                      <span
+                        style={{
+                          fontFamily: "'Inter', sans-serif",
+                          fontSize: '12px',
+                          color: '#999999',
+                        }}
+                      >
+                        Default: {plant?.species?.fertilizingFrequencyDays || 14} hari
+                      </span>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <input
+                      type="number"
+                      min="1"
+                      max="90"
+                      placeholder={String(plant?.species?.fertilizingFrequencyDays || 14)}
+                      value={formData.customFertilizingDays}
+                      onChange={(e) => setFormData({ ...formData, customFertilizingDays: e.target.value })}
+                      onFocus={() => setFocusedInput('fertilizing')}
+                      onBlur={() => setFocusedInput(null)}
+                      style={{
+                        width: '80px',
+                        padding: '12px 16px',
+                        fontSize: '1rem',
+                        fontFamily: "'Inter', sans-serif",
+                        color: '#2C2C2C',
+                        backgroundColor: '#FFFFFF',
+                        border: focusedInput === 'fertilizing' ? '2px solid #7CB342' : '2px solid #E0E0E0',
+                        borderRadius: '8px',
+                        outline: 'none',
+                        textAlign: 'center',
+                        transition: 'border-color 200ms',
+                      }}
+                    />
+                    <span
+                      style={{
+                        fontFamily: "'Inter', sans-serif",
+                        fontSize: '14px',
+                        color: '#666666',
+                      }}
+                    >
+                      hari
+                    </span>
+                    {formData.customFertilizingDays && (
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, customFertilizingDays: '' })}
+                        style={{
+                          marginLeft: 'auto',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          padding: '8px 12px',
+                          backgroundColor: 'transparent',
+                          border: '1px solid #E0E0E0',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          fontFamily: "'Inter', sans-serif",
+                          fontSize: '12px',
+                          color: '#666666',
+                        }}
+                      >
+                        <ArrowCounterClockwise size={14} weight="bold" />
+                        Reset
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               {/* Photo Upload */}
               <div style={{ marginBottom: '24px' }}>
                 <label
@@ -455,6 +705,7 @@ const EditPlant = ({ plant, onClose, onSave, onDelete }) => {
                         setPhotoPreview(null);
                         setFormData({ ...formData, photo: null });
                       }}
+                      aria-label="Hapus foto"
                       style={{
                         position: 'absolute',
                         top: '8px',
@@ -462,12 +713,22 @@ const EditPlant = ({ plant, onClose, onSave, onDelete }) => {
                         width: '32px',
                         height: '32px',
                         borderRadius: '50%',
-                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                        backgroundColor: 'rgba(0, 0, 0, 0.6)',
                         border: 'none',
                         cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
                       }}
                     >
-                      ✕
+                      <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+                        <path
+                          d="M15 5L5 15M5 5l10 10"
+                          stroke="#FFFFFF"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                        />
+                      </svg>
                     </button>
                   </div>
                 ) : (

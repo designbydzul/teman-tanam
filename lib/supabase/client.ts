@@ -1,7 +1,14 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, AuthChangeEvent, Session } from '@supabase/supabase-js';
+import { createDebugger } from '../debug';
+
+const debug = createDebugger('supabase');
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Missing Supabase environment variables');
+}
 
 // Browser client for client-side operations
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
@@ -9,9 +16,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 // Auth helper functions for browser
 export const auth = {
   // Send magic link to email
-  async sendMagicLink(email) {
-    console.log('[Supabase Client] sendMagicLink called with email:', email);
-    console.log('[Supabase Client] Redirect URL:', `${window.location.origin}/auth/callback`);
+  async sendMagicLink(email: string) {
+    debug.log('sendMagicLink called with email:', email);
 
     const { data, error } = await supabase.auth.signInWithOtp({
       email,
@@ -20,16 +26,12 @@ export const auth = {
       },
     });
 
-    console.log('[Supabase Client] signInWithOtp response:');
-    console.log('[Supabase Client] - data:', JSON.stringify(data, null, 2));
-    console.log('[Supabase Client] - error:', error);
-
     if (error) {
-      console.error('[Supabase Client] Error sending magic link:', error.message);
+      debug.error('Error sending magic link:', error.message);
       throw error;
     }
 
-    console.log('[Supabase Client] Magic link sent successfully!');
+    debug.log('Magic link sent successfully!');
     return data;
   },
 
@@ -67,7 +69,7 @@ export const auth = {
   },
 
   // Listen for auth changes
-  onAuthStateChange(callback) {
+  onAuthStateChange(callback: (event: AuthChangeEvent, session: Session | null) => void) {
     return supabase.auth.onAuthStateChange(callback);
   },
 };

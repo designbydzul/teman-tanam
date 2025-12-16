@@ -494,6 +494,7 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
                         setFormData({ ...formData, photo: null, compressedPhoto: null });
                       }}
                       disabled={isCompressing}
+                      aria-label="Hapus foto"
                       style={{
                         position: 'absolute',
                         top: '8px',
@@ -501,13 +502,23 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
                         width: '32px',
                         height: '32px',
                         borderRadius: '50%',
-                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                        backgroundColor: 'rgba(0, 0, 0, 0.6)',
                         border: 'none',
                         cursor: isCompressing ? 'not-allowed' : 'pointer',
                         opacity: isCompressing ? 0.5 : 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
                       }}
                     >
-                      ✕
+                      <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+                        <path
+                          d="M15 5L5 15M5 5l10 10"
+                          stroke="#FFFFFF"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                        />
+                      </svg>
                     </button>
                   </div>
                 ) : (

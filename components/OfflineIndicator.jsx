@@ -32,13 +32,15 @@ const OfflineIndicator = ({
 
   // Determine what to show
   const getIndicatorConfig = () => {
-    // Offline state
+    // Offline state - more prominent orange/yellow style
     if (!isOnline) {
       return {
         show: true,
-        bg: '#F59E0B', // amber
-        icon: <WifiSlash size={18} weight="bold" />,
-        text: `Mode Offline - Data tersimpan lokal${pendingCount > 0 ? ` (${pendingCount} pending)` : ''}`,
+        bg: '#FFF3E0', // light orange background
+        borderColor: '#FFE0B2',
+        textColor: '#E65100', // dark orange text
+        icon: <WifiSlash size={18} weight="bold" color="#E65100" />,
+        text: 'Kamu sedang offline',
         showRetry: false,
       };
     }
@@ -94,6 +96,10 @@ const OfflineIndicator = ({
 
   const config = getIndicatorConfig();
 
+  // Determine text and icon colors
+  const textColor = config.textColor || 'white';
+  const iconColor = config.iconColor || 'white';
+
   return (
     <AnimatePresence>
       {config.show && (
@@ -104,7 +110,8 @@ const OfflineIndicator = ({
           transition={{ type: 'spring', stiffness: 300, damping: 30 }}
           style={{
             backgroundColor: config.bg,
-            padding: '8px 16px',
+            borderBottom: config.borderColor ? `1px solid ${config.borderColor}` : 'none',
+            padding: '10px 16px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -113,16 +120,17 @@ const OfflineIndicator = ({
           }}
         >
           {/* Icon */}
-          <span style={{ color: 'white', display: 'flex', alignItems: 'center' }}>
+          <span style={{ color: textColor, display: 'flex', alignItems: 'center' }}>
             {config.icon}
           </span>
 
           {/* Text */}
           <span
             style={{
-              color: 'white',
+              color: textColor,
               fontSize: '14px',
               fontWeight: 500,
+              fontFamily: "'Inter', sans-serif",
             }}
           >
             {config.text}
@@ -135,10 +143,10 @@ const OfflineIndicator = ({
               style={{
                 marginLeft: '8px',
                 padding: '4px 12px',
-                backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                border: '1px solid rgba(255, 255, 255, 0.4)',
-                borderRadius: '4px',
-                color: 'white',
+                backgroundColor: config.textColor ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.2)',
+                border: config.textColor ? `1px solid ${config.textColor}40` : '1px solid rgba(255, 255, 255, 0.4)',
+                borderRadius: '6px',
+                color: textColor,
                 fontSize: '12px',
                 fontWeight: 600,
                 cursor: 'pointer',
@@ -147,7 +155,7 @@ const OfflineIndicator = ({
                 gap: '4px',
               }}
             >
-              <ArrowClockwise size={14} weight="bold" />
+              <ArrowClockwise size={14} weight="bold" color={textColor} />
               {config.retryText || 'Coba Lagi'}
             </button>
           )}

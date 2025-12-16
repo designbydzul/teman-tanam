@@ -12,6 +12,9 @@ import MagicLinkModal from './MagicLinkModal';
 import { auth } from '@/lib/supabase';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { WifiSlash } from '@phosphor-icons/react';
+import { createDebugger } from '@/lib/debug';
+
+const debug = createDebugger('Login');
 
 const Login = ({ onLogin }) => {
   const [email, setEmail] = useState('');
@@ -37,14 +40,14 @@ const Login = ({ onLogin }) => {
     setIsLoading(true);
     setError('');
 
-    console.log('[Login] Sending magic link to:', email);
+    debug.log('Sending magic link to:', email);
 
     try {
       const result = await auth.sendMagicLink(email);
-      console.log('[Login] Magic link sent successfully:', result);
+      debug.log('Magic link sent successfully:', result);
       setShowModal(true);
     } catch (err) {
-      console.error('[Login] Magic link error:', err);
+      debug.error('Magic link error:', err);
       setError(err.message || 'Gagal mengirim magic link. Coba lagi.');
     } finally {
       setIsLoading(false);
@@ -55,7 +58,7 @@ const Login = ({ onLogin }) => {
     try {
       await auth.sendMagicLink(emailToResend);
     } catch (err) {
-      console.error('Resend error:', err);
+      debug.error('Resend error:', err);
       throw err;
     }
   };
@@ -69,13 +72,15 @@ const Login = ({ onLogin }) => {
       await auth.signInWithGoogle();
       // Redirect will happen automatically
     } catch (err) {
-      console.error('Google login error:', err);
+      debug.error('Google login error:', err);
       setError(err.message || 'Gagal login dengan Google. Coba lagi.');
     }
   };
 
   return (
-    <div
+    <main
+      role="main"
+      aria-label="Halaman Login"
       style={{
         display: 'flex',
         width: '100vw',
@@ -196,6 +201,8 @@ const Login = ({ onLogin }) => {
         {/* Error Message */}
         {error && (
           <p
+            role="alert"
+            aria-live="polite"
             style={{
               fontFamily: "'Inter', sans-serif",
               fontSize: '14px',
@@ -213,6 +220,8 @@ const Login = ({ onLogin }) => {
           type="submit"
           disabled={isButtonDisabled || !email}
           onClick={handleEmailSubmit}
+          aria-label={isLoading ? 'Mengirim magic link' : 'Masuk atau daftar dengan email'}
+          aria-busy={isLoading}
           style={{
             width: '100%',
             padding: '18px',
@@ -250,6 +259,7 @@ const Login = ({ onLogin }) => {
           type="button"
           onClick={handleGoogleLogin}
           disabled={!isOnline}
+          aria-label="Masuk dengan akun Google"
           style={{
             width: '100%',
             padding: '18px',
@@ -332,7 +342,7 @@ const Login = ({ onLogin }) => {
         email={email}
         onResend={handleResendMagicLink}
       />
-    </div>
+    </main>
   );
 };
 

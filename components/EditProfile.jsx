@@ -1,27 +1,141 @@
-import React, { useState, useRef } from 'react';
-import { ArrowLeft, UploadSimple } from '@phosphor-icons/react';
+import React, { useState, useRef, useEffect } from 'react';
+import { ArrowLeft, UploadSimple, CircleNotch } from '@phosphor-icons/react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
+
+// Add spin animation style
+const spinStyle = `
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+`;
+
+// Constants for image compression
+const MAX_FILE_SIZE = 500 * 1024; // 500KB
+const MAX_IMAGE_DIMENSION = 400; // 400x400px max for avatar
 
 const EditProfile = ({ onBack, userName, userEmail, userPhoto, onSave, onProfileUpdated }) => {
   const { user, updateProfile } = useAuth();
   const [name, setName] = useState(userName || '');
   const [email, setEmail] = useState(userEmail || '');
   const [photoPreview, setPhotoPreview] = useState(userPhoto || null);
-  const [photoFile, setPhotoFile] = useState(null);
+  const [photoBlob, setPhotoBlob] = useState(null);
   const [focusedInput, setFocusedInput] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isProcessingPhoto, setIsProcessingPhoto] = useState(false);
+  const [photoError, setPhotoError] = useState(null);
   const fileInputRef = useRef(null);
 
-  const handlePhotoChange = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setPhotoFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPhotoPreview(reader.result);
+  // Compress and resize image for profile photo
+  const compressImage = (file) => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      const objectUrl = URL.createObjectURL(file);
+
+      img.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+
+        let { width, height } = img;
+
+        // Calculate new dimensions - make it square and smaller
+        const maxDim = MAX_IMAGE_DIMENSION;
+
+        // Crop to square (center crop)
+        const minDim = Math.min(width, height);
+        const scale = maxDim / minDim;
+
+        // If image is larger than max, scale down
+        if (minDim > maxDim) {
+          width = Math.round(width * scale);
+          height = Math.round(height * scale);
+        }
+
+        // Set canvas to target square size
+        canvas.width = maxDim;
+        canvas.height = maxDim;
+
+        // Calculate crop position (center)
+        const cropX = (width - maxDim) / 2;
+        const cropY = (height - maxDim) / 2;
+
+        // Draw scaled and cropped image
+        ctx.drawImage(
+          img,
+          cropX < 0 ? 0 : cropX / (width / img.width),
+          cropY < 0 ? 0 : cropY / (height / img.height),
+          minDim,
+          minDim,
+          0,
+          0,
+          maxDim,
+          maxDim
+        );
+
+        // Convert to blob with quality reduction
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              resolve(blob);
+            } else {
+              reject(new Error('Gagal memproses gambar'));
+            }
+          },
+          'image/jpeg',
+          0.85
+        );
       };
-      reader.readAsDataURL(file);
+
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error('Gagal memuat gambar'));
+      };
+
+      img.src = objectUrl;
+    });
+  };
+
+  const handlePhotoChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+      setPhotoError('File harus berupa gambar');
+      return;
+    }
+
+    setIsProcessingPhoto(true);
+    setPhotoError(null);
+
+    try {
+      // Compress image
+      const compressedBlob = await compressImage(file);
+
+      // Check if compressed size is still too large
+      if (compressedBlob.size > MAX_FILE_SIZE) {
+        setPhotoError('Foto terlalu besar. Coba foto dengan resolusi lebih kecil.');
+        setIsProcessingPhoto(false);
+        return;
+      }
+
+      // Create preview URL
+      const previewUrl = URL.createObjectURL(compressedBlob);
+      setPhotoPreview(previewUrl);
+      setPhotoBlob(compressedBlob);
+    } catch (err) {
+      console.error('Error processing photo:', err);
+      setPhotoError('Gagal memproses foto. Coba lagi.');
+    } finally {
+      setIsProcessingPhoto(false);
+    }
+
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -31,33 +145,38 @@ const EditProfile = ({ onBack, userName, userEmail, userPhoto, onSave, onProfile
 
   const handleSave = async () => {
     setIsSaving(true);
+    setPhotoError(null);
 
     try {
-      let photoUrl = photoPreview;
+      let photoUrl = userPhoto; // Keep existing photo URL by default
 
-      // Upload photo to Supabase Storage if there's a new file
-      if (photoFile && user) {
-        const fileExt = photoFile.name.split('.').pop();
-        const fileName = `${user.id}/avatar.${fileExt}`;
+      // Upload photo to Supabase Storage if there's a new compressed blob
+      if (photoBlob && user) {
+        const fileName = `${user.id}/avatar.jpg`;
 
-        // Upload to avatars bucket
-        const { data: uploadData, error: uploadError } = await supabase.storage
+        // Upload compressed blob to avatars bucket
+        const { error: uploadError } = await supabase.storage
           .from('avatars')
-          .upload(fileName, photoFile, {
+          .upload(fileName, photoBlob, {
             cacheControl: '3600',
             upsert: true,
+            contentType: 'image/jpeg',
           });
 
         if (uploadError) {
           console.error('Error uploading avatar:', uploadError);
-          // Continue with base64 photo if upload fails
-        } else {
-          // Get public URL
-          const { data: { publicUrl } } = supabase.storage
-            .from('avatars')
-            .getPublicUrl(fileName);
-          photoUrl = publicUrl;
+          setPhotoError('Gagal mengupload foto. Coba lagi.');
+          setIsSaving(false);
+          return;
         }
+
+        // Get public URL with cache buster
+        const { data: { publicUrl } } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(fileName);
+
+        // Add timestamp to bust cache
+        photoUrl = `${publicUrl}?t=${Date.now()}`;
       }
 
       // Update profile in Supabase
@@ -68,7 +187,9 @@ const EditProfile = ({ onBack, userName, userEmail, userPhoto, onSave, onProfile
 
       if (!result.success) {
         console.error('Failed to update profile:', result.error);
-        // Still update localStorage as fallback
+        setPhotoError('Gagal menyimpan profil. Coba lagi.');
+        setIsSaving(false);
+        return;
       }
 
       // Save profile data to localStorage as backup
@@ -98,6 +219,7 @@ const EditProfile = ({ onBack, userName, userEmail, userPhoto, onSave, onProfile
       onBack();
     } catch (err) {
       console.error('Error saving profile:', err);
+      setPhotoError('Terjadi kesalahan. Coba lagi.');
     } finally {
       setIsSaving(false);
     }
@@ -119,6 +241,9 @@ const EditProfile = ({ onBack, userName, userEmail, userPhoto, onSave, onProfile
         flexDirection: 'column',
       }}
     >
+      {/* Spin animation styles */}
+      <style>{spinStyle}</style>
+
       {/* Header */}
       <div
         style={{
@@ -188,7 +313,7 @@ const EditProfile = ({ onBack, userName, userEmail, userPhoto, onSave, onProfile
 
           <div
             style={{
-              border: '2px dashed #E0E0E0',
+              border: photoError ? '2px dashed #FF5252' : '2px dashed #E0E0E0',
               borderRadius: '12px',
               padding: '32px',
               display: 'flex',
@@ -199,7 +324,32 @@ const EditProfile = ({ onBack, userName, userEmail, userPhoto, onSave, onProfile
               minHeight: '160px',
             }}
           >
-            {photoPreview ? (
+            {isProcessingPhoto ? (
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '12px',
+                }}
+              >
+                <CircleNotch
+                  size={32}
+                  weight="bold"
+                  color="#7CB342"
+                  style={{ animation: 'spin 1s linear infinite' }}
+                />
+                <span
+                  style={{
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: '14px',
+                    color: '#666666',
+                  }}
+                >
+                  Memproses foto...
+                </span>
+              </div>
+            ) : photoPreview ? (
               <div
                 style={{
                   width: '100px',
@@ -226,30 +376,49 @@ const EditProfile = ({ onBack, userName, userEmail, userPhoto, onSave, onProfile
               type="file"
               accept="image/*"
               onChange={handlePhotoChange}
+              disabled={isProcessingPhoto}
               style={{ display: 'none' }}
             />
 
-            <button
-              onClick={handleUploadClick}
+            {!isProcessingPhoto && (
+              <button
+                onClick={handleUploadClick}
+                disabled={isProcessingPhoto}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '12px 24px',
+                  backgroundColor: '#FFFFFF',
+                  border: '1px solid #E0E0E0',
+                  borderRadius: '24px',
+                  cursor: 'pointer',
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  color: '#666666',
+                }}
+              >
+                <UploadSimple size={20} weight="bold" />
+                {photoPreview ? 'Ganti Foto' : 'Upload Foto'}
+              </button>
+            )}
+          </div>
+
+          {/* Photo Error Message */}
+          {photoError && (
+            <p
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '12px 24px',
-                backgroundColor: '#FFFFFF',
-                border: '1px solid #E0E0E0',
-                borderRadius: '24px',
-                cursor: 'pointer',
                 fontFamily: "'Inter', sans-serif",
-                fontSize: '14px',
-                fontWeight: 500,
-                color: '#666666',
+                fontSize: '12px',
+                color: '#FF5252',
+                margin: '8px 0 0 0',
+                textAlign: 'center',
               }}
             >
-              <UploadSimple size={20} weight="bold" />
-              {photoPreview ? 'Ganti Foto' : 'Upload Foto'}
-            </button>
-          </div>
+              {photoError}
+            </p>
+          )}
         </div>
 
         {/* Email Field */}

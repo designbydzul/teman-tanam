@@ -25,6 +25,8 @@ import {
 } from '@phosphor-icons/react';
 import TanyaTanam from './TanyaTanam';
 import EditPlant from './EditPlant';
+import OfflineModal from './OfflineModal';
+import useOnlineStatus from '@/hooks/useOnlineStatus';
 import { supabase } from '@/lib/supabase/client';
 
 // Helper to validate UUID format
@@ -35,6 +37,10 @@ const isValidUUID = (str) => {
 };
 
 const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePlant }) => {
+  // Online status for offline handling
+  const { isOnline } = useOnlineStatus();
+  const [showOfflineModal, setShowOfflineModal] = useState(false);
+
   const [activeTab, setActiveTab] = useState('perawatan');
   const [showMenu, setShowMenu] = useState(false);
   const [showImagePreview, setShowImagePreview] = useState(false);
@@ -116,37 +122,23 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
     id: sourcePlant.id,
     customName: sourcePlant.customName || sourcePlant.name,
     species: sourcePlant.species || {
-      name: sourcePlant.name,
-      scientific: 'Cucumis sativus',
+      name: null,
+      scientific: null,
       emoji: '🌱',
     },
     location: sourcePlant.location,
-    plantedDate: sourcePlant.plantedDate || sourcePlant.createdAt || new Date(Date.now() - 12 * 24 * 60 * 60 * 1000),
+    plantedDate: sourcePlant.plantedDate || sourcePlant.createdAt || new Date(),
     photoUrl: sourcePlant.photoUrl || sourcePlant.photoPreview || sourcePlant.image || null,
     lastWatered: lastActionOverrides.lastWatered || sourcePlant.lastWatered || null,
     lastFertilized: lastActionOverrides.lastFertilized || sourcePlant.lastFertilized || null,
-    quickTips: sourcePlant.quickTips || sourcePlant.species?.quickTips || 'Pilih lahan yang memiliki sinar matahari penuh dan tanah yang gembur, mudah menyerap air, serta kaya akan humus dengan pH sekitar 6–7. Bersihkan lahan dari gulma dan bebatuan, lalu gemburkan tanah dengan pencangkulan. Buat bedengan atau guludan dengan lebar sekitar 1 meter, tinggi 20–30 cm, dan jarak antar bedengan 30–50 cm.',
+    quickTips: sourcePlant.quickTips || sourcePlant.species?.quickTips || null,
     notes: sourcePlant.notes || '',
-  } : {
-    id: '1',
-    customName: 'Timun Jelita',
-    species: {
-      name: 'Timun',
-      scientific: 'Cucumis sativus',
-      emoji: '🥒',
-    },
-    location: 'Teras',
-    plantedDate: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000),
-    photoUrl: null,
-    lastWatered: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
-    lastFertilized: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
-    quickTips: 'Pilih lahan yang memiliki sinar matahari penuh dan tanah yang gembur, mudah menyerap air, serta kaya akan humus dengan pH sekitar 6–7. Bersihkan lahan dari gulma dan bebatuan, lalu gemburkan tanah dengan pencangkulan. Buat bedengan atau guludan dengan lebar sekitar 1 meter, tinggi 20–30 cm, dan jarak antar bedengan 30–50 cm.',
-  };
+  } : null;
 
   // Calculate days since planted
-  const daysSincePlanted = Math.floor(
-    (new Date() - new Date(plantData.plantedDate)) / (1000 * 60 * 60 * 24)
-  );
+  const daysSincePlanted = plantData?.plantedDate
+    ? Math.floor((new Date() - new Date(plantData.plantedDate)) / (1000 * 60 * 60 * 24))
+    : 0;
 
   // Get care schedule from species (null if not available)
   const wateringFrequencyDays = sourcePlant?.species?.wateringFrequencyDays || null;
@@ -412,7 +404,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
 
   const handleActionLog = async (actionType, options = {}) => {
     const plantName = plantData.customName;
-    const { notes, photoUrl } = options;
+    const { notes, photo } = options;
 
     // Map UI action types to database action types
     // UI: 'water', 'fertilize' -> DB: 'siram', 'pupuk'
@@ -424,13 +416,13 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
       plantId: plantData.id,
       plantName,
       notes,
-      photoUrl,
+      hasPhoto: !!photo,
     });
 
     // Call the onRecordAction prop to save to Supabase
     if (onRecordAction) {
-      console.log('[PlantDetail] Calling onRecordAction with:', plantData.id, dbActionType, notes);
-      const result = await onRecordAction(plantData.id, dbActionType, notes);
+      console.log('[PlantDetail] Calling onRecordAction with:', plantData.id, dbActionType, notes, !!photo);
+      const result = await onRecordAction(plantData.id, dbActionType, notes, photo);
       console.log('[PlantDetail] onRecordAction result:', result);
 
       if (!result.success) {
@@ -590,8 +582,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
     setIsSubmittingAction(true);
 
     try {
-      // For now, we'll just pass the notes. Photo upload can be added later
-      const result = await handleActionLog('fertilize', { notes: fertilizingNotes });
+      const result = await handleActionLog('fertilize', { notes: fertilizingNotes, photo: fertilizingPhoto });
 
       if (result?.success) {
         // Clear form and close drawer
@@ -639,7 +630,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
     setIsSubmittingAction(true);
 
     try {
-      const result = await handleActionLog('pangkas', { notes: pruningNotes });
+      const result = await handleActionLog('pangkas', { notes: pruningNotes, photo: pruningPhoto });
 
       if (result?.success) {
         setPruningNotes('');
@@ -682,18 +673,32 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
     setIsSubmittingAction(true);
 
     try {
-      // Use the action name as a custom action type
-      const customActionType = otherActionName.trim().toLowerCase();
-      const combinedNotes = otherActionNotes ? `${otherActionName}: ${otherActionNotes}` : otherActionName;
-      const result = await handleActionLog(customActionType, { notes: combinedNotes });
+      // Use 'lainnya' as the action type and store custom action name in notes
+      // This works with the database constraint that only allows specific action types
+      const combinedNotes = otherActionNotes
+        ? `[${otherActionName.trim()}] ${otherActionNotes}`
+        : `[${otherActionName.trim()}]`;
+      const result = await handleActionLog('lainnya', { notes: combinedNotes, photo: otherActionPhoto });
 
-      if (result?.success) {
-        setOtherActionName('');
-        setOtherActionNotes('');
-        setOtherActionPhoto(null);
-        setOtherActionPhotoPreview(null);
-        setShowOtherActionDrawer(false);
-      }
+      // Always close drawer and reset state after submit attempt
+      setOtherActionName('');
+      setOtherActionNotes('');
+      setOtherActionPhoto(null);
+      setOtherActionPhotoPreview(null);
+      setShowOtherActionDrawer(false);
+
+      // Note: handleActionLog already shows toast messages for both success and failure
+    } catch (err) {
+      console.error('[PlantDetail] Other action submit error:', err);
+      setActionToastMessage('Gagal menyimpan aksi. Coba lagi.');
+      setShowActionToast(true);
+      setTimeout(() => setShowActionToast(false), 3000);
+      // Still close the drawer on error so user isn't stuck
+      setOtherActionName('');
+      setOtherActionNotes('');
+      setOtherActionPhoto(null);
+      setOtherActionPhotoPreview(null);
+      setShowOtherActionDrawer(false);
     } finally {
       setIsSubmittingAction(false);
     }
@@ -765,7 +770,11 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
         handleActionLog('fertilize');
         break;
       case 'diagnose':
-        setShowTanyaTanam(true);
+        if (!isOnline) {
+          setShowOfflineModal(true);
+        } else {
+          setShowTanyaTanam(true);
+        }
         break;
       case 'edit':
         setShowEditPlant(true);
@@ -791,10 +800,12 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
         zIndex: 2000,
         overflow: 'hidden',
         visibility: showTanyaTanam ? 'hidden' : 'visible',
+        display: 'flex',
+        flexDirection: 'column',
       }}
     >
       {/* Sticky Header Section */}
-      <div style={{ position: 'relative', zIndex: 10, backgroundColor: '#FFFFFF' }}>
+      <div style={{ position: 'relative', zIndex: 10, backgroundColor: '#FFFFFF', flexShrink: 0 }}>
         {/* Header with Navigation - Back, Image Center, Settings */}
         <div
           style={{
@@ -901,7 +912,11 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
               margin: '0 0 4px 0',
             }}
           >
-            {plantData.location} • {daysSincePlanted} hari sejak ditanam • {plantData.species?.scientific || 'Cucumis sativus'}
+            {[
+              plantData.location,
+              `${daysSincePlanted} hari sejak ditanam`,
+              plantData.species?.name || plantData.species?.scientific
+            ].filter(Boolean).join(' • ')}
           </p>
 
           {/* Notes - Only show if exists */}
@@ -973,11 +988,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
 
       {/* Scrollable Tab Content */}
       <div style={{
-        position: 'absolute',
-        top: '340px',
-        left: 0,
-        right: 0,
-        bottom: 0,
+        flex: 1,
         overflowY: 'auto',
         WebkitOverflowScrolling: 'touch',
         touchAction: 'pan-y',
@@ -991,7 +1002,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                   fontSize: '14px',
                   fontWeight: 400,
                   color: '#666666',
-                  margin: '16px 0 12px 0',
+                  margin: '0 0 12px 0',
                 }}
               >
                 Yang dapat anda lakukan
@@ -2724,7 +2735,18 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => {
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setShowOtherActionDrawer(false);
+                setOtherActionName('');
+                setOtherActionNotes('');
+                setOtherActionPhoto(null);
+                setOtherActionPhotoPreview(null);
+              }}
+              onTouchEnd={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 setShowOtherActionDrawer(false);
                 setOtherActionName('');
                 setOtherActionNotes('');
@@ -2739,6 +2761,8 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                 bottom: 0,
                 backgroundColor: 'rgba(0, 0, 0, 0.5)',
                 zIndex: 5000,
+                cursor: 'pointer',
+                touchAction: 'manipulation',
               }}
             />
 
@@ -2748,6 +2772,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              onClick={(e) => e.stopPropagation()}
               style={{
                 position: 'fixed',
                 bottom: 0,
@@ -2783,7 +2808,10 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                   Aksi Lainya
                 </h2>
                 <button
-                  onClick={() => {
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
                     setShowOtherActionDrawer(false);
                     setOtherActionName('');
                     setOtherActionNotes('');
@@ -2915,7 +2943,12 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
 
               {/* Submit Button */}
               <button
-                onClick={handleOtherActionSubmit}
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleOtherActionSubmit();
+                }}
                 disabled={isSubmittingAction || !otherActionName.trim()}
                 style={{
                   width: '100%',
@@ -3340,6 +3373,13 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
           </>
         )}
       </AnimatePresence>
+
+      {/* Offline Modal for Tanya Tanam */}
+      <OfflineModal
+        isOpen={showOfflineModal}
+        onClose={() => setShowOfflineModal(false)}
+        featureName="Tanya Tanam"
+      />
     </div>
   );
 };

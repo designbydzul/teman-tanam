@@ -8,6 +8,13 @@ import {
   PaperPlaneTilt,
   X,
 } from '@phosphor-icons/react';
+import {
+  fetchPlantCareHistory,
+  buildEnhancedPlantContext,
+  formatContextForAI,
+} from '@/lib/plantContextBuilder';
+import useOnlineStatus from '@/hooks/useOnlineStatus';
+import OfflineModal from './OfflineModal';
 
 // Helper function to calculate days since planted
 const calculateDaysSincePlanted = (plantedDate) => {
@@ -23,6 +30,10 @@ const calculateDaysSincePlanted = (plantedDate) => {
 const getChatStorageKey = (plantId) => `tanyaTanam_chat_${plantId}`;
 
 const TanyaTanam = ({ plant, plants = [], onBack }) => {
+  // Online status
+  const { isOnline } = useOnlineStatus();
+  const [showOfflineModal, setShowOfflineModal] = useState(false);
+
   // State
   const [selectedPlant, setSelectedPlant] = useState(plant || null);
   const [showPlantDropdown, setShowPlantDropdown] = useState(false);
@@ -34,6 +45,13 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [fullscreenImage, setFullscreenImage] = useState(null);
+  const [imageError, setImageError] = useState(null);
+  const [careHistory, setCareHistory] = useState([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+
+  // Constants for image handling
+  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+  const MAX_IMAGE_DIMENSION = 1200; // Max width/height for compression
 
   // Load chat history from localStorage when plant changes
   useEffect(() => {
@@ -62,6 +80,29 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
     }
   }, [messages, selectedPlant?.id]);
 
+  // Fetch care history when plant changes
+  useEffect(() => {
+    const loadCareHistory = async () => {
+      if (!selectedPlant?.id) {
+        setCareHistory([]);
+        return;
+      }
+
+      setIsLoadingHistory(true);
+      try {
+        const history = await fetchPlantCareHistory(selectedPlant.id);
+        setCareHistory(history);
+      } catch (err) {
+        console.error('Error fetching care history:', err);
+        setCareHistory([]);
+      } finally {
+        setIsLoadingHistory(false);
+      }
+    };
+
+    loadCareHistory();
+  }, [selectedPlant?.id]);
+
   // Refs
   const chatAreaRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -77,8 +118,9 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
     document.body.style.width = '100%';
     document.body.style.top = '0';
 
-    // Track keyboard using visualViewport
-    const handleViewportChange = () => {
+    // Track keyboard using visualViewport - only listen to resize, not scroll
+    // The scroll event fires too frequently during normal scrolling and causes errors
+    const handleViewportResize = () => {
       if (window.visualViewport && containerRef.current) {
         const viewportHeight = window.visualViewport.height;
         const viewportOffsetTop = window.visualViewport.offsetTop;
@@ -104,38 +146,64 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
     };
 
     if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', handleViewportChange);
-      window.visualViewport.addEventListener('scroll', handleViewportChange);
+      // Only listen to resize events for keyboard detection
+      // Removed scroll listener as it causes issues during chat scrolling
+      window.visualViewport.addEventListener('resize', handleViewportResize);
       // Initial call
-      handleViewportChange();
+      handleViewportResize();
     }
 
     return () => {
       document.body.style.cssText = originalStyle;
       if (window.visualViewport) {
-        window.visualViewport.removeEventListener('resize', handleViewportChange);
-        window.visualViewport.removeEventListener('scroll', handleViewportChange);
+        window.visualViewport.removeEventListener('resize', handleViewportResize);
       }
     };
   }, []);
 
-  // Normalize plant data
+  // Helper to format date for AI context
+  const formatDateForAI = (date) => {
+    if (!date) return null;
+    const d = new Date(date);
+    const now = new Date();
+    const diffTime = now - d;
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return 'hari ini';
+    if (diffDays === 1) return 'kemarin';
+    if (diffDays < 7) return `${diffDays} hari yang lalu`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} minggu yang lalu`;
+    return `${Math.floor(diffDays / 30)} bulan yang lalu`;
+  };
+
+  // Normalize plant data (includes all info needed for enhanced context)
   const plantData = selectedPlant
     ? {
         id: selectedPlant.id,
         name: selectedPlant.customName || selectedPlant.name,
-        species: selectedPlant.species?.scientific || 'Cucumis sativus',
+        species: {
+          name: selectedPlant.species?.name || null,
+          scientific: selectedPlant.species?.scientific || null,
+          wateringFrequencyDays: selectedPlant.species?.wateringFrequencyDays || 3,
+          fertilizingFrequencyDays: selectedPlant.species?.fertilizingFrequencyDays || 14,
+        },
         speciesEmoji: selectedPlant.species?.emoji || '🌱',
-        location: selectedPlant.location || 'Teras',
-        plantedDate: selectedPlant.plantedDate || new Date(Date.now() - 12 * 24 * 60 * 60 * 1000),
+        location: selectedPlant.location || null,
+        plantedDate: selectedPlant.plantedDate || null,
         coverPhotoUrl: selectedPlant.photoUrl || (selectedPlant.image !== null && selectedPlant.image) || null,
+        notes: selectedPlant.notes || null,
+        lastWatered: selectedPlant.lastWatered || null,
+        lastFertilized: selectedPlant.lastFertilized || null,
+        // Custom care frequencies (override species defaults)
+        customWateringDays: selectedPlant.customWateringDays || null,
+        customFertilizingDays: selectedPlant.customFertilizingDays || null,
       }
     : null;
 
   // Calculate days since planted
-  const daysSincePlanted = plantData
+  const daysSincePlanted = plantData?.plantedDate
     ? Math.floor((new Date() - new Date(plantData.plantedDate)) / (1000 * 60 * 60 * 24))
-    : 0;
+    : null;
 
   // Auto-scroll to bottom when new messages
   useEffect(() => {
@@ -145,21 +213,22 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
   }, [messages, isLoading]);
 
   // Call API to get AI response
-  const callTanyaTanamAPI = async (userMessageContent, currentMessages) => {
+  const callTanyaTanamAPI = async (userMessageContent, currentMessages, images = []) => {
     try {
+      // Build enhanced context with care history
+      let enhancedContextText = null;
+      if (plantData) {
+        const enhancedContext = buildEnhancedPlantContext(plantData, careHistory);
+        enhancedContextText = formatContextForAI(enhancedContext);
+      }
+
       const response = await fetch('/api/tanya-tanam', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: userMessageContent,
-          plantContext: plantData ? {
-            name: plantData.name,
-            species: plantData.species,
-            age: calculateDaysSincePlanted(plantData.plantedDate),
-            location: plantData.location,
-            lastWatered: selectedPlant?.lastWatered || null,
-            lastFertilized: selectedPlant?.lastFertilized || null
-          } : null,
+          images: images, // Send base64 images
+          plantContextText: enhancedContextText, // Rich formatted context
           chatHistory: currentMessages
             .filter(m => m.role)
             .map(m => ({ role: m.role, content: m.content }))
@@ -179,18 +248,90 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
     }
   };
 
+  // Compress image for mobile
+  const compressImage = (file) => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      // Create object URL to load image
+      const objectUrl = URL.createObjectURL(file);
+
+      img.onload = () => {
+        // Revoke the object URL to free memory
+        URL.revokeObjectURL(objectUrl);
+
+        let { width, height } = img;
+
+        // Calculate new dimensions while maintaining aspect ratio
+        if (width > MAX_IMAGE_DIMENSION || height > MAX_IMAGE_DIMENSION) {
+          if (width > height) {
+            height = (height / width) * MAX_IMAGE_DIMENSION;
+            width = MAX_IMAGE_DIMENSION;
+          } else {
+            width = (width / height) * MAX_IMAGE_DIMENSION;
+            height = MAX_IMAGE_DIMENSION;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Convert to base64 with quality reduction
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        resolve(compressedDataUrl);
+      };
+
+      img.onerror = () => {
+        // Revoke the object URL on error too
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error('Gagal memproses gambar'));
+      };
+
+      img.src = objectUrl;
+    });
+  };
+
   // Handle image attachment
-  const handleAttachImage = (e) => {
+  const handleAttachImage = async (e) => {
     const files = Array.from(e.target.files || []);
     const imageFiles = files.filter((file) => file.type.startsWith('image/'));
 
-    imageFiles.forEach((file) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAttachedImages((prev) => [...prev, { file, preview: reader.result }]);
-      };
-      reader.readAsDataURL(file);
-    });
+    // Clear any previous error
+    setImageError(null);
+
+    for (const file of imageFiles) {
+      // Check file size
+      if (file.size > MAX_FILE_SIZE) {
+        setImageError('Foto terlalu besar, maks 5MB. Coba foto dengan resolusi lebih kecil.');
+        // Auto-hide error after 4 seconds
+        setTimeout(() => setImageError(null), 4000);
+        continue;
+      }
+
+      try {
+        // Compress large images (> 1MB)
+        let preview;
+        if (file.size > 1024 * 1024) {
+          preview = await compressImage(file);
+        } else {
+          // Small images don't need compression
+          preview = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.readAsDataURL(file);
+          });
+        }
+
+        setAttachedImages((prev) => [...prev, { file, preview }]);
+      } catch (err) {
+        console.error('Error processing image:', err);
+        setImageError('Gagal memproses gambar. Coba lagi ya.');
+        setTimeout(() => setImageError(null), 4000);
+      }
+    }
 
     // Reset input
     if (fileInputRef.current) {
@@ -207,14 +348,21 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
   const handleSendMessage = async () => {
     if (!inputText.trim() && attachedImages.length === 0) return;
 
+    // Check if offline
+    if (!isOnline) {
+      setShowOfflineModal(true);
+      return;
+    }
+
     const messageContent = inputText.trim();
+    const imagesToSend = attachedImages.map((img) => img.preview);
 
     // Create user message
     const userMessage = {
       id: Date.now().toString(),
       role: 'user',
       content: messageContent,
-      images: attachedImages.map((img) => img.preview),
+      images: imagesToSend,
       timestamp: new Date(),
     };
 
@@ -229,8 +377,8 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
       inputRef.current.style.height = 'auto';
     }
 
-    // Call real API
-    const aiResponse = await callTanyaTanamAPI(messageContent, updatedMessages);
+    // Call real API with images
+    const aiResponse = await callTanyaTanamAPI(messageContent, updatedMessages, imagesToSend);
 
     const aiMessage = {
       id: (Date.now() + 1).toString(),
@@ -342,7 +490,7 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
         ref={chatAreaRef}
         style={{
           flex: 1,
-          overflowY: 'scroll',
+          overflowY: 'auto',
           overflowX: 'hidden',
           padding: keyboardHeight > 0 ? '8px 16px' : '16px 24px',
           display: 'flex',
@@ -460,7 +608,10 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
                           margin: 0,
                         }}
                       >
-                        {plantData.location} • {daysSincePlanted} hari sejak ditanam
+                        {[
+                          plantData.location,
+                          daysSincePlanted !== null ? `${daysSincePlanted} hari sejak ditanam` : null
+                        ].filter(Boolean).join(' • ') || 'Tanaman'}
                       </p>
                     </div>
                   </div>
@@ -587,6 +738,34 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
 
       </div>
 
+      {/* Image Error Toast */}
+      <AnimatePresence>
+        {imageError && (
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            style={{
+              position: 'fixed',
+              bottom: '140px',
+              left: '24px',
+              right: '24px',
+              backgroundColor: '#FF5252',
+              color: '#FFFFFF',
+              padding: '12px 16px',
+              borderRadius: '12px',
+              fontFamily: "'Inter', sans-serif",
+              fontSize: '14px',
+              textAlign: 'center',
+              zIndex: 10000,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            }}
+          >
+            {imageError}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Input Area */}
       <div
         style={{
@@ -685,11 +864,11 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
               transition: 'border-color 200ms',
             }}
           >
-            {/* Attachment Button */}
+            {/* Attachment Button - accept="image/*" enables both camera and gallery on mobile */}
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/gif,image/webp"
               multiple
               onChange={handleAttachImage}
               style={{ display: 'none' }}
@@ -954,6 +1133,13 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
           </>
         )}
       </AnimatePresence>
+
+      {/* Offline Modal */}
+      <OfflineModal
+        isOpen={showOfflineModal}
+        onClose={() => setShowOfflineModal(false)}
+        featureName="Tanya Tanam"
+      />
     </div>
   );
 };

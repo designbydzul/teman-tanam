@@ -38,7 +38,9 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${caveat.variable} antialiased`}
       >
-        {children}
+        <div className="app-container">
+          {children}
+        </div>
         <Analytics />
         <SpeedInsights />
       </body>
