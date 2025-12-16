@@ -71,8 +71,8 @@ Contoh respons yang SALAH (terlalu panjang/teknis):
 export async function POST(request: Request) {
   try {
     // Read API key at request time
-    // Use TEMAN_TANAM_ANTHROPIC_KEY to avoid conflict with system ANTHROPIC_API_KEY
-    const anthropicApiKey = process.env.TEMAN_TANAM_ANTHROPIC_KEY;
+    // Support both TEMAN_TANAM_ANTHROPIC_KEY and ANTHROPIC_API_KEY
+    const anthropicApiKey = process.env.TEMAN_TANAM_ANTHROPIC_KEY || process.env.ANTHROPIC_API_KEY;
 
     // Check API key
     if (!anthropicApiKey) {
