@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft,
@@ -15,6 +15,8 @@ import {
 } from '@/lib/plantContextBuilder';
 import useOnlineStatus from '@/hooks/useOnlineStatus';
 import OfflineModal from './OfflineModal';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/hooks/useAuth';
 
 // Helper function to calculate days since planted
 const calculateDaysSincePlanted = (plantedDate) => {
@@ -30,6 +32,9 @@ const calculateDaysSincePlanted = (plantedDate) => {
 const getChatStorageKey = (plantId) => `tanyaTanam_chat_${plantId}`;
 
 const TanyaTanam = ({ plant, plants = [], onBack }) => {
+  // Auth - get current user
+  const { user } = useAuth();
+
   // Online status
   const { isOnline } = useOnlineStatus();
   const [showOfflineModal, setShowOfflineModal] = useState(false);
@@ -41,6 +46,7 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
   const [inputText, setInputText] = useState('');
   const [attachedImages, setAttachedImages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingChat, setIsLoadingChat] = useState(false);
   const [inputFocused, setInputFocused] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
@@ -53,26 +59,90 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
   const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
   const MAX_IMAGE_DIMENSION = 1200; // Max width/height for compression
 
-  // Load chat history from localStorage when plant changes
-  useEffect(() => {
-    if (selectedPlant?.id) {
-      const storageKey = getChatStorageKey(selectedPlant.id);
-      const savedChat = localStorage.getItem(storageKey);
-      if (savedChat) {
-        try {
-          const parsedChat = JSON.parse(savedChat);
-          setMessages(parsedChat);
-        } catch (e) {
-          console.error('Failed to parse saved chat:', e);
+  // Load chat history from database when plant changes
+  const loadChatFromDatabase = useCallback(async (plantId) => {
+    if (!plantId || !user?.id) {
+      setMessages([]);
+      return;
+    }
+
+    setIsLoadingChat(true);
+    try {
+      const { data, error } = await supabase
+        .from('tanya_tanam_chats')
+        .select('*')
+        .eq('plant_id', plantId)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Error loading chat history:', error);
+        // Fallback to localStorage
+        const storageKey = getChatStorageKey(plantId);
+        const savedChat = localStorage.getItem(storageKey);
+        if (savedChat) {
+          try {
+            setMessages(JSON.parse(savedChat));
+          } catch (e) {
+            setMessages([]);
+          }
+        } else {
           setMessages([]);
         }
+      } else if (data && data.length > 0) {
+        // Transform database format to component format
+        const formattedMessages = data.map((msg) => ({
+          id: msg.id,
+          role: msg.role,
+          content: msg.message,
+          images: msg.photo_url ? [msg.photo_url] : [],
+          timestamp: new Date(msg.created_at),
+        }));
+        setMessages(formattedMessages);
       } else {
         setMessages([]);
       }
+    } catch (err) {
+      console.error('Error loading chat:', err);
+      setMessages([]);
+    } finally {
+      setIsLoadingChat(false);
     }
-  }, [selectedPlant?.id]);
+  }, [user?.id]);
 
-  // Save chat history to localStorage when messages change
+  useEffect(() => {
+    loadChatFromDatabase(selectedPlant?.id);
+  }, [selectedPlant?.id, loadChatFromDatabase]);
+
+  // Save message to database
+  const saveMessageToDatabase = useCallback(async (plantId, role, message, photoUrl = null) => {
+    if (!plantId || !user?.id) return null;
+
+    try {
+      const { data, error } = await supabase
+        .from('tanya_tanam_chats')
+        .insert({
+          plant_id: plantId,
+          user_id: user.id,
+          role: role,
+          message: message,
+          photo_url: photoUrl,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error saving message:', error);
+        return null;
+      }
+      return data;
+    } catch (err) {
+      console.error('Error saving message:', err);
+      return null;
+    }
+  }, [user?.id]);
+
+  // Also save to localStorage as backup
   useEffect(() => {
     if (selectedPlant?.id && messages.length > 0) {
       const storageKey = getChatStorageKey(selectedPlant.id);
@@ -356,8 +426,9 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
 
     const messageContent = inputText.trim();
     const imagesToSend = attachedImages.map((img) => img.preview);
+    const photoUrl = imagesToSend.length > 0 ? imagesToSend[0] : null;
 
-    // Create user message
+    // Create user message for UI
     const userMessage = {
       id: Date.now().toString(),
       role: 'user',
@@ -377,9 +448,28 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
       inputRef.current.style.height = 'auto';
     }
 
+    // Save user message to database
+    if (selectedPlant?.id) {
+      const savedUserMsg = await saveMessageToDatabase(
+        selectedPlant.id,
+        'user',
+        messageContent,
+        photoUrl
+      );
+      // Update message ID if saved successfully
+      if (savedUserMsg) {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === userMessage.id ? { ...msg, id: savedUserMsg.id } : msg
+          )
+        );
+      }
+    }
+
     // Call real API with images
     const aiResponse = await callTanyaTanamAPI(messageContent, updatedMessages, imagesToSend);
 
+    // Create AI message for UI
     const aiMessage = {
       id: (Date.now() + 1).toString(),
       role: 'assistant',
@@ -387,6 +477,25 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
       timestamp: new Date(),
     };
     setMessages((prev) => [...prev, aiMessage]);
+
+    // Save AI response to database
+    if (selectedPlant?.id) {
+      const savedAiMsg = await saveMessageToDatabase(
+        selectedPlant.id,
+        'assistant',
+        aiResponse,
+        null
+      );
+      // Update message ID if saved successfully
+      if (savedAiMsg) {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === aiMessage.id ? { ...msg, id: savedAiMsg.id } : msg
+          )
+        );
+      }
+    }
+
     setIsLoading(false);
   };
 

@@ -83,7 +83,7 @@ const Login = ({ onLogin }) => {
       aria-label="Halaman Login"
       style={{
         display: 'flex',
-        width: '100vw',
+        width: '100%',
         minHeight: '100vh',
         flexDirection: 'column',
         alignItems: 'center',

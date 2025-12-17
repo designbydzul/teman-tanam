@@ -6,12 +6,26 @@ const debug = createDebugger('supabase');
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
+// Debug: Log env vars on client
+if (typeof window !== 'undefined') {
+  console.log('[Supabase Client] URL:', supabaseUrl);
+  console.log('[Supabase Client] Key exists:', !!supabaseAnonKey, 'Length:', supabaseAnonKey?.length);
+}
+
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables');
 }
 
 // Browser client for client-side operations
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Using implicit flow - tokens returned directly in URL hash
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+    flowType: 'implicit',
+  },
+});
 
 // Auth helper functions for browser
 export const auth = {
@@ -40,7 +54,8 @@ export const auth = {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        // For implicit flow, redirect to home - tokens come in URL hash
+        redirectTo: `${window.location.origin}/`,
       },
     });
 

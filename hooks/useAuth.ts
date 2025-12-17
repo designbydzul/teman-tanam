@@ -169,10 +169,11 @@ export function useAuth(): UseAuthReturn {
         } else {
           debug.log('No session found - user not authenticated');
         }
+        setLoading(false);
       } catch (err) {
         debug.error('Auth init error:', err);
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     initAuth();
@@ -194,6 +195,10 @@ export function useAuth(): UseAuthReturn {
         debug.log('User signed in:', newSession.user?.email);
         setUser(newSession.user);
         await checkOnboardingStatus(newSession.user?.id);
+        // Clear any OAuth tokens from URL hash
+        if (window.location.hash && window.location.hash.includes('access_token')) {
+          window.history.replaceState(null, '', window.location.pathname);
+        }
         setLoading(false);
       } else if (event === 'SIGNED_OUT') {
         debug.log('User signed out');

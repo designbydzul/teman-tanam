@@ -329,7 +329,7 @@ const EditPlant = ({ plant, onClose, onSave, onDelete }) => {
                 </div>
               </div>
 
-              {/* Planted Date Pills */}
+              {/* Planted Date - Native Date Input */}
               <div style={{ marginBottom: '24px' }}>
                 <label
                   style={{
@@ -337,66 +337,33 @@ const EditPlant = ({ plant, onClose, onSave, onDelete }) => {
                     fontFamily: "'Inter', sans-serif",
                     fontSize: '14px',
                     color: '#666666',
-                    marginBottom: '12px',
+                    marginBottom: '8px',
                   }}
                 >
                   Tanggal Ditanam
                 </label>
-                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                  {/* Hari ini button */}
-                  <button
-                    type="button"
-                    onClick={() => handleDateSelect('Hari ini')}
-                    style={{
-                      padding: '12px 24px',
-                      fontSize: '1rem',
-                      fontFamily: "'Inter', sans-serif",
-                      fontWeight: 500,
-                      color: formData.plantedDate === 'Hari ini' ? '#2D5016' : '#666666',
-                      backgroundColor: formData.plantedDate === 'Hari ini' ? '#F1F8E9' : 'transparent',
-                      border: formData.plantedDate === 'Hari ini' ? '2px solid #7CB342' : '2px solid #E0E0E0',
-                      borderRadius: '24px',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                    }}
-                  >
-                    Hari ini
-                  </button>
-
-                  {/* Pilih Tanggal / Selected Date button */}
-                  <button
-                    type="button"
-                    onClick={() => handleDateSelect('Pilih Tanggal')}
-                    style={{
-                      padding: '12px 24px',
-                      fontSize: '1rem',
-                      fontFamily: "'Inter', sans-serif",
-                      fontWeight: 500,
-                      color: formData.customDate ? '#2D5016' : '#666666',
-                      backgroundColor: formData.customDate ? '#F1F8E9' : 'transparent',
-                      border: formData.customDate ? '2px solid #7CB342' : '2px solid #E0E0E0',
-                      borderRadius: '24px',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                    }}
-                  >
-                    {formData.customDate ? formData.plantedDate : 'Pilih Tanggal'}
-                  </button>
-                </div>
-
-                {/* Hidden Date Input */}
                 <input
                   ref={dateInputRef}
                   type="date"
                   value={formData.customDate}
                   max={new Date().toISOString().split('T')[0]}
                   onChange={handleCustomDateChange}
+                  onFocus={() => setFocusedInput('date')}
+                  onBlur={() => setFocusedInput(null)}
                   style={{
-                    position: 'absolute',
-                    opacity: 0,
-                    pointerEvents: 'none',
-                    width: 0,
-                    height: 0,
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    padding: '16px',
+                    fontSize: '1rem',
+                    fontFamily: "'Inter', sans-serif",
+                    color: '#2C2C2C',
+                    backgroundColor: '#FAFAFA',
+                    border: focusedInput === 'date' ? '2px solid #7CB342' : '2px solid transparent',
+                    borderRadius: '12px',
+                    outline: 'none',
+                    transition: 'border-color 200ms',
+                    WebkitAppearance: 'none',
+                    appearance: 'none',
                   }}
                 />
               </div>
