@@ -188,24 +188,27 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
     };
   }, []);
 
-  // Detect keyboard height on mobile
+  // Detect keyboard and adjust input position to stick to visible viewport bottom
   useEffect(() => {
-    const handleResize = () => {
-      // Only run on mobile devices
+    const handleViewportChange = () => {
       if (typeof window !== 'undefined' && window.visualViewport) {
         const viewport = window.visualViewport;
-        const keyboardHeight = window.innerHeight - viewport.height;
-        setKeyboardHeight(keyboardHeight > 0 ? keyboardHeight : 0);
+        // Calculate how much the viewport has shifted up
+        const offsetY = window.innerHeight - viewport.height - viewport.offsetTop;
+        setKeyboardHeight(offsetY > 0 ? offsetY : 0);
       }
     };
 
     if (typeof window !== 'undefined' && window.visualViewport) {
-      window.visualViewport.addEventListener('resize', handleResize);
-      window.visualViewport.addEventListener('scroll', handleResize);
+      window.visualViewport.addEventListener('resize', handleViewportChange);
+      window.visualViewport.addEventListener('scroll', handleViewportChange);
+
+      // Initial call
+      handleViewportChange();
 
       return () => {
-        window.visualViewport.removeEventListener('resize', handleResize);
-        window.visualViewport.removeEventListener('scroll', handleResize);
+        window.visualViewport.removeEventListener('resize', handleViewportChange);
+        window.visualViewport.removeEventListener('scroll', handleViewportChange);
       };
     }
   }, []);
@@ -871,17 +874,17 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
       <div
         style={{
           position: 'fixed',
-          bottom: keyboardHeight > 0 ? `${keyboardHeight}px` : 0,
+          bottom: 0,
           left: '50%',
-          transform: 'translateX(-50%)',
+          transform: `translateX(-50%) translateY(${-keyboardHeight}px)`,
           width: '100%',
           maxWidth: 'var(--app-max-width)',
           backgroundColor: '#FFFFFF',
           borderTop: '1px solid #F5F5F5',
           padding: '16px 24px',
-          paddingBottom: keyboardHeight > 0 ? '16px' : 'max(16px, env(safe-area-inset-bottom))',
+          paddingBottom: 'max(16px, env(safe-area-inset-bottom))',
           zIndex: 10001,
-          transition: 'bottom 0.3s ease-out',
+          transition: 'transform 0.1s linear',
         }}
       >
         {/* Attached Images Preview */}
