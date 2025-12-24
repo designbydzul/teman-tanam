@@ -483,7 +483,7 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
       }}
     >
       {/* Header - Fixed at top, never scrolls */}
-      <div style={{ position: 'relative', zIndex: 10, backgroundColor: '#FFFFFF', flexShrink: 0, borderBottom: '1px solid #E0E0E0' }}>
+      <div style={{ position: 'sticky', top: 0, zIndex: 10, backgroundColor: '#FFFFFF', flexShrink: 0, borderBottom: '1px solid #E0E0E0' }}>
         {/* Navigation Row - Same as PlantDetail */}
         <div
           style={{
