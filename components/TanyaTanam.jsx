@@ -480,10 +480,9 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
         zIndex: 9999,
         display: 'flex',
         flexDirection: 'column',
-        overflow: 'hidden',
       }}
     >
-      {/* Header - Matches PlantDetail header layout exactly */}
+      {/* Header - Fixed at top, never scrolls */}
       <div style={{ position: 'relative', zIndex: 10, backgroundColor: '#FFFFFF', flexShrink: 0, borderBottom: '1px solid #E0E0E0' }}>
         {/* Navigation Row - Same as PlantDetail */}
         <div
