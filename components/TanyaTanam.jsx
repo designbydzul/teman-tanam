@@ -519,6 +519,9 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
         backgroundColor: '#FFFFFF',
         borderBottom: '1px solid #E0E0E0',
         boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+        WebkitTransform: 'translateX(-50%) translateZ(0)',
+        willChange: 'transform',
+        backfaceVisibility: 'hidden',
       }}>
         {/* Navigation Row - Same as PlantDetail */}
         <div
@@ -601,6 +604,7 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
           display: 'flex',
           flexDirection: 'column',
           paddingTop: '88px', // Space for fixed header (24px padding top + 40px button + 24px padding bottom)
+          overflow: 'hidden', // Prevent any scroll on container itself
         }}
       >
         {/* Chat Content Area */}
