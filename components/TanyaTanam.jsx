@@ -190,12 +190,23 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
 
   // Detect keyboard and adjust input position to stick to visible viewport bottom
   useEffect(() => {
+    let timeoutId;
+
     const handleViewportChange = () => {
       if (typeof window !== 'undefined' && window.visualViewport) {
         const viewport = window.visualViewport;
         // Calculate how much the viewport has shifted up
         const offsetY = window.innerHeight - viewport.height - viewport.offsetTop;
-        setKeyboardHeight(offsetY > 0 ? offsetY : 0);
+
+        // Clear previous timeout
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+
+        // Debounce to prevent bounce
+        timeoutId = setTimeout(() => {
+          setKeyboardHeight(offsetY > 0 ? offsetY : 0);
+        }, 10);
       }
     };
 
@@ -207,6 +218,9 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
       handleViewportChange();
 
       return () => {
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
         window.visualViewport.removeEventListener('resize', handleViewportChange);
         window.visualViewport.removeEventListener('scroll', handleViewportChange);
       };
@@ -493,7 +507,7 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
 
   return (
     <>
-      {/* Header - Fixed at top, never scrolls */}
+      {/* Header - Fixed at top, never moves */}
       <div style={{
         position: 'fixed',
         top: 0,
@@ -503,7 +517,7 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
         maxWidth: 'var(--app-max-width)',
         zIndex: 10000,
         backgroundColor: '#FFFFFF',
-        borderBottom: '1px solid #E0E0E0'
+        borderBottom: '1px solid #E0E0E0',
       }}>
         {/* Navigation Row - Same as PlantDetail */}
         <div
@@ -884,7 +898,7 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
           padding: '16px 24px',
           paddingBottom: 'max(16px, env(safe-area-inset-bottom))',
           zIndex: 10001,
-          transition: 'transform 0.1s linear',
+          transition: 'transform 0.2s ease-out',
         }}
       >
         {/* Attached Images Preview */}
