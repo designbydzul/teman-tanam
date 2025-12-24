@@ -38,6 +38,12 @@ export const colors = {
   offline: '#E65100',
   offlineLight: '#FFF3E0',
   sync: '#3B82F6',
+
+  // Action Colors
+  water: '#3B82F6',       // Blue for watering actions
+  waterLight: '#EFF6FF',  // Light blue background
+  fertilize: '#16A34A',   // Green for fertilizing actions
+  fertilizeLight: '#F0FDF4', // Light green background
 } as const;
 
 /* ==================== TYPOGRAPHY ==================== */

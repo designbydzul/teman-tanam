@@ -25,6 +25,7 @@ import {
   Plus,
   WifiSlash,
   MapPin,
+  X,
 } from '@phosphor-icons/react';
 import { useLocations } from '@/hooks/useLocations';
 
@@ -684,17 +685,10 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
                   opacity: isSubmitting ? 0.5 : 1,
                 }}
               >
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                  <path
-                    d="M15 5L5 15M5 5l10 10"
-                    stroke="#666666"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                </svg>
+                <X size={20} weight="bold" color="#666666" />
               </button>
 
-              {/* Modal Title */}
+              {/* Add Location Modal Title */}
               <h2
                 style={{
                   fontFamily: "'Inter', sans-serif",
@@ -935,14 +929,7 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
                   opacity: isDeleting ? 0.5 : 1,
                 }}
               >
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                  <path
-                    d="M15 5L5 15M5 5l10 10"
-                    stroke="#666666"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                </svg>
+                <X size={20} weight="bold" color="#666666" />
               </button>
 
               {/* Modal Title */}

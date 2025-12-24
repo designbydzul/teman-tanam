@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { X, Camera } from '@phosphor-icons/react';
 import LocationSettings from './LocationSettings';
 import { compressImage } from '@/lib/imageUtils';
 import { useLocations } from '@/hooks/useLocations';
@@ -206,14 +207,7 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
                 cursor: 'pointer',
               }}
             >
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <path
-                  d="M15 5L5 15M5 5l10 10"
-                  stroke="#666666"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-              </svg>
+              <X size={20} weight="bold" color="#666666" />
             </button>
 
             {/* Header */}
@@ -532,15 +526,7 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
                       cursor: 'pointer',
                     }}
                   >
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
-                      <path
-                        d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"
-                        stroke="#7CB342"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
+                    <Camera size={48} weight="regular" color="#7CB342" />
                     <span
                       style={{
                         fontFamily: "'Inter', sans-serif",

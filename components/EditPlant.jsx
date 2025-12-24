@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import LocationSettings from './LocationSettings';
 import { useLocations } from '@/hooks/useLocations';
-import { Drop, Leaf, ArrowCounterClockwise } from '@phosphor-icons/react';
+import { Drop, Leaf, ArrowCounterClockwise, X, Trash } from '@phosphor-icons/react';
 
 const EditPlant = ({ plant, onClose, onSave, onDelete }) => {
   const [formData, setFormData] = useState({
@@ -220,14 +220,7 @@ const EditPlant = ({ plant, onClose, onSave, onDelete }) => {
                 cursor: 'pointer',
               }}
             >
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <path
-                  d="M15 5L5 15M5 5l10 10"
-                  stroke="#666666"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-              </svg>
+              <X size={20} weight="bold" color="#666666" />
             </button>
 
             {/* Header */}
@@ -448,7 +441,7 @@ const EditPlant = ({ plant, onClose, onSave, onDelete }) => {
                         justifyContent: 'center',
                       }}
                     >
-                      <Drop size={20} weight="fill" color="#2196F3" />
+                      <Drop size={20} weight="fill" color="#3B82F6" />
                     </div>
                     <div style={{ flex: 1 }}>
                       <label
@@ -490,7 +483,7 @@ const EditPlant = ({ plant, onClose, onSave, onDelete }) => {
                         fontFamily: "'Inter', sans-serif",
                         color: '#2C2C2C',
                         backgroundColor: '#FFFFFF',
-                        border: focusedInput === 'watering' ? '2px solid #2196F3' : '2px solid #E0E0E0',
+                        border: focusedInput === 'watering' ? '2px solid #3B82F6' : '2px solid #E0E0E0',
                         borderRadius: '8px',
                         outline: 'none',
                         textAlign: 'center',
@@ -552,7 +545,7 @@ const EditPlant = ({ plant, onClose, onSave, onDelete }) => {
                         justifyContent: 'center',
                       }}
                     >
-                      <Leaf size={20} weight="fill" color="#7CB342" />
+                      <Leaf size={20} weight="fill" color="#16A34A" />
                     </div>
                     <div style={{ flex: 1 }}>
                       <label
@@ -594,7 +587,7 @@ const EditPlant = ({ plant, onClose, onSave, onDelete }) => {
                         fontFamily: "'Inter', sans-serif",
                         color: '#2C2C2C',
                         backgroundColor: '#FFFFFF',
-                        border: focusedInput === 'fertilizing' ? '2px solid #7CB342' : '2px solid #E0E0E0',
+                        border: focusedInput === 'fertilizing' ? '2px solid #16A34A' : '2px solid #E0E0E0',
                         borderRadius: '8px',
                         outline: 'none',
                         textAlign: 'center',
@@ -761,15 +754,7 @@ const EditPlant = ({ plant, onClose, onSave, onDelete }) => {
                     gap: '8px',
                   }}
                 >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                    <path
-                      d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14zM10 11v6M14 11v6"
-                      stroke="#DC2626"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
+                  <Trash size={20} weight="regular" color="#DC2626" />
                   Hapus Tanaman
                 </button>
               )}

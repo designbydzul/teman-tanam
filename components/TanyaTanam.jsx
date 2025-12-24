@@ -193,15 +193,14 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
     const handleViewportResize = () => {
       if (window.visualViewport && containerRef.current) {
         const viewportHeight = window.visualViewport.height;
-        const viewportOffsetTop = window.visualViewport.offsetTop;
 
-        // Set container height to match visual viewport
+        // Set container height to match visual viewport, but keep top at 0
+        // This prevents the header from going off-screen when keyboard opens
         containerRef.current.style.height = `${viewportHeight}px`;
-        containerRef.current.style.top = `${viewportOffsetTop}px`;
 
         // Calculate if keyboard is open
         const windowHeight = window.innerHeight;
-        const newKeyboardHeight = windowHeight - viewportHeight - viewportOffsetTop;
+        const newKeyboardHeight = windowHeight - viewportHeight;
         setKeyboardHeight(newKeyboardHeight > 50 ? newKeyboardHeight : 0);
 
         // Auto-scroll chat to bottom when keyboard opens
@@ -249,25 +248,25 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
   // Normalize plant data (includes all info needed for enhanced context)
   const plantData = selectedPlant
     ? {
-        id: selectedPlant.id,
-        name: selectedPlant.customName || selectedPlant.name,
-        species: {
-          name: selectedPlant.species?.name || null,
-          scientific: selectedPlant.species?.scientific || null,
-          wateringFrequencyDays: selectedPlant.species?.wateringFrequencyDays || 3,
-          fertilizingFrequencyDays: selectedPlant.species?.fertilizingFrequencyDays || 14,
-        },
-        speciesEmoji: selectedPlant.species?.emoji || '🌱',
-        location: selectedPlant.location || null,
-        plantedDate: selectedPlant.plantedDate || null,
-        coverPhotoUrl: selectedPlant.photoUrl || (selectedPlant.image !== null && selectedPlant.image) || null,
-        notes: selectedPlant.notes || null,
-        lastWatered: selectedPlant.lastWatered || null,
-        lastFertilized: selectedPlant.lastFertilized || null,
-        // Custom care frequencies (override species defaults)
-        customWateringDays: selectedPlant.customWateringDays || null,
-        customFertilizingDays: selectedPlant.customFertilizingDays || null,
-      }
+      id: selectedPlant.id,
+      name: selectedPlant.customName || selectedPlant.name,
+      species: {
+        name: selectedPlant.species?.name || null,
+        scientific: selectedPlant.species?.scientific || null,
+        wateringFrequencyDays: selectedPlant.species?.wateringFrequencyDays || 3,
+        fertilizingFrequencyDays: selectedPlant.species?.fertilizingFrequencyDays || 14,
+      },
+      speciesEmoji: selectedPlant.species?.emoji || '🌱',
+      location: selectedPlant.location || null,
+      plantedDate: selectedPlant.plantedDate || null,
+      coverPhotoUrl: selectedPlant.photoUrl || (selectedPlant.image !== null && selectedPlant.image) || null,
+      notes: selectedPlant.notes || null,
+      lastWatered: selectedPlant.lastWatered || null,
+      lastFertilized: selectedPlant.lastFertilized || null,
+      // Custom care frequencies (override species defaults)
+      customWateringDays: selectedPlant.customWateringDays || null,
+      customFertilizingDays: selectedPlant.customFertilizingDays || null,
+    }
     : null;
 
   // Calculate days since planted
@@ -519,6 +518,8 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
+        top: 0,
+        bottom: 'auto',
       }}
     >
       {/* Header - Matches PlantDetail header layout exactly */}
@@ -701,7 +702,7 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
                           margin: '0 0 4px 0',
                         }}
                       >
-                        {plantData.species}
+                        {plantData.species?.name || plantData.species?.scientific}
                       </p>
                       <p
                         style={{

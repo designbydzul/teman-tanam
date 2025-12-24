@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, ChartBar } from '@phosphor-icons/react';
+import { User, ChartBar, X, PencilSimple, MapPin, Question, Play, SignOut } from '@phosphor-icons/react';
 import { auth } from '@/lib/supabase';
 
 const ProfileModal = ({
@@ -117,14 +117,7 @@ const ProfileModal = ({
                 cursor: 'pointer',
               }}
             >
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <path
-                  d="M15 5L5 15M5 5l10 10"
-                  stroke="#666666"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-              </svg>
+              <X size={20} weight="bold" color="#666666" />
             </button>
 
             {/* Profile Picture */}
@@ -201,22 +194,7 @@ const ProfileModal = ({
                 onMouseEnter={(e) => (e.target.style.backgroundColor = '#F5F5F5')}
                 onMouseLeave={(e) => (e.target.style.backgroundColor = '#FFFFFF')}
               >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <path
-                    d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"
-                    stroke="#2C2C2C"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"
-                    stroke="#2C2C2C"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
+                <PencilSimple size={24} weight="regular" color="#2C2C2C" />
                 <span
                   style={{
                     fontFamily: "'Inter', sans-serif",
@@ -247,24 +225,7 @@ const ProfileModal = ({
                 onMouseEnter={(e) => (e.target.style.backgroundColor = '#F5F5F5')}
                 onMouseLeave={(e) => (e.target.style.backgroundColor = '#FFFFFF')}
               >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <path
-                    d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"
-                    stroke="#2C2C2C"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <circle
-                    cx="12"
-                    cy="10"
-                    r="3"
-                    stroke="#2C2C2C"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
+                <MapPin size={24} weight="regular" color="#2C2C2C" />
                 <span
                   style={{
                     fontFamily: "'Inter', sans-serif",
@@ -295,24 +256,7 @@ const ProfileModal = ({
                 onMouseEnter={(e) => (e.target.style.backgroundColor = '#F5F5F5')}
                 onMouseLeave={(e) => (e.target.style.backgroundColor = '#FFFFFF')}
               >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <circle
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="#2C2C2C"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3M12 17h.01"
-                    stroke="#2C2C2C"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
+                <Question size={24} weight="regular" color="#2C2C2C" />
                 <span
                   style={{
                     fontFamily: "'Inter', sans-serif",
@@ -343,21 +287,7 @@ const ProfileModal = ({
                 onMouseEnter={(e) => (e.target.style.backgroundColor = '#F5F5F5')}
                 onMouseLeave={(e) => (e.target.style.backgroundColor = '#FFFFFF')}
               >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <circle
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="#2C2C2C"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <polygon
-                    points="10 8 16 12 10 16 10 8"
-                    fill="#2C2C2C"
-                  />
-                </svg>
+                <Play size={24} weight="fill" color="#2C2C2C" />
                 <span
                   style={{
                     fontFamily: "'Inter', sans-serif",
@@ -443,15 +373,7 @@ const ProfileModal = ({
                   marginTop: '12px',
                 }}
               >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <path
-                    d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"
-                    stroke="#DC2626"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
+                <SignOut size={24} weight="regular" color="#DC2626" />
                 <span
                   style={{
                     fontFamily: "'Inter', sans-serif",
