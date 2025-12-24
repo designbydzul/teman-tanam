@@ -518,6 +518,7 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
         zIndex: 10000,
         backgroundColor: '#FFFFFF',
         borderBottom: '1px solid #E0E0E0',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
       }}>
         {/* Navigation Row - Same as PlantDetail */}
         <div
