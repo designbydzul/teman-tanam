@@ -59,46 +59,49 @@ const ProfileModal = ({
         <>
           {/* Backdrop */}
           <motion.div
+            className="ios-fixed-container"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
             style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
               backgroundColor: 'rgba(0, 0, 0, 0.5)',
               zIndex: 1000,
             }}
           />
 
-          {/* Modal Sheet */}
-          <motion.div
-            initial={{ y: '100%' }}
-            animate={{ y: 0 }}
-            exit={{ y: '100%' }}
-            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+          {/* Modal Sheet Container - for centering */}
+          <div
             style={{
               position: 'fixed',
               bottom: 0,
-              left: 0,
-              right: 0,
-              backgroundColor: '#FFFFFF',
-              borderRadius: '12px 12px 0 0',
-              padding: '24px',
-              maxHeight: '85vh',
-              overflowY: 'auto',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: '100%',
+              maxWidth: 'var(--app-max-width)',
               zIndex: 1001,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
             }}
           >
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              style={{
+                backgroundColor: '#FFFFFF',
+                borderRadius: '12px 12px 0 0',
+                padding: '24px',
+                maxHeight: '85vh',
+                overflowY: 'auto',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+              }}
+            >
             {/* Close Button */}
             <button
               onClick={onClose}
+              aria-label="Tutup"
               style={{
                 position: 'absolute',
                 top: '20px',
@@ -462,6 +465,7 @@ const ProfileModal = ({
               </button>
             </div>
           </motion.div>
+          </div>
         </>
       )}
     </AnimatePresence>

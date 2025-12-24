@@ -29,7 +29,15 @@ export const colors = {
   success: '#4CAF50',
   warning: '#FF9800',
   error: '#F44336',
+  errorDark: '#DC2626',  // For delete/logout actions
+  errorLight: '#FEF2F2', // Light red background
+  errorBorder: '#FEE2E2', // Light red border
   info: '#2196F3',
+
+  // Offline/Sync Colors
+  offline: '#E65100',
+  offlineLight: '#FFF3E0',
+  sync: '#3B82F6',
 } as const;
 
 /* ==================== TYPOGRAPHY ==================== */
@@ -90,6 +98,19 @@ export const radius = {
   full: '9999px',
 } as const;
 
+/* ==================== Z-INDEX ==================== */
+
+export const zIndex = {
+  dropdown: 100,
+  sticky: 200,
+  fixed: 300,
+  modalBackdrop: 400,
+  modal: 500,
+  popover: 600,
+  tooltip: 700,
+  toast: 800,
+} as const;
+
 /* ==================== SHADOWS ==================== */
 
 export const shadows = {
@@ -118,6 +139,7 @@ export const theme = {
   typography,
   spacing,
   radius,
+  zIndex,
   shadows,
   transitions,
 } as const;

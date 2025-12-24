@@ -158,16 +158,12 @@ const EditPlant = ({ plant, onClose, onSave, onDelete }) => {
     <AnimatePresence>
       <motion.div
         key="edit-plant-form-backdrop"
+        className="ios-fixed-container"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
         style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
           backgroundColor: 'rgba(0, 0, 0, 0.5)',
           zIndex: 3000,
           display: 'flex',
@@ -208,6 +204,7 @@ const EditPlant = ({ plant, onClose, onSave, onDelete }) => {
             {/* Close Button */}
             <button
               onClick={onClose}
+              aria-label="Tutup"
               style={{
                 position: 'absolute',
                 top: '20px',
@@ -833,16 +830,12 @@ const EditPlant = ({ plant, onClose, onSave, onDelete }) => {
             {/* Backdrop */}
             <motion.div
               key="delete-confirm-backdrop"
+              className="ios-fixed-container"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowDeleteConfirm(false)}
               style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
                 backgroundColor: 'rgba(0, 0, 0, 0.5)',
                 zIndex: 4000,
                 display: 'flex',

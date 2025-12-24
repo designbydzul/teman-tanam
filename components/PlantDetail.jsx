@@ -790,12 +790,8 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
   return (
     <div
       ref={containerRef}
+      className="ios-fixed-container"
       style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
         backgroundColor: '#FFFFFF',
         zIndex: 2000,
         overflow: 'hidden',
@@ -1476,38 +1472,40 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
           <>
             {/* Backdrop */}
             <motion.div
+              className="ios-fixed-container"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowMenu(false)}
               style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
                 backgroundColor: 'rgba(0, 0, 0, 0.5)',
                 zIndex: 1000,
               }}
             />
 
-            {/* Menu Sheet */}
+            {/* Menu Sheet Container - for centering */}
+            <div
+              style={{
+                position: 'fixed',
+                bottom: 0,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '100%',
+                maxWidth: 'var(--app-max-width)',
+                zIndex: 1001,
+              }}
+            >
             <motion.div
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
               style={{
-                position: 'fixed',
-                bottom: 0,
-                left: 0,
-                right: 0,
                 backgroundColor: '#FFFFFF',
                 borderRadius: '12px 12px 0 0',
                 padding: '24px',
                 maxHeight: '70vh',
                 overflowY: 'auto',
-                zIndex: 1001,
               }}
             >
               {/* Header */}
@@ -1759,6 +1757,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                 </span>
               </button>
             </motion.div>
+            </div>
           </>
         )}
       </AnimatePresence>
@@ -1787,6 +1786,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
             {/* Close Button */}
             <button
               onClick={() => setShowImagePreview(false)}
+              aria-label="Tutup"
               style={{
                 position: 'absolute',
                 top: '24px',
@@ -2075,37 +2075,39 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
           <>
             {/* Backdrop */}
             <motion.div
+              className="ios-fixed-container"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowWateringDrawer(false)}
               style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
                 backgroundColor: 'rgba(0, 0, 0, 0.5)',
                 zIndex: 5000,
               }}
             />
 
-            {/* Drawer */}
+            {/* Drawer Container - for centering */}
+            <div
+              style={{
+                position: 'fixed',
+                bottom: 0,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '100%',
+                maxWidth: 'var(--app-max-width)',
+                zIndex: 5001,
+              }}
+            >
             <motion.div
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
               style={{
-                position: 'fixed',
-                bottom: 0,
-                left: 0,
-                right: 0,
                 backgroundColor: '#FFFFFF',
-                borderRadius: '24px 24px 0 0',
+                borderRadius: '12px 12px 0 0',
                 padding: '24px',
                 paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 0px))',
-                zIndex: 5001,
               }}
             >
               {/* Header */}
@@ -2243,6 +2245,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                 </button>
               </div>
             </motion.div>
+            </div>
           </>
         )}
       </AnimatePresence>
@@ -2253,6 +2256,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
           <>
             {/* Backdrop */}
             <motion.div
+              className="ios-fixed-container"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -2263,34 +2267,35 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                 setFertilizingPhotoPreview(null);
               }}
               style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
                 backgroundColor: 'rgba(0, 0, 0, 0.5)',
                 zIndex: 5000,
               }}
             />
 
-            {/* Drawer */}
+            {/* Drawer Container - for centering */}
+            <div
+              style={{
+                position: 'fixed',
+                bottom: 0,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '100%',
+                maxWidth: 'var(--app-max-width)',
+                zIndex: 5001,
+              }}
+            >
             <motion.div
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
               style={{
-                position: 'fixed',
-                bottom: 0,
-                left: 0,
-                right: 0,
                 backgroundColor: '#FFFFFF',
-                borderRadius: '24px 24px 0 0',
+                borderRadius: '12px 12px 0 0',
                 padding: '24px',
                 paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 0px))',
                 maxHeight: '80vh',
                 overflowY: 'auto',
-                zIndex: 5001,
               }}
             >
               {/* Header */}
@@ -2515,6 +2520,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                 </button>
               )}
             </motion.div>
+            </div>
           </>
         )}
       </AnimatePresence>
@@ -2525,6 +2531,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
           <>
             {/* Backdrop */}
             <motion.div
+              className="ios-fixed-container"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -2535,34 +2542,35 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                 setPruningPhotoPreview(null);
               }}
               style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
                 backgroundColor: 'rgba(0, 0, 0, 0.5)',
                 zIndex: 5000,
               }}
             />
 
-            {/* Drawer */}
+            {/* Drawer Container - for centering */}
+            <div
+              style={{
+                position: 'fixed',
+                bottom: 0,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '100%',
+                maxWidth: 'var(--app-max-width)',
+                zIndex: 5001,
+              }}
+            >
             <motion.div
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
               style={{
-                position: 'fixed',
-                bottom: 0,
-                left: 0,
-                right: 0,
                 backgroundColor: '#FFFFFF',
-                borderRadius: '24px 24px 0 0',
+                borderRadius: '12px 12px 0 0',
                 padding: '24px',
                 paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 0px))',
                 maxHeight: '80vh',
                 overflowY: 'auto',
-                zIndex: 5001,
               }}
             >
               {/* Header */}
@@ -2722,6 +2730,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                 </span>
               </button>
             </motion.div>
+            </div>
           </>
         )}
       </AnimatePresence>
@@ -2732,6 +2741,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
           <>
             {/* Backdrop */}
             <motion.div
+              className="ios-fixed-container"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -2754,11 +2764,6 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                 setOtherActionPhotoPreview(null);
               }}
               style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
                 backgroundColor: 'rgba(0, 0, 0, 0.5)',
                 zIndex: 5000,
                 cursor: 'pointer',
@@ -2766,7 +2771,18 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
               }}
             />
 
-            {/* Drawer */}
+            {/* Drawer Container - for centering */}
+            <div
+              style={{
+                position: 'fixed',
+                bottom: 0,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '100%',
+                maxWidth: 'var(--app-max-width)',
+                zIndex: 5001,
+              }}
+            >
             <motion.div
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
@@ -2774,17 +2790,12 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
               onClick={(e) => e.stopPropagation()}
               style={{
-                position: 'fixed',
-                bottom: 0,
-                left: 0,
-                right: 0,
                 backgroundColor: '#FFFFFF',
-                borderRadius: '24px 24px 0 0',
+                borderRadius: '12px 12px 0 0',
                 padding: '24px',
                 paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 0px))',
                 maxHeight: '80vh',
                 overflowY: 'auto',
-                zIndex: 5001,
               }}
             >
               {/* Header */}
@@ -2976,6 +2987,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                 </span>
               </button>
             </motion.div>
+            </div>
           </>
         )}
       </AnimatePresence>
@@ -2986,6 +2998,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
           <>
             {/* Backdrop */}
             <motion.div
+              className="ios-fixed-container"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -2994,34 +3007,35 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                 setSelectedHistoryEntry(null);
               }}
               style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
                 backgroundColor: 'rgba(0, 0, 0, 0.5)',
                 zIndex: 5000,
               }}
             />
 
-            {/* Drawer */}
+            {/* Drawer Container - for centering */}
+            <div
+              style={{
+                position: 'fixed',
+                bottom: 0,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '100%',
+                maxWidth: 'var(--app-max-width)',
+                zIndex: 5001,
+              }}
+            >
             <motion.div
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
               style={{
-                position: 'fixed',
-                bottom: 0,
-                left: 0,
-                right: 0,
                 backgroundColor: '#FFFFFF',
-                borderRadius: '24px 24px 0 0',
+                borderRadius: '12px 12px 0 0',
                 padding: '24px',
                 paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 0px))',
                 maxHeight: '80vh',
                 overflowY: 'auto',
-                zIndex: 5001,
               }}
             >
               {/* Header */}
@@ -3231,6 +3245,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                 </span>
               </button>
             </motion.div>
+            </div>
           </>
         )}
       </AnimatePresence>

@@ -144,16 +144,12 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
     <AnimatePresence>
       <motion.div
         key="add-plant-form-backdrop"
+        className="ios-fixed-container"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
         style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
           backgroundColor: 'rgba(0, 0, 0, 0.5)',
           zIndex: 1001,
           display: 'flex',
@@ -194,6 +190,7 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
             {/* Close Button */}
             <button
               onClick={onClose}
+              aria-label="Tutup"
               style={{
                 position: 'absolute',
                 top: '20px',

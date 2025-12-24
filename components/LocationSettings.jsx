@@ -342,12 +342,8 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
 
   return (
     <div
+      className="ios-fixed-container"
       style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
         backgroundColor: '#FFFFFF',
         zIndex: 3000,
         overflowY: 'auto',
@@ -633,41 +629,45 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
         {showAddModal && (
           <>
             <motion.div
+              className="ios-fixed-container"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => !isSubmitting && setShowAddModal(false)}
               style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
                 backgroundColor: 'rgba(0, 0, 0, 0.5)',
                 zIndex: 1000,
               }}
             />
 
+            {/* Modal Container - for centering */}
+            <div
+              style={{
+                position: 'fixed',
+                bottom: 0,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '100%',
+                maxWidth: 'var(--app-max-width)',
+                zIndex: 1001,
+              }}
+            >
             <motion.div
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
               style={{
-                position: 'fixed',
-                bottom: 0,
-                left: 0,
-                right: 0,
                 backgroundColor: '#FFFFFF',
                 borderRadius: '12px 12px 0 0',
                 padding: '24px',
-                zIndex: 1001,
               }}
             >
               {/* Close Button */}
               <button
                 onClick={() => !isSubmitting && setShowAddModal(false)}
                 disabled={isSubmitting}
+                aria-label="Tutup"
                 style={{
                   position: 'absolute',
                   top: '20px',
@@ -768,6 +768,7 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
                 {isSubmitting ? 'Menyimpan...' : 'Simpan'}
               </button>
             </motion.div>
+            </div>
           </>
         )}
       </AnimatePresence>
@@ -776,16 +777,12 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
       <AnimatePresence>
         {showDeleteConfirmModal && locationToDelete && (
           <motion.div
+            className="ios-fixed-container"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => !isDeleting && setShowDeleteConfirmModal(false)}
             style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
               backgroundColor: 'rgba(0, 0, 0, 0.5)',
               zIndex: 1000,
               display: 'flex',
@@ -881,43 +878,47 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
         {showMovePlantsModal && locationToDelete && (
           <>
             <motion.div
+              className="ios-fixed-container"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => !isDeleting && setShowMovePlantsModal(false)}
               style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
                 backgroundColor: 'rgba(0, 0, 0, 0.5)',
                 zIndex: 1000,
               }}
             />
 
+            {/* Modal Container - for centering */}
+            <div
+              style={{
+                position: 'fixed',
+                bottom: 0,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '100%',
+                maxWidth: 'var(--app-max-width)',
+                zIndex: 1001,
+              }}
+            >
             <motion.div
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
               style={{
-                position: 'fixed',
-                bottom: 0,
-                left: 0,
-                right: 0,
                 backgroundColor: '#FFFFFF',
                 borderRadius: '12px 12px 0 0',
                 padding: '24px',
                 maxHeight: '80vh',
                 overflowY: 'auto',
-                zIndex: 1001,
               }}
             >
               {/* Close Button */}
               <button
                 onClick={() => !isDeleting && setShowMovePlantsModal(false)}
                 disabled={isDeleting}
+                aria-label="Tutup"
                 style={{
                   position: 'absolute',
                   top: '20px',
@@ -1047,6 +1048,7 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
                 </button>
               </div>
             </motion.div>
+            </div>
           </>
         )}
       </AnimatePresence>

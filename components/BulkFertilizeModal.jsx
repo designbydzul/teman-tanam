@@ -82,40 +82,42 @@ const BulkFertilizeModal = ({
 
           {/* Backdrop */}
           <motion.div
+            className="ios-fixed-container"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={handleClose}
             style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
               backgroundColor: 'rgba(0, 0, 0, 0.5)',
               zIndex: 5000,
             }}
           />
 
-          {/* Modal */}
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 50 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+          {/* Modal Container - for centering */}
+          <div
             style={{
               position: 'fixed',
               bottom: 0,
-              left: 0,
-              right: 0,
-              backgroundColor: '#FFFFFF',
-              borderRadius: '24px 24px 0 0',
-              padding: '24px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: '100%',
+              maxWidth: 'var(--app-max-width)',
               zIndex: 5001,
-              maxHeight: '90vh',
-              overflowY: 'auto',
             }}
           >
+            <motion.div
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 50 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              style={{
+                backgroundColor: '#FFFFFF',
+                borderRadius: '12px 12px 0 0',
+                padding: '24px',
+                maxHeight: '90vh',
+                overflowY: 'auto',
+              }}
+            >
             {/* Header */}
             <div
               style={{
@@ -414,6 +416,7 @@ const BulkFertilizeModal = ({
               </button>
             </div>
           </motion.div>
+          </div>
         </>
       )}
     </AnimatePresence>

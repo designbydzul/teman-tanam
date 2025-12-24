@@ -229,12 +229,8 @@ const EditProfile = ({ onBack, userName, userEmail, userPhoto, onSave, onProfile
 
   return (
     <div
+      className="ios-fixed-container"
       style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
         backgroundColor: '#FFFFFF',
         zIndex: 3000,
         display: 'flex',

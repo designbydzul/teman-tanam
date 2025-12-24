@@ -780,12 +780,8 @@ const Home = ({ userName }) => {
 
   return (
     <div
+      className="ios-fixed-container"
       style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
         backgroundColor: '#FAFAFA',
         visibility: showTanyaTanamModal ? 'hidden' : 'visible',
         display: 'flex',
@@ -1655,9 +1651,10 @@ const Home = ({ userName }) => {
             exit={{ scale: 0, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 300, damping: 20 }}
             style={{
-              position: 'fixed',
+              position: 'absolute',
               bottom: '24px',
               right: '24px',
+              zIndex: 100,
             }}
           >
             <button
@@ -2067,38 +2064,40 @@ const Home = ({ userName }) => {
           <>
             {/* Backdrop */}
             <motion.div
+              className="ios-fixed-container"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowMoreMenu(false)}
               style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
                 backgroundColor: 'rgba(0, 0, 0, 0.5)',
                 zIndex: 5000,
               }}
             />
 
-            {/* Drawer */}
+            {/* Drawer Container - for centering */}
+            <div
+              style={{
+                position: 'fixed',
+                bottom: 0,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '100%',
+                maxWidth: 'var(--app-max-width)',
+                zIndex: 5001,
+              }}
+            >
             <motion.div
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
               style={{
-                position: 'fixed',
-                bottom: 0,
-                left: 0,
-                right: 0,
                 backgroundColor: '#FFFFFF',
                 borderTopLeftRadius: '24px',
                 borderTopRightRadius: '24px',
                 padding: '24px',
                 paddingBottom: 'max(24px, env(safe-area-inset-bottom))',
-                zIndex: 5001,
               }}
             >
               {/* Header */}
@@ -2291,6 +2290,7 @@ const Home = ({ userName }) => {
                 </button>
               </div>
             </motion.div>
+            </div>
           </>
         )}
       </AnimatePresence>
@@ -2584,35 +2584,37 @@ const Home = ({ userName }) => {
           <>
             {/* Backdrop */}
             <motion.div
+              className="ios-fixed-container"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowLocationDropdown(false)}
               style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
                 backgroundColor: 'rgba(0, 0, 0, 0.5)',
                 zIndex: 5000,
               }}
             />
-            {/* Bottom Sheet */}
+            {/* Bottom Sheet Container - for centering */}
+            <div
+              style={{
+                position: 'fixed',
+                bottom: 0,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '100%',
+                maxWidth: 'var(--app-max-width)',
+                zIndex: 5001,
+              }}
+            >
             <motion.div
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
               style={{
-                position: 'fixed',
-                bottom: 0,
-                left: 0,
-                right: 0,
                 backgroundColor: '#FFFFFF',
                 borderTopLeftRadius: '24px',
                 borderTopRightRadius: '24px',
-                zIndex: 5001,
                 maxHeight: '70vh',
                 overflow: 'hidden',
                 display: 'flex',
@@ -2786,6 +2788,7 @@ const Home = ({ userName }) => {
                 </button>
               </div>
             </motion.div>
+            </div>
           </>
         )}
       </AnimatePresence>
@@ -2796,35 +2799,37 @@ const Home = ({ userName }) => {
           <>
             {/* Backdrop */}
             <motion.div
+              className="ios-fixed-container"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowStatusDropdown(false)}
               style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
                 backgroundColor: 'rgba(0, 0, 0, 0.5)',
                 zIndex: 5000,
               }}
             />
-            {/* Bottom Sheet */}
+            {/* Bottom Sheet Container - for centering */}
+            <div
+              style={{
+                position: 'fixed',
+                bottom: 0,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '100%',
+                maxWidth: 'var(--app-max-width)',
+                zIndex: 5001,
+              }}
+            >
             <motion.div
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
               style={{
-                position: 'fixed',
-                bottom: 0,
-                left: 0,
-                right: 0,
                 backgroundColor: '#FFFFFF',
                 borderTopLeftRadius: '24px',
                 borderTopRightRadius: '24px',
-                zIndex: 5001,
                 maxHeight: '70vh',
                 overflow: 'hidden',
                 display: 'flex',
@@ -2933,6 +2938,7 @@ const Home = ({ userName }) => {
                 ))}
               </div>
             </motion.div>
+            </div>
           </>
         )}
       </AnimatePresence>

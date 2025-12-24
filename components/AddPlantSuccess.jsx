@@ -4,14 +4,10 @@ import { motion } from 'framer-motion';
 const AddPlantSuccess = ({ plantData, onViewDetails, onAddNew, onBackHome }) => {
   return (
     <motion.div
+      className="ios-fixed-container"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
         zIndex: 1002,
         display: 'flex',

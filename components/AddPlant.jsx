@@ -40,15 +40,11 @@ const AddPlant = ({ onClose, onSelectSpecies }) => {
 
   return (
     <motion.div
+      className="ios-fixed-container"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
         backgroundColor: '#FFFFFF',
         zIndex: 1000,
       }}
