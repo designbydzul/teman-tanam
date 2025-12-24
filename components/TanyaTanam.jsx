@@ -178,13 +178,50 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
   const inputRef = useRef(null);
   const containerRef = useRef(null);
 
-  // Simple scroll lock - let keyboard behave naturally without manipulating layout
+  // Handle iOS keyboard and lock body scroll
   useEffect(() => {
     const originalStyle = document.body.style.cssText;
     document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.width = '100%';
+    document.body.style.top = '0';
+
+    // Track keyboard using visualViewport - only listen to resize, not scroll
+    const handleViewportResize = () => {
+      if (window.visualViewport && containerRef.current) {
+        const viewportHeight = window.visualViewport.height;
+        const viewportOffsetTop = window.visualViewport.offsetTop;
+
+        // Set container height to match visual viewport
+        // DO NOT set top position - this keeps UI fixed in place when keyboard appears
+        containerRef.current.style.height = `${viewportHeight}px`;
+
+        // Calculate if keyboard is open
+        const windowHeight = window.innerHeight;
+        const newKeyboardHeight = windowHeight - viewportHeight - viewportOffsetTop;
+        setKeyboardHeight(newKeyboardHeight > 0 ? newKeyboardHeight : 0);
+
+        // Auto-scroll chat to bottom when keyboard opens
+        if (newKeyboardHeight > 50 && chatAreaRef.current) {
+          setTimeout(() => {
+            if (chatAreaRef.current) {
+              chatAreaRef.current.scrollTop = chatAreaRef.current.scrollHeight;
+            }
+          }, 50);
+        }
+      }
+    };
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleViewportResize);
+      handleViewportResize();
+    }
 
     return () => {
       document.body.style.cssText = originalStyle;
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', handleViewportResize);
+      }
     };
   }, []);
 

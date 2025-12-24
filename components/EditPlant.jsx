@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import LocationSettings from './LocationSettings';
 import { useLocations } from '@/hooks/useLocations';
+import { useKeyboardHeight } from '@/hooks/useKeyboardHeight';
 import { Drop, Leaf, ArrowCounterClockwise, X, Trash } from '@phosphor-icons/react';
 
 const EditPlant = ({ plant, onClose, onSave, onDelete }) => {
@@ -23,6 +24,9 @@ const EditPlant = ({ plant, onClose, onSave, onDelete }) => {
   const [showLocationSettings, setShowLocationSettings] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const dateInputRef = useRef(null);
+
+  // Track keyboard height for mobile UX
+  const keyboardHeight = useKeyboardHeight();
 
   // Get locations from Supabase via useLocations hook
   const { locations: supabaseLocations, refetch: refetchLocations } = useLocations();
@@ -164,6 +168,11 @@ const EditPlant = ({ plant, onClose, onSave, onDelete }) => {
         exit={{ opacity: 0 }}
         onClick={onClose}
         style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: keyboardHeight > 0 ? `${keyboardHeight}px` : 0,
           backgroundColor: 'rgba(0, 0, 0, 0.5)',
           zIndex: 3000,
           display: 'flex',
@@ -178,7 +187,7 @@ const EditPlant = ({ plant, onClose, onSave, onDelete }) => {
           onClick={(e) => e.stopPropagation()}
           style={{
             width: '100%',
-            height: '95vh',
+            height: keyboardHeight > 0 ? `calc(95vh - ${keyboardHeight}px)` : '95vh',
             backgroundColor: '#FFFFFF',
             borderRadius: '12px 12px 0 0',
             display: 'flex',
