@@ -466,24 +466,19 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
   const hasInput = inputText.trim().length > 0 || attachedImages.length > 0;
 
   return (
-    <div
-      style={{
+    <>
+      {/* Header - Fixed at top, never scrolls */}
+      <div style={{
         position: 'fixed',
         top: 0,
         left: '50%',
         transform: 'translateX(-50%)',
         width: '100%',
         maxWidth: 'var(--app-max-width)',
-        height: '100vh',
-        height: '100dvh', // Dynamic viewport height - adjusts when keyboard appears
+        zIndex: 10000,
         backgroundColor: '#FFFFFF',
-        zIndex: 9999,
-        display: 'flex',
-        flexDirection: 'column',
-      }}
-    >
-      {/* Header - Fixed at top, never scrolls */}
-      <div style={{ position: 'sticky', top: 0, zIndex: 10, backgroundColor: '#FFFFFF', flexShrink: 0, borderBottom: '1px solid #E0E0E0' }}>
+        borderBottom: '1px solid #E0E0E0'
+      }}>
         {/* Navigation Row - Same as PlantDetail */}
         <div
           style={{
@@ -549,9 +544,27 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
         </div>
       </div>
 
-      {/* Chat Content Area */}
+      {/* Main Container */}
       <div
-        ref={chatAreaRef}
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: '100%',
+          maxWidth: 'var(--app-max-width)',
+          height: '100vh',
+          height: '100dvh', // Dynamic viewport height - adjusts when keyboard appears
+          backgroundColor: '#FFFFFF',
+          zIndex: 9999,
+          display: 'flex',
+          flexDirection: 'column',
+          paddingTop: '88px', // Space for fixed header (24px padding top + 40px button + 24px padding bottom)
+        }}
+      >
+        {/* Chat Content Area */}
+        <div
+          ref={chatAreaRef}
         style={{
           flex: 1,
           overflowY: 'auto',
@@ -1198,13 +1211,14 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
         )}
       </AnimatePresence>
 
-      {/* Offline Modal */}
-      <OfflineModal
-        isOpen={showOfflineModal}
-        onClose={() => setShowOfflineModal(false)}
-        featureName="Tanya Tanam"
-      />
-    </div>
+        {/* Offline Modal */}
+        <OfflineModal
+          isOpen={showOfflineModal}
+          onClose={() => setShowOfflineModal(false)}
+          featureName="Tanya Tanam"
+        />
+      </div>
+    </>
   );
 };
 
