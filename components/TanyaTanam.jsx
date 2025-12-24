@@ -179,7 +179,7 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
   const inputRef = useRef(null);
   const containerRef = useRef(null);
 
-  // Handle iOS keyboard and lock body scroll
+  // Handle iOS keyboard - use dvh units and avoid manual height manipulation
   useEffect(() => {
     // Lock body scroll when TanyaTanam opens
     const originalStyle = document.body.style.cssText;
@@ -188,19 +188,15 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
     document.body.style.width = '100%';
     document.body.style.top = '0';
 
-    // Track keyboard using visualViewport - only listen to resize, not scroll
-    // The scroll event fires too frequently during normal scrolling and causes errors
+    // On iOS, track keyboard state for padding adjustments only
+    // Don't manipulate container height - let CSS handle it with 100dvh
     const handleViewportResize = () => {
-      if (window.visualViewport && containerRef.current) {
+      if (window.visualViewport) {
         const viewportHeight = window.visualViewport.height;
-
-        // Set container height to match visual viewport, but keep top at 0
-        // This prevents the header from going off-screen when keyboard opens
-        containerRef.current.style.height = `${viewportHeight}px`;
-
-        // Calculate if keyboard is open
         const windowHeight = window.innerHeight;
         const newKeyboardHeight = windowHeight - viewportHeight;
+
+        // Only set keyboard height for state tracking (used for padding)
         setKeyboardHeight(newKeyboardHeight > 50 ? newKeyboardHeight : 0);
 
         // Auto-scroll chat to bottom when keyboard opens
@@ -209,16 +205,13 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
             if (chatAreaRef.current) {
               chatAreaRef.current.scrollTop = chatAreaRef.current.scrollHeight;
             }
-          }, 50);
+          }, 100);
         }
       }
     };
 
     if (window.visualViewport) {
-      // Only listen to resize events for keyboard detection
-      // Removed scroll listener as it causes issues during chat scrolling
       window.visualViewport.addEventListener('resize', handleViewportResize);
-      // Initial call
       handleViewportResize();
     }
 
@@ -511,15 +504,19 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
   return (
     <div
       ref={containerRef}
-      className="ios-fixed-container"
       style={{
+        position: 'fixed',
+        top: 0,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: '100%',
+        maxWidth: 'var(--app-max-width)',
+        height: '100dvh',
         backgroundColor: '#FFFFFF',
         zIndex: 9999,
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
-        top: 0,
-        bottom: 'auto',
       }}
     >
       {/* Header - Matches PlantDetail header layout exactly */}
