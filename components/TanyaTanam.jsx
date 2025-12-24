@@ -193,8 +193,10 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
     const handleViewportResize = () => {
       if (window.visualViewport) {
         const viewportHeight = window.visualViewport.height;
+        const viewportOffsetTop = window.visualViewport.offsetTop;
         const windowHeight = window.innerHeight;
-        const newKeyboardHeight = windowHeight - viewportHeight;
+        // Include offsetTop to account for iOS Safari viewport scroll
+        const newKeyboardHeight = windowHeight - viewportHeight - viewportOffsetTop;
 
         // Only set keyboard height for state tracking (used for padding)
         setKeyboardHeight(newKeyboardHeight > 50 ? newKeyboardHeight : 0);
