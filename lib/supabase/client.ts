@@ -17,13 +17,13 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 // Browser client for client-side operations
-// Using implicit flow - tokens returned directly in URL hash
+// Using PKCE flow - more secure for server-side rendered apps
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true,
-    flowType: 'implicit',
+    flowType: 'pkce',
   },
 });
 
@@ -54,8 +54,8 @@ export const auth = {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        // For implicit flow, redirect to home - tokens come in URL hash
-        redirectTo: `${window.location.origin}/`,
+        // For PKCE flow, redirect to callback route for code exchange
+        redirectTo: `${window.location.origin}/auth/callback`,
       },
     });
 
