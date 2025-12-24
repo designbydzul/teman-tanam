@@ -53,6 +53,7 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
   const [imageError, setImageError] = useState(null);
   const [careHistory, setCareHistory] = useState([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   // Constants for image handling
   const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
