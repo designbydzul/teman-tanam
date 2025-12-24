@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ArrowLeft, UploadSimple, CircleNotch } from '@phosphor-icons/react';
 import { useAuth } from '@/hooks/useAuth';
-import { useKeyboardHeight } from '@/hooks/useKeyboardHeight';
 import { supabase } from '@/lib/supabase';
 
 // Add spin animation style
@@ -27,9 +26,6 @@ const EditProfile = ({ onBack, userName, userEmail, userPhoto, onSave, onProfile
   const [isProcessingPhoto, setIsProcessingPhoto] = useState(false);
   const [photoError, setPhotoError] = useState(null);
   const fileInputRef = useRef(null);
-
-  // Track keyboard height for mobile UX
-  const keyboardHeight = useKeyboardHeight();
 
   // Compress and resize image for profile photo
   const compressImage = (file) => {
@@ -235,11 +231,8 @@ const EditProfile = ({ onBack, userName, userEmail, userPhoto, onSave, onProfile
     <div
       className="ios-fixed-container"
       style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: keyboardHeight > 0 ? `${keyboardHeight}px` : 0,
+        height: '100vh',
+        height: '100dvh', // Dynamic viewport height - adjusts when keyboard appears
         backgroundColor: '#FFFFFF',
         zIndex: 3000,
         display: 'flex',

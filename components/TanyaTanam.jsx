@@ -53,7 +53,6 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
   const [imageError, setImageError] = useState(null);
   const [careHistory, setCareHistory] = useState([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   // Constants for image handling
   const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -177,52 +176,14 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
   const chatAreaRef = useRef(null);
   const fileInputRef = useRef(null);
   const inputRef = useRef(null);
-  const containerRef = useRef(null);
 
-  // Handle iOS keyboard and lock body scroll
+  // Lock body scroll when TanyaTanam is open
   useEffect(() => {
     const originalStyle = document.body.style.cssText;
     document.body.style.overflow = 'hidden';
-    document.body.style.position = 'fixed';
-    document.body.style.width = '100%';
-    document.body.style.top = '0';
-
-    // Track keyboard using visualViewport - only listen to resize, not scroll
-    const handleViewportResize = () => {
-      if (window.visualViewport && containerRef.current) {
-        const viewportHeight = window.visualViewport.height;
-        const viewportOffsetTop = window.visualViewport.offsetTop;
-
-        // Set container height to match visual viewport
-        // DO NOT set top position - this keeps UI fixed in place when keyboard appears
-        containerRef.current.style.height = `${viewportHeight}px`;
-
-        // Calculate if keyboard is open
-        const windowHeight = window.innerHeight;
-        const newKeyboardHeight = windowHeight - viewportHeight - viewportOffsetTop;
-        setKeyboardHeight(newKeyboardHeight > 0 ? newKeyboardHeight : 0);
-
-        // Auto-scroll chat to bottom when keyboard opens
-        if (newKeyboardHeight > 50 && chatAreaRef.current) {
-          setTimeout(() => {
-            if (chatAreaRef.current) {
-              chatAreaRef.current.scrollTop = chatAreaRef.current.scrollHeight;
-            }
-          }, 50);
-        }
-      }
-    };
-
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', handleViewportResize);
-      handleViewportResize();
-    }
 
     return () => {
       document.body.style.cssText = originalStyle;
-      if (window.visualViewport) {
-        window.visualViewport.removeEventListener('resize', handleViewportResize);
-      }
     };
   }, []);
 
@@ -506,7 +467,6 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
 
   return (
     <div
-      ref={containerRef}
       style={{
         position: 'fixed',
         top: 0,
@@ -514,7 +474,8 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
         transform: 'translateX(-50%)',
         width: '100%',
         maxWidth: 'var(--app-max-width)',
-        height: '100%',
+        height: '100vh',
+        height: '100dvh', // Dynamic viewport height - adjusts when keyboard appears
         backgroundColor: '#FFFFFF',
         zIndex: 9999,
         display: 'flex',
