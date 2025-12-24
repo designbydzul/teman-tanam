@@ -5,7 +5,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase, auth } from '@/lib/supabase';
 import { createDebugger } from '@/lib/debug';
 import { TIMEOUTS } from '@/lib/constants';
-import type { Profile, UseAuthReturn, EmailFrequency } from '@/types';
+import type { Profile, UseAuthReturn } from '@/types';
 
 const debug = createDebugger('useAuth');
 
@@ -337,7 +337,7 @@ export function useAuth(): UseAuthReturn {
         debug.log('Profile updated:', profileData);
       } catch (profileErr) {
         debug.error('Profile update failed or timed out:', profileErr);
-        profileData = { id: user.id, display_name: displayName, avatar_url: null, show_statistics: true, email_notifications: false, email_frequency: 'none' as const, updated_at: new Date().toISOString() };
+        profileData = { id: user.id, display_name: displayName, avatar_url: null, show_statistics: true, updated_at: new Date().toISOString() };
         debug.log('Using fallback profile data');
       }
 
@@ -387,7 +387,7 @@ export function useAuth(): UseAuthReturn {
 
       // Even on error, try to complete onboarding locally
       debug.log('Attempting local fallback for onboarding');
-      const fallbackProfile: Profile = { id: user.id, display_name: displayName, avatar_url: null, show_statistics: true, email_notifications: false, email_frequency: 'none', updated_at: new Date().toISOString() };
+      const fallbackProfile: Profile = { id: user.id, display_name: displayName, avatar_url: null, show_statistics: true, updated_at: new Date().toISOString() };
       setProfile(fallbackProfile);
       setHasCompletedOnboarding(true);
       localStorage.setItem(`onboarding_complete_${user.id}`, 'true');
@@ -497,42 +497,6 @@ export function useAuth(): UseAuthReturn {
     }
   };
 
-  // Update email notification settings
-  const updateEmailNotifications = async (enabled: boolean, frequency: EmailFrequency) => {
-    if (!user) {
-      return { success: false, error: 'Tidak ada user yang login' };
-    }
-
-    debug.log('updateEmailNotifications called:', { enabled, frequency });
-
-    try {
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .upsert({
-          id: user.id,
-          email_notifications: enabled,
-          email_frequency: frequency,
-          updated_at: new Date().toISOString(),
-        }, { onConflict: 'id' })
-        .select()
-        .single();
-
-      if (profileError) {
-        debug.error('Email notifications update error:', profileError);
-        return { success: false, error: profileError.message };
-      }
-
-      debug.log('Email notifications updated:', profileData);
-      setProfile(profileData as Profile);
-
-      return { success: true, profile: profileData as Profile };
-    } catch (err) {
-      const error = err as Error;
-      debug.error('Email notifications update error:', error);
-      return { success: false, error: error.message };
-    }
-  };
-
   return {
     user,
     session,
@@ -547,7 +511,6 @@ export function useAuth(): UseAuthReturn {
     refreshOnboardingStatus,
     updateProfile,
     updateShowStatistics,
-    updateEmailNotifications,
   };
 }
 

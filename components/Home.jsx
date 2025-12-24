@@ -35,7 +35,7 @@ import { colors, radius, typography } from '@/styles/theme';
 
 const Home = ({ userName }) => {
   // Auth hook - get profile from Supabase
-  const { user, profile, updateShowStatistics, updateEmailNotifications } = useAuth();
+  const { user, profile, updateShowStatistics } = useAuth();
 
   // Data hooks - fetch real data from Supabase
   const {
@@ -1757,9 +1757,6 @@ const Home = ({ userName }) => {
         onNavigate={handleProfileNavigation}
         showStats={showHomeStats}
         onToggleStats={handleToggleStats}
-        emailNotifications={profile?.email_notifications || false}
-        emailFrequency={profile?.email_frequency || 'none'}
-        onUpdateEmailNotifications={updateEmailNotifications}
       />
 
       {/* Location Settings */}

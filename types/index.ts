@@ -4,17 +4,12 @@
 
 import { User, Session } from '@supabase/supabase-js';
 
-// Email notification frequency options
-export type EmailFrequency = 'daily' | 'weekly' | 'none';
-
 // Profile from Supabase
 export interface Profile {
   id: string;
   display_name: string | null;
   avatar_url: string | null;
   show_statistics: boolean;
-  email_notifications: boolean;
-  email_frequency: EmailFrequency;
   updated_at: string;
 }
 
@@ -150,7 +145,6 @@ export interface UseAuthReturn {
   refreshOnboardingStatus: () => Promise<boolean>;
   updateProfile: (updates: { displayName?: string; photoUrl?: string }) => Promise<{ success: boolean; profile?: Profile; error?: string }>;
   updateShowStatistics: (showStatistics: boolean) => Promise<{ success: boolean; profile?: Profile; error?: string }>;
-  updateEmailNotifications: (enabled: boolean, frequency: EmailFrequency) => Promise<{ success: boolean; profile?: Profile; error?: string }>;
 }
 
 // Plants hook return type
