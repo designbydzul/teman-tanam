@@ -257,7 +257,7 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
           images: images, // Send base64 images
           plantContextText: enhancedContextText, // Rich formatted context
           chatHistory: currentMessages
-            .filter(m => m.role)
+            .filter(m => m.role && m.content && m.content.trim().length > 0)
             .map(m => ({ role: m.role, content: m.content }))
         })
       });
