@@ -53,6 +53,7 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
   const [imageError, setImageError] = useState(null);
   const [careHistory, setCareHistory] = useState([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   // Constants for image handling
   const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -185,6 +186,28 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
     return () => {
       document.body.style.cssText = originalStyle;
     };
+  }, []);
+
+  // Detect keyboard height on mobile
+  useEffect(() => {
+    const handleResize = () => {
+      // Only run on mobile devices
+      if (typeof window !== 'undefined' && window.visualViewport) {
+        const viewport = window.visualViewport;
+        const keyboardHeight = window.innerHeight - viewport.height;
+        setKeyboardHeight(keyboardHeight > 0 ? keyboardHeight : 0);
+      }
+    };
+
+    if (typeof window !== 'undefined' && window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleResize);
+      window.visualViewport.addEventListener('scroll', handleResize);
+
+      return () => {
+        window.visualViewport.removeEventListener('resize', handleResize);
+        window.visualViewport.removeEventListener('scroll', handleResize);
+      };
+    }
   }, []);
 
   // Helper to format date for AI context
@@ -565,18 +588,19 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
         {/* Chat Content Area */}
         <div
           ref={chatAreaRef}
-        style={{
-          flex: 1,
-          overflowY: 'auto',
-          overflowX: 'hidden',
-          padding: '16px 24px',
-          display: 'flex',
-          flexDirection: 'column',
-          WebkitOverflowScrolling: 'touch',
-          minHeight: 0,
-          touchAction: 'pan-y',
-        }}
-      >
+          style={{
+            flex: 1,
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            padding: '16px 24px',
+            paddingBottom: '120px', // Space for fixed input area
+            display: 'flex',
+            flexDirection: 'column',
+            WebkitOverflowScrolling: 'touch',
+            minHeight: 0,
+            touchAction: 'pan-y',
+          }}
+        >
         {/* Plant Selector Card */}
         {plantData && (
           <div style={{ marginBottom: '24px' }}>
@@ -846,11 +870,18 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
       {/* Input Area */}
       <div
         style={{
-          flexShrink: 0,
+          position: 'fixed',
+          bottom: keyboardHeight > 0 ? `${keyboardHeight}px` : 0,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: '100%',
+          maxWidth: 'var(--app-max-width)',
           backgroundColor: '#FFFFFF',
           borderTop: '1px solid #F5F5F5',
           padding: '16px 24px',
-          paddingBottom: 'max(16px, env(safe-area-inset-bottom))',
+          paddingBottom: keyboardHeight > 0 ? '16px' : 'max(16px, env(safe-area-inset-bottom))',
+          zIndex: 10001,
+          transition: 'bottom 0.3s ease-out',
         }}
       >
         {/* Attached Images Preview */}
