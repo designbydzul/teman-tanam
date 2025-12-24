@@ -49,7 +49,6 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
   const [isLoadingChat, setIsLoadingChat] = useState(false);
   const [inputFocused, setInputFocused] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [fullscreenImage, setFullscreenImage] = useState(null);
   const [imageError, setImageError] = useState(null);
   const [careHistory, setCareHistory] = useState([]);
@@ -179,49 +178,13 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
   const inputRef = useRef(null);
   const containerRef = useRef(null);
 
-  // Handle iOS keyboard - use dvh units and avoid manual height manipulation
+  // Simple scroll lock - let keyboard behave naturally without manipulating layout
   useEffect(() => {
-    // Lock body scroll when TanyaTanam opens
     const originalStyle = document.body.style.cssText;
     document.body.style.overflow = 'hidden';
-    document.body.style.position = 'fixed';
-    document.body.style.width = '100%';
-    document.body.style.top = '0';
-
-    // On iOS, track keyboard state for padding adjustments only
-    // Don't manipulate container height - let CSS handle it with 100dvh
-    const handleViewportResize = () => {
-      if (window.visualViewport) {
-        const viewportHeight = window.visualViewport.height;
-        const viewportOffsetTop = window.visualViewport.offsetTop;
-        const windowHeight = window.innerHeight;
-        // Include offsetTop to account for iOS Safari viewport scroll
-        const newKeyboardHeight = windowHeight - viewportHeight - viewportOffsetTop;
-
-        // Only set keyboard height for state tracking (used for padding)
-        setKeyboardHeight(newKeyboardHeight > 50 ? newKeyboardHeight : 0);
-
-        // Auto-scroll chat to bottom when keyboard opens
-        if (newKeyboardHeight > 50 && chatAreaRef.current) {
-          setTimeout(() => {
-            if (chatAreaRef.current) {
-              chatAreaRef.current.scrollTop = chatAreaRef.current.scrollHeight;
-            }
-          }, 100);
-        }
-      }
-    };
-
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', handleViewportResize);
-      handleViewportResize();
-    }
 
     return () => {
       document.body.style.cssText = originalStyle;
-      if (window.visualViewport) {
-        window.visualViewport.removeEventListener('resize', handleViewportResize);
-      }
     };
   }, []);
 
@@ -513,7 +476,7 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
         transform: 'translateX(-50%)',
         width: '100%',
         maxWidth: 'var(--app-max-width)',
-        height: '100dvh',
+        height: '100%',
         backgroundColor: '#FFFFFF',
         zIndex: 9999,
         display: 'flex',
@@ -595,7 +558,7 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
           flex: 1,
           overflowY: 'auto',
           overflowX: 'hidden',
-          padding: keyboardHeight > 0 ? '8px 16px' : '16px 24px',
+          padding: '16px 24px',
           display: 'flex',
           flexDirection: 'column',
           WebkitOverflowScrolling: 'touch',
@@ -875,9 +838,8 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
           flexShrink: 0,
           backgroundColor: '#FFFFFF',
           borderTop: '1px solid #F5F5F5',
-          padding: keyboardHeight > 0 ? '8px 16px' : '16px 24px',
-          paddingBottom: keyboardHeight > 0 ? '8px' : 'max(16px, env(safe-area-inset-bottom))',
-          transition: 'padding 0.2s ease',
+          padding: '16px 24px',
+          paddingBottom: 'max(16px, env(safe-area-inset-bottom))',
         }}
       >
         {/* Attached Images Preview */}
