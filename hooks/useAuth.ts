@@ -31,6 +31,7 @@ export function useAuth(): UseAuthReturn {
     console.log('🔍 [ONBOARDING] checkOnboardingStatus called:', userId);
 
     if (!userId) {
+      console.log('🔍 [ONBOARDING] No userId, returning false');
       setHasCompletedOnboarding(false);
       setProfile(null);
       return false;
@@ -38,22 +39,29 @@ export function useAuth(): UseAuthReturn {
 
     // Prevent duplicate fetches
     if (!forceRefetch && hasFetchedProfile.current && currentUserId.current === userId) {
-      console.log('🔍 [ONBOARDING] Using cached result');
+      console.log('🔍 [ONBOARDING] Using cached result:', hasCompletedOnboarding);
       return hasCompletedOnboarding;
     }
 
     currentUserId.current = userId;
+    console.log('🔍 [ONBOARDING] Fetching profile from Supabase...');
 
     try {
-      // Simple query - just get the profile
-      const { data, error } = await supabase
+      // Query with timeout
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Profile query timeout after 5s')), 5000);
+      });
+
+      const queryPromise = supabase
         .from('profiles')
-        .select('*')
+        .select('id, display_name, onboarding_completed, avatar_url, show_statistics, updated_at')
         .eq('id', userId)
         .maybeSingle();
 
-      console.log('🔍 [ONBOARDING] Profile result:', {
-        hasProfile: !!data,
+      const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
+
+      console.log('🔍 [ONBOARDING] Query completed:', {
+        hasData: !!data,
         onboarding_completed: data?.onboarding_completed,
         error: error?.message,
       });
@@ -84,7 +92,14 @@ export function useAuth(): UseAuthReturn {
       hasFetchedProfile.current = true;
       return completed;
     } catch (err) {
-      console.log('🚨 [ONBOARDING] Error:', (err as Error).message);
+      const errorMsg = (err as Error).message;
+      console.log('🚨 [ONBOARDING] Error:', errorMsg);
+
+      // On timeout/error, check if we have a cached value
+      if (errorMsg.includes('timeout')) {
+        console.log('🚨 [ONBOARDING] Query timed out - defaulting to show onboarding');
+      }
+
       setHasCompletedOnboarding(false);
       setProfile(null);
       hasFetchedProfile.current = true;
