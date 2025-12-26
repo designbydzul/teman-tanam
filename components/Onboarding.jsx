@@ -68,18 +68,25 @@ const Onboarding = ({ onComplete }) => {
   return (
     <div
       style={{
-        minHeight: '100vh',
+        height: '100vh',
+        height: '100dvh', // Dynamic viewport height - accounts for mobile browser UI
         backgroundColor: '#FFFFFF',
-        padding: '32px 24px',
         display: 'flex',
         flexDirection: 'column',
+        overflow: 'hidden',
       }}
     >
+      {/* Scrollable content area */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        style={{ flex: 1 }}
+        style={{
+          flex: 1,
+          overflowY: 'auto',
+          padding: '32px 24px 24px 24px',
+          WebkitOverflowScrolling: 'touch',
+        }}
       >
         {/* Header */}
         <h1
@@ -109,7 +116,7 @@ const Onboarding = ({ onComplete }) => {
         </h2>
 
         {/* Form */}
-        <div style={{ marginTop: '48px' }}>
+        <div style={{ marginTop: '32px' }}>
           {/* Name Input */}
           <div>
             <label
@@ -165,7 +172,7 @@ const Onboarding = ({ onComplete }) => {
           </div>
 
           {/* Location Selection */}
-          <div style={{ marginTop: '32px' }}>
+          <div style={{ marginTop: '24px' }}>
             <label
               style={{
                 display: 'block',
@@ -230,7 +237,14 @@ const Onboarding = ({ onComplete }) => {
       </motion.div>
 
       {/* Submit Button - Fixed at bottom */}
-      <div style={{ marginTop: 'auto', paddingTop: '32px' }}>
+      <div
+        style={{
+          flexShrink: 0,
+          padding: '16px 24px 24px 24px',
+          backgroundColor: '#FFFFFF',
+          borderTop: '1px solid #F0F0F0',
+        }}
+      >
         <motion.button
           type="button"
           onClick={() => {
