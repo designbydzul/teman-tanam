@@ -225,7 +225,7 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
                 cursor: 'pointer',
               }}
             >
-              <X size={20} weight="bold" color="#666666" />
+              <X size={20} weight="regular" color="#757575" />
             </button>
 
             {/* Header */}
@@ -246,7 +246,7 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
                 style={{
                   fontFamily: "'Inter', sans-serif",
                   fontSize: '14px',
-                  color: '#666666',
+                  color: '#757575',
                   margin: '4px 0 0 0',
                 }}
               >
@@ -267,7 +267,7 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
                     display: 'block',
                     fontFamily: "'Inter', sans-serif",
                     fontSize: '14px',
-                    color: '#666666',
+                    color: '#757575',
                     marginBottom: '8px',
                   }}
                 >
@@ -303,7 +303,7 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
                     display: 'block',
                     fontFamily: "'Inter', sans-serif",
                     fontSize: '14px',
-                    color: '#666666',
+                    color: '#757575',
                     marginBottom: '12px',
                   }}
                 >
@@ -320,7 +320,7 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
                         fontSize: '1rem',
                         fontFamily: "'Inter', sans-serif",
                         fontWeight: 500,
-                        color: formData.location === location ? '#2D5016' : '#666666',
+                        color: formData.location === location ? '#2D5016' : '#757575',
                         backgroundColor: formData.location === location ? '#F1F8E9' : 'transparent',
                         border: formData.location === location ? '2px solid #7CB342' : '2px solid #E0E0E0',
                         borderRadius: '24px',
@@ -341,7 +341,7 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
                     display: 'block',
                     fontFamily: "'Inter', sans-serif",
                     fontSize: '14px',
-                    color: '#666666',
+                    color: '#757575',
                     marginBottom: '12px',
                   }}
                 >
@@ -357,7 +357,7 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
                       fontSize: '1rem',
                       fontFamily: "'Inter', sans-serif",
                       fontWeight: 500,
-                      color: formData.plantedDate === 'Hari ini' ? '#2D5016' : '#666666',
+                      color: formData.plantedDate === 'Hari ini' ? '#2D5016' : '#757575',
                       backgroundColor: formData.plantedDate === 'Hari ini' ? '#F1F8E9' : 'transparent',
                       border: formData.plantedDate === 'Hari ini' ? '2px solid #7CB342' : '2px solid #E0E0E0',
                       borderRadius: '24px',
@@ -375,7 +375,7 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
                       fontSize: '1rem',
                       fontFamily: "'Inter', sans-serif",
                       fontWeight: 500,
-                      color: formData.customDate ? '#2D5016' : '#666666',
+                      color: formData.customDate ? '#2D5016' : '#757575',
                       backgroundColor: formData.customDate ? '#F1F8E9' : 'transparent',
                       border: formData.customDate ? '2px solid #7CB342' : '2px solid #E0E0E0',
                       borderRadius: '24px',
@@ -431,7 +431,7 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
                     display: 'block',
                     fontFamily: "'Inter', sans-serif",
                     fontSize: '14px',
-                    color: '#666666',
+                    color: '#757575',
                     marginBottom: '8px',
                   }}
                 >
@@ -468,7 +468,7 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
                     display: 'block',
                     fontFamily: "'Inter', sans-serif",
                     fontSize: '14px',
-                    color: '#666666',
+                    color: '#757575',
                     marginBottom: '12px',
                   }}
                 >
@@ -639,7 +639,7 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
                 fontFamily: "'Inter', sans-serif",
                 fontWeight: 600,
                 color: '#FFFFFF',
-                backgroundColor: (isValid && !isSubmitting && !isCompressing) ? '#7CB342' : '#CCCCCC',
+                backgroundColor: (isValid && !isSubmitting && !isCompressing) ? '#7CB342' : '#E0E0E0',
                 border: 'none',
                 borderRadius: '12px',
                 cursor: (isValid && !isSubmitting && !isCompressing) ? 'pointer' : 'not-allowed',

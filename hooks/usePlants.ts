@@ -286,9 +286,7 @@ export function usePlants(): UsePlantsReturn {
       console.log('🌱 [FETCH] Fetching plants for USER_ID:', user.id);
 
       // Fetch plants with joins
-      let plantsData: PlantRaw[] | null = null;
-
-      const queryWithHarvest = await supabase
+      const { data: plantsData, error: plantsError } = await supabase
         .from('plants')
         .select(`
           *,
@@ -299,8 +297,7 @@ export function usePlants(): UsePlantsReturn {
             category,
             quick_tips,
             watering_frequency_days,
-            fertilizing_frequency_days,
-            days_to_harvest
+            fertilizing_frequency_days
           ),
           locations (
             id,
@@ -310,35 +307,7 @@ export function usePlants(): UsePlantsReturn {
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (queryWithHarvest.error) {
-        debug.warn('Query with days_to_harvest failed, trying without:', queryWithHarvest.error.message);
-
-        const queryWithoutHarvest = await supabase
-          .from('plants')
-          .select(`
-            *,
-            plant_species (
-              id,
-              common_name,
-              latin_name,
-              category,
-              quick_tips,
-              watering_frequency_days,
-              fertilizing_frequency_days
-            ),
-            locations (
-              id,
-              name
-            )
-          `)
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
-
-        if (queryWithoutHarvest.error) throw queryWithoutHarvest.error;
-        plantsData = queryWithoutHarvest.data as PlantRaw[];
-      } else {
-        plantsData = queryWithHarvest.data as PlantRaw[];
-      }
+      if (plantsError) throw plantsError;
 
       debug.log('Plants count:', plantsData?.length);
       // DEBUG: Log fetched plants count

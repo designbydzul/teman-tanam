@@ -104,7 +104,7 @@ const SortableLocationCard = ({ location, plantCount, onDelete, isDeleting }) =>
               style={{
                 fontFamily: "'Inter', sans-serif",
                 fontSize: '14px',
-                color: '#666666',
+                color: '#757575',
                 margin: '4px 0 0 0',
               }}
             >
@@ -383,13 +383,13 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
               cursor: 'pointer',
             }}
           >
-            <ArrowLeft size={16} weight="bold" color="#2D5016" />
+            <ArrowLeft size={20} weight="regular" color="#2C2C2C" />
           </button>
 
           {/* Title */}
           <h1
             style={{
-              fontFamily: 'var(--font-caveat), Caveat, cursive',
+              fontFamily: "'Caveat', cursive",
               fontSize: '1.75rem',
               fontWeight: 600,
               color: '#2D5016',
@@ -432,7 +432,7 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
         {/* Loading State */}
         {loading && (
           <div style={{ textAlign: 'center', padding: '40px' }}>
-            <p style={{ color: '#666666', fontFamily: "'Inter', sans-serif" }}>
+            <p style={{ color: '#757575', fontFamily: "'Inter', sans-serif" }}>
               Memuat lokasi...
             </p>
           </div>
@@ -497,7 +497,7 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
                 fontFamily: "'Inter', sans-serif",
                 fontSize: '1.125rem',
                 fontWeight: 500,
-                color: '#666666',
+                color: '#757575',
                 margin: 0,
                 lineHeight: 1.5,
               }}
@@ -685,7 +685,7 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
                   opacity: isSubmitting ? 0.5 : 1,
                 }}
               >
-                <X size={20} weight="bold" color="#666666" />
+                <X size={20} weight="regular" color="#757575" />
               </button>
 
               {/* Add Location Modal Title */}
@@ -753,7 +753,7 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
                   fontFamily: "'Inter', sans-serif",
                   fontWeight: 600,
                   color: '#FFFFFF',
-                  backgroundColor: isValidNewLocation && !isSubmitting ? '#7CB342' : '#CCCCCC',
+                  backgroundColor: isValidNewLocation && !isSubmitting ? '#7CB342' : '#E0E0E0',
                   border: 'none',
                   borderRadius: '12px',
                   cursor: isValidNewLocation && !isSubmitting ? 'pointer' : 'not-allowed',
@@ -815,7 +815,7 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
                 style={{
                   fontFamily: "'Inter', sans-serif",
                   fontSize: '14px',
-                  color: '#666666',
+                  color: '#757575',
                   margin: '0 0 24px 0',
                 }}
               >
@@ -832,7 +832,7 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
                     fontSize: '1rem',
                     fontFamily: "'Inter', sans-serif",
                     fontWeight: 600,
-                    color: '#666666',
+                    color: '#757575',
                     backgroundColor: '#F5F5F5',
                     border: 'none',
                     borderRadius: '12px',
@@ -929,7 +929,7 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
                   opacity: isDeleting ? 0.5 : 1,
                 }}
               >
-                <X size={20} weight="bold" color="#666666" />
+                <X size={20} weight="regular" color="#757575" />
               </button>
 
               {/* Modal Title */}
@@ -949,7 +949,7 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
                 style={{
                   fontFamily: "'Inter', sans-serif",
                   fontSize: '14px',
-                  color: '#666666',
+                  color: '#757575',
                   margin: '0 0 24px 0',
                 }}
               >
@@ -986,7 +986,7 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
                     >
                       {location.name}
                       {getPlantCountForLocation(location.name) > 0 && (
-                        <span style={{ color: '#666666', fontSize: '14px', marginLeft: '8px' }}>
+                        <span style={{ color: '#757575', fontSize: '14px', marginLeft: '8px' }}>
                           ({getPlantCountForLocation(location.name)} tanaman)
                         </span>
                       )}
@@ -1005,7 +1005,7 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
                     fontSize: '1rem',
                     fontFamily: "'Inter', sans-serif",
                     fontWeight: 600,
-                    color: '#666666',
+                    color: '#757575',
                     backgroundColor: '#F5F5F5',
                     border: 'none',
                     borderRadius: '12px',
@@ -1025,7 +1025,7 @@ const LocationSettings = ({ onBack, onLocationDeleted, onLocationAdded, plants =
                     fontFamily: "'Inter', sans-serif",
                     fontWeight: 600,
                     color: '#FFFFFF',
-                    backgroundColor: moveToLocation && !isDeleting ? '#7CB342' : '#CCCCCC',
+                    backgroundColor: moveToLocation && !isDeleting ? '#7CB342' : '#E0E0E0',
                     border: 'none',
                     borderRadius: '12px',
                     cursor: moveToLocation && !isDeleting ? 'pointer' : 'not-allowed',

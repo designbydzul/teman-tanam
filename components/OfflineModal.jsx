@@ -38,7 +38,7 @@ const OfflineModal = ({ isOpen, onClose, featureName = null }) => {
               onClick={(e) => e.stopPropagation()}
               style={{
                 backgroundColor: '#FFFFFF',
-                borderRadius: '20px',
+                borderRadius: '24px',
                 padding: '32px 24px',
                 width: '100%',
                 maxWidth: '320px',
@@ -80,7 +80,7 @@ const OfflineModal = ({ isOpen, onClose, featureName = null }) => {
                 style={{
                   fontFamily: "'Inter', sans-serif",
                   fontSize: '15px',
-                  color: '#666666',
+                  color: '#757575',
                   lineHeight: 1.5,
                   margin: '0 0 24px 0',
                 }}

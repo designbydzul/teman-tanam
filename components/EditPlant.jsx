@@ -69,8 +69,8 @@ const EditPlant = ({ plant, onClose, onSave, onDelete }) => {
         customDate: plantedDateStr,
         notes: plant.notes || '',
         photo: null,
-        customWateringDays: plant.customWateringDays !== null ? String(plant.customWateringDays) : '',
-        customFertilizingDays: plant.customFertilizingDays !== null ? String(plant.customFertilizingDays) : '',
+        customWateringDays: plant.customWateringDays != null ? String(plant.customWateringDays) : '',
+        customFertilizingDays: plant.customFertilizingDays != null ? String(plant.customFertilizingDays) : '',
       });
 
       setPhotoPreview(plant.photoUrl || plant.photoPreview || plant.image || null);
@@ -226,7 +226,7 @@ const EditPlant = ({ plant, onClose, onSave, onDelete }) => {
                 cursor: 'pointer',
               }}
             >
-              <X size={20} weight="bold" color="#666666" />
+              <X size={20} weight="regular" color="#757575" />
             </button>
 
             {/* Header */}
@@ -258,7 +258,7 @@ const EditPlant = ({ plant, onClose, onSave, onDelete }) => {
                     display: 'block',
                     fontFamily: "'Inter', sans-serif",
                     fontSize: '14px',
-                    color: '#666666',
+                    color: '#757575',
                     marginBottom: '8px',
                   }}
                 >
@@ -294,7 +294,7 @@ const EditPlant = ({ plant, onClose, onSave, onDelete }) => {
                     display: 'block',
                     fontFamily: "'Inter', sans-serif",
                     fontSize: '14px',
-                    color: '#666666',
+                    color: '#757575',
                     marginBottom: '12px',
                   }}
                 >
@@ -311,7 +311,7 @@ const EditPlant = ({ plant, onClose, onSave, onDelete }) => {
                         fontSize: '1rem',
                         fontFamily: "'Inter', sans-serif",
                         fontWeight: 500,
-                        color: formData.location === location ? '#2D5016' : '#666666',
+                        color: formData.location === location ? '#2D5016' : '#757575',
                         backgroundColor: formData.location === location ? '#F1F8E9' : 'transparent',
                         border: formData.location === location ? '2px solid #7CB342' : '2px solid #E0E0E0',
                         borderRadius: '24px',
@@ -332,7 +332,7 @@ const EditPlant = ({ plant, onClose, onSave, onDelete }) => {
                     display: 'block',
                     fontFamily: "'Inter', sans-serif",
                     fontSize: '14px',
-                    color: '#666666',
+                    color: '#757575',
                     marginBottom: '8px',
                   }}
                 >
@@ -371,7 +371,7 @@ const EditPlant = ({ plant, onClose, onSave, onDelete }) => {
                     display: 'block',
                     fontFamily: "'Inter', sans-serif",
                     fontSize: '14px',
-                    color: '#666666',
+                    color: '#757575',
                     marginBottom: '8px',
                   }}
                 >
@@ -403,76 +403,47 @@ const EditPlant = ({ plant, onClose, onSave, onDelete }) => {
 
               {/* Frekuensi Perawatan Section */}
               <div style={{ marginBottom: '24px' }}>
+                {/* Section Title - consistent with other labels */}
                 <label
                   style={{
                     display: 'block',
                     fontFamily: "'Inter', sans-serif",
                     fontSize: '14px',
                     fontWeight: 500,
-                    color: '#2C2C2C',
-                    marginBottom: '4px',
+                    color: '#757575',
+                    marginBottom: '8px',
                   }}
                 >
                   Frekuensi Perawatan
                 </label>
-                <p
-                  style={{
-                    fontFamily: "'Inter', sans-serif",
-                    fontSize: '13px',
-                    color: '#666666',
-                    margin: '0 0 16px 0',
-                  }}
-                >
-                  Sesuaikan dengan kondisi tanaman kamu
-                </p>
 
-                {/* Watering Frequency */}
+                {/* Watering Frequency Row - Gray background like other form fields */}
                 <div
                   style={{
                     backgroundColor: '#FAFAFA',
                     borderRadius: '12px',
-                    padding: '16px',
-                    marginBottom: '12px',
+                    padding: '12px 16px',
+                    marginBottom: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-                    <div
+                  {/* Left side: Icon + Label */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+                    <Drop size={20} weight="regular" color="#757575" />
+                    <span
                       style={{
-                        width: '36px',
-                        height: '36px',
-                        borderRadius: '50%',
-                        backgroundColor: '#E3F2FD',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
+                        fontFamily: "'Inter', sans-serif",
+                        fontSize: '14px',
+                        color: '#2C2C2C',
                       }}
                     >
-                      <Drop size={20} weight="fill" color="#3B82F6" />
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <label
-                        style={{
-                          display: 'block',
-                          fontFamily: "'Inter', sans-serif",
-                          fontSize: '14px',
-                          fontWeight: 500,
-                          color: '#2C2C2C',
-                        }}
-                      >
-                        Siram setiap
-                      </label>
-                      <span
-                        style={{
-                          fontFamily: "'Inter', sans-serif",
-                          fontSize: '12px',
-                          color: '#999999',
-                        }}
-                      >
-                        Default: {plant?.species?.wateringFrequencyDays || 3} hari
-                      </span>
-                    </div>
+                      Siram setiap
+                    </span>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {/* Right side: Value display + Reset */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <input
                       type="number"
                       min="1"
@@ -480,103 +451,73 @@ const EditPlant = ({ plant, onClose, onSave, onDelete }) => {
                       placeholder={String(plant?.species?.wateringFrequencyDays || 3)}
                       value={formData.customWateringDays}
                       onChange={(e) => setFormData({ ...formData, customWateringDays: e.target.value })}
-                      onFocus={() => setFocusedInput('watering')}
-                      onBlur={() => setFocusedInput(null)}
                       style={{
-                        width: '80px',
-                        padding: '12px 16px',
-                        fontSize: '1rem',
+                        width: '32px',
+                        padding: '0',
+                        fontSize: '14px',
                         fontFamily: "'Inter', sans-serif",
                         color: '#2C2C2C',
-                        backgroundColor: '#FFFFFF',
-                        border: focusedInput === 'watering' ? '2px solid #3B82F6' : '2px solid #E0E0E0',
-                        borderRadius: '8px',
+                        backgroundColor: 'transparent',
+                        border: 'none',
                         outline: 'none',
-                        textAlign: 'center',
-                        transition: 'border-color 200ms',
+                        textAlign: 'right',
+                        MozAppearance: 'textfield',
                       }}
                     />
                     <span
                       style={{
                         fontFamily: "'Inter', sans-serif",
                         fontSize: '14px',
-                        color: '#666666',
+                        color: '#757575',
                       }}
                     >
                       hari
                     </span>
-                    {formData.customWateringDays && (
-                      <button
-                        type="button"
-                        onClick={() => setFormData({ ...formData, customWateringDays: '' })}
-                        style={{
-                          marginLeft: 'auto',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          padding: '8px 12px',
-                          backgroundColor: 'transparent',
-                          border: '1px solid #E0E0E0',
-                          borderRadius: '8px',
-                          cursor: 'pointer',
-                          fontFamily: "'Inter', sans-serif",
-                          fontSize: '12px',
-                          color: '#666666',
-                        }}
-                      >
-                        <ArrowCounterClockwise size={14} weight="bold" />
-                        Reset
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, customWateringDays: '' })}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '4px',
+                        marginLeft: '4px',
+                        backgroundColor: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <ArrowCounterClockwise size={20} weight="regular" color="#757575" />
+                    </button>
                   </div>
                 </div>
 
-                {/* Fertilizing Frequency */}
+                {/* Fertilizing Frequency Row - Gray background like other form fields */}
                 <div
                   style={{
                     backgroundColor: '#FAFAFA',
                     borderRadius: '12px',
-                    padding: '16px',
+                    padding: '12px 16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-                    <div
+                  {/* Left side: Icon + Label */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+                    <Leaf size={20} weight="regular" color="#757575" />
+                    <span
                       style={{
-                        width: '36px',
-                        height: '36px',
-                        borderRadius: '50%',
-                        backgroundColor: '#F1F8E9',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
+                        fontFamily: "'Inter', sans-serif",
+                        fontSize: '14px',
+                        color: '#2C2C2C',
                       }}
                     >
-                      <Leaf size={20} weight="fill" color="#16A34A" />
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <label
-                        style={{
-                          display: 'block',
-                          fontFamily: "'Inter', sans-serif",
-                          fontSize: '14px',
-                          fontWeight: 500,
-                          color: '#2C2C2C',
-                        }}
-                      >
-                        Pupuk setiap
-                      </label>
-                      <span
-                        style={{
-                          fontFamily: "'Inter', sans-serif",
-                          fontSize: '12px',
-                          color: '#999999',
-                        }}
-                      >
-                        Default: {plant?.species?.fertilizingFrequencyDays || 14} hari
-                      </span>
-                    </div>
+                      Pupuk setiap
+                    </span>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {/* Right side: Value display + Reset */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <input
                       type="number"
                       min="1"
@@ -584,54 +525,44 @@ const EditPlant = ({ plant, onClose, onSave, onDelete }) => {
                       placeholder={String(plant?.species?.fertilizingFrequencyDays || 14)}
                       value={formData.customFertilizingDays}
                       onChange={(e) => setFormData({ ...formData, customFertilizingDays: e.target.value })}
-                      onFocus={() => setFocusedInput('fertilizing')}
-                      onBlur={() => setFocusedInput(null)}
                       style={{
-                        width: '80px',
-                        padding: '12px 16px',
-                        fontSize: '1rem',
+                        width: '32px',
+                        padding: '0',
+                        fontSize: '14px',
                         fontFamily: "'Inter', sans-serif",
                         color: '#2C2C2C',
-                        backgroundColor: '#FFFFFF',
-                        border: focusedInput === 'fertilizing' ? '2px solid #16A34A' : '2px solid #E0E0E0',
-                        borderRadius: '8px',
+                        backgroundColor: 'transparent',
+                        border: 'none',
                         outline: 'none',
-                        textAlign: 'center',
-                        transition: 'border-color 200ms',
+                        textAlign: 'right',
+                        MozAppearance: 'textfield',
                       }}
                     />
                     <span
                       style={{
                         fontFamily: "'Inter', sans-serif",
                         fontSize: '14px',
-                        color: '#666666',
+                        color: '#757575',
                       }}
                     >
                       hari
                     </span>
-                    {formData.customFertilizingDays && (
-                      <button
-                        type="button"
-                        onClick={() => setFormData({ ...formData, customFertilizingDays: '' })}
-                        style={{
-                          marginLeft: 'auto',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          padding: '8px 12px',
-                          backgroundColor: 'transparent',
-                          border: '1px solid #E0E0E0',
-                          borderRadius: '8px',
-                          cursor: 'pointer',
-                          fontFamily: "'Inter', sans-serif",
-                          fontSize: '12px',
-                          color: '#666666',
-                        }}
-                      >
-                        <ArrowCounterClockwise size={14} weight="bold" />
-                        Reset
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, customFertilizingDays: '' })}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '4px',
+                        marginLeft: '4px',
+                        backgroundColor: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <ArrowCounterClockwise size={20} weight="regular" color="#757575" />
+                    </button>
                   </div>
                 </div>
               </div>
@@ -643,7 +574,7 @@ const EditPlant = ({ plant, onClose, onSave, onDelete }) => {
                     display: 'block',
                     fontFamily: "'Inter', sans-serif",
                     fontSize: '14px',
-                    color: '#666666',
+                    color: '#757575',
                     marginBottom: '12px',
                   }}
                 >
@@ -791,7 +722,7 @@ const EditPlant = ({ plant, onClose, onSave, onDelete }) => {
                 fontFamily: "'Inter', sans-serif",
                 fontWeight: 600,
                 color: '#FFFFFF',
-                backgroundColor: isValid ? '#7CB342' : '#CCCCCC',
+                backgroundColor: isValid ? '#7CB342' : '#E0E0E0',
                 border: 'none',
                 borderRadius: '12px',
                 cursor: isValid ? 'pointer' : 'not-allowed',
@@ -894,7 +825,7 @@ const EditPlant = ({ plant, onClose, onSave, onDelete }) => {
                   style={{
                     fontFamily: "'Inter', sans-serif",
                     fontSize: '14px',
-                    color: '#666666',
+                    color: '#757575',
                     margin: '0 0 24px 0',
                     lineHeight: 1.5,
                   }}
@@ -912,7 +843,7 @@ const EditPlant = ({ plant, onClose, onSave, onDelete }) => {
                       fontSize: '1rem',
                       fontFamily: "'Inter', sans-serif",
                       fontWeight: 500,
-                      color: '#666666',
+                      color: '#757575',
                       backgroundColor: '#F5F5F5',
                       border: 'none',
                       borderRadius: '12px',

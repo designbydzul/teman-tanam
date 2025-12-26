@@ -157,7 +157,7 @@ const BulkFertilizeModal = ({
                     style={{
                       fontFamily: "'Inter', sans-serif",
                       fontSize: '14px',
-                      color: '#666666',
+                      color: '#757575',
                       margin: 0,
                     }}
                   >
@@ -180,7 +180,7 @@ const BulkFertilizeModal = ({
                   cursor: 'pointer',
                 }}
               >
-                <X size={20} weight="bold" color="#666666" />
+                <X size={20} weight="regular" color="#757575" />
               </button>
             </div>
 
@@ -189,7 +189,7 @@ const BulkFertilizeModal = ({
               <div
                 style={{
                   backgroundColor: '#FEF3C7',
-                  border: '1px solid #F59E0B',
+                  border: '1px solid #FF9800',
                   borderRadius: '12px',
                   padding: '12px 16px',
                   marginBottom: '20px',
@@ -227,7 +227,7 @@ const BulkFertilizeModal = ({
                   fontFamily: "'Inter', sans-serif",
                   fontSize: '14px',
                   fontWeight: 500,
-                  color: '#666666',
+                  color: '#757575',
                   display: 'block',
                   marginBottom: '8px',
                 }}
@@ -302,7 +302,7 @@ const BulkFertilizeModal = ({
                       cursor: 'pointer',
                       fontFamily: "'Inter', sans-serif",
                       fontSize: '14px',
-                      color: '#666666',
+                      color: '#757575',
                     }}
                   >
                     <Camera size={24} weight="bold" color="#16A34A" />
@@ -327,7 +327,7 @@ const BulkFertilizeModal = ({
                   fontFamily: "'Inter', sans-serif",
                   fontSize: '14px',
                   fontWeight: 500,
-                  color: '#666666',
+                  color: '#757575',
                   display: 'block',
                   marginBottom: '8px',
                 }}
@@ -375,7 +375,7 @@ const BulkFertilizeModal = ({
                   fontFamily: "'Inter', sans-serif",
                   fontSize: '16px',
                   fontWeight: 600,
-                  color: '#666666',
+                  color: '#757575',
                 }}
               >
                 Batal

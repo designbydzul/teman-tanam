@@ -548,13 +548,13 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
               cursor: 'pointer',
             }}
           >
-            <ArrowLeft size={16} weight="bold" color="#2D5016" />
+            <ArrowLeft size={20} weight="regular" color="#2C2C2C" />
           </button>
 
           {/* Title - Centered */}
           <h1
             style={{
-              fontFamily: 'var(--font-caveat), Caveat, cursive',
+              fontFamily: "'Caveat', cursive",
               fontSize: '1.75rem',
               fontWeight: 600,
               color: '#2D5016',
@@ -583,7 +583,7 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
               cursor: 'pointer',
             }}
           >
-            <ClockCounterClockwise size={16} weight="regular" color="#666666" />
+            <ClockCounterClockwise size={20} weight="regular" color="#2C2C2C" />
           </button>
         </div>
       </div>
@@ -657,7 +657,7 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
                 animate={{ rotate: showPlantDropdown ? 180 : 0 }}
                 transition={{ duration: 0.2 }}
               >
-                <CaretDown size={20} weight="bold" color="#666666" />
+                <CaretDown size={20} weight="regular" color="#757575" />
               </motion.div>
             </button>
 
@@ -717,7 +717,7 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
                         style={{
                           fontFamily: "'Inter', sans-serif",
                           fontSize: '14px',
-                          color: '#666666',
+                          color: '#757575',
                           margin: '0 0 4px 0',
                         }}
                       >
@@ -727,13 +727,13 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
                         style={{
                           fontFamily: "'Inter', sans-serif",
                           fontSize: '14px',
-                          color: '#666666',
+                          color: '#757575',
                           margin: 0,
                         }}
                       >
                         {[
                           plantData.location,
-                          daysSincePlanted !== null ? `${daysSincePlanted} hari sejak ditanam` : null
+                          daysSincePlanted !== null ? (daysSincePlanted === 0 ? 'Ditanam hari ini' : `${daysSincePlanted} hari sejak ditanam`) : null
                         ].filter(Boolean).join(' • ') || 'Tanaman'}
                       </p>
                     </div>
@@ -873,7 +873,7 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
               bottom: '140px',
               left: '24px',
               right: '24px',
-              backgroundColor: '#FF5252',
+              backgroundColor: '#DC2626',
               color: '#FFFFFF',
               padding: '12px 16px',
               borderRadius: '12px',
@@ -1017,7 +1017,7 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
                 marginBottom: '2px',
               }}
             >
-              <Camera size={24} weight="regular" color="#666666" />
+              <Camera size={24} weight="regular" color="#757575" />
             </button>
 
             {/* Text Input - Expandable Textarea */}
@@ -1151,7 +1151,7 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
                 {/* Title */}
                 <h2
                   style={{
-                    fontFamily: 'var(--font-caveat), Caveat, cursive',
+                    fontFamily: "'Caveat', cursive",
                     fontSize: '1.75rem',
                     fontWeight: 600,
                     color: '#2D5016',
@@ -1166,7 +1166,7 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
                   style={{
                     fontFamily: "'Inter', sans-serif",
                     fontSize: '14px',
-                    color: '#666666',
+                    color: '#757575',
                     margin: '0 0 24px 0',
                     lineHeight: 1.5,
                   }}

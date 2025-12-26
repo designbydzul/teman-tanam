@@ -44,6 +44,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
   const [activeTab, setActiveTab] = useState('perawatan');
   const [showMenu, setShowMenu] = useState(false);
   const [showImagePreview, setShowImagePreview] = useState(false);
+  const [timelinePhotoPreview, setTimelinePhotoPreview] = useState(null); // URL for timeline photo fullscreen
   const [showTanyaTanam, setShowTanyaTanam] = useState(false);
   const [showEditPlant, setShowEditPlant] = useState(false);
   const [currentPlantData, setCurrentPlantData] = useState(null);
@@ -144,7 +145,8 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
   const wateringFrequencyDays = sourcePlant?.species?.wateringFrequencyDays || null;
   const fertilizingFrequencyDays = sourcePlant?.species?.fertilizingFrequencyDays || null;
 
-  // Helper function to get subtitle text and color for action cards
+  // Helper function to get subtitle text, color, and icon style for action cards
+  // Colors: Green (#7CB342) - just done, Orange (#FF9800) - attention soon, Red (#F44336) - needs action
   const getActionSubtitle = (daysSince, frequencyDays, actionType) => {
     const pastTense = actionType === 'water' ? 'Disiram' : 'Dipupuk';
     const needsText = actionType === 'water' ? 'Perlu disiram' : 'Perlu dipupuk';
@@ -152,28 +154,76 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
     const justNowText = actionType === 'water' ? 'Baru saja disiram' : 'Baru saja dipupuk';
     const yesterdayText = actionType === 'water' ? 'Disiram kemarin' : 'Dipupuk kemarin';
 
-    // Never done
+    // Default frequencies if not specified: water every 2-3 days, fertilize every 14 days
+    const defaultFrequency = actionType === 'water' ? 3 : 14;
+    const effectiveFrequency = frequencyDays || defaultFrequency;
+
+    // Calculate warning threshold (when to show orange - about 70% of frequency)
+    const warningThreshold = Math.max(2, Math.floor(effectiveFrequency * 0.7));
+
+    // Never done - show red (needs action)
     if (daysSince === null || daysSince === undefined) {
-      return { text: neverText, color: '#666666' };
+      return {
+        text: neverText,
+        color: '#F44336',
+        iconBg: 'rgba(244, 67, 54, 0.1)',
+        iconColor: '#F44336',
+        borderColor: '#F44336'
+      };
     }
 
-    // Done today
+    // Done today - green
     if (daysSince === 0) {
-      return { text: justNowText, color: '#666666' };
+      return {
+        text: justNowText,
+        color: '#7CB342',
+        iconBg: 'rgba(124, 179, 66, 0.1)',
+        iconColor: '#7CB342',
+        borderColor: '#7CB342'
+      };
     }
 
-    // Done yesterday
+    // Done yesterday - green
     if (daysSince === 1) {
-      return { text: yesterdayText, color: '#666666' };
+      return {
+        text: yesterdayText,
+        color: '#7CB342',
+        iconBg: 'rgba(124, 179, 66, 0.1)',
+        iconColor: '#7CB342',
+        borderColor: '#7CB342'
+      };
     }
 
-    // Check if overdue (only if frequency data exists)
-    if (frequencyDays !== null && daysSince >= frequencyDays) {
-      return { text: needsText, color: '#F59E0B' };
+    // Check if overdue (past the frequency) - red
+    if (daysSince >= effectiveFrequency) {
+      return {
+        text: needsText,
+        color: '#F44336',
+        iconBg: 'rgba(244, 67, 54, 0.1)',
+        iconColor: '#F44336',
+        borderColor: '#F44336'
+      };
     }
 
-    // X days ago
-    return { text: `${pastTense} ${daysSince} hari lalu`, color: '#666666' };
+    // Check if attention needed soon (between warning threshold and overdue) - orange
+    if (daysSince >= warningThreshold) {
+      return {
+        text: `${pastTense} ${daysSince} hari lalu`,
+        color: '#FF9800',
+        iconBg: 'rgba(255, 152, 0, 0.1)',
+        iconColor: '#FF9800',
+        borderColor: '#FF9800'
+      };
+    }
+
+    // Recently done (within safe zone) - green
+    return {
+      text: `${pastTense} ${daysSince} hari lalu`,
+      color: '#7CB342',
+      iconBg: 'rgba(124, 179, 66, 0.1)',
+      iconColor: '#7CB342',
+      borderColor: '#7CB342'
+    };
   };
 
   // Calculate care status based on last action dates (considering overrides)
@@ -385,20 +435,20 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
   const getActionIcon = (type) => {
     switch (type) {
       case 'water':
-        return <Drop size={20} weight="regular" color="#666666" />;
+        return <Drop size={20} weight="regular" color="#757575" />;
       case 'fertilize':
-        return <Leaf size={20} weight="regular" color="#666666" />;
+        return <Leaf size={20} weight="regular" color="#757575" />;
       case 'prune':
-        return <Scissors size={20} weight="regular" color="#666666" />;
+        return <Scissors size={20} weight="regular" color="#757575" />;
       case 'harvest':
-        return <Basket size={20} weight="regular" color="#666666" />;
+        return <Basket size={20} weight="regular" color="#757575" />;
       case 'diagnose':
-        return <FirstAidKit size={20} weight="regular" color="#666666" />;
+        return <FirstAidKit size={20} weight="regular" color="#757575" />;
       case 'add':
-        return <Plant size={20} weight="regular" color="#666666" />;
+        return <Plant size={20} weight="regular" color="#757575" />;
       default:
         // Custom actions show a generic icon
-        return <DotsThree size={20} weight="bold" color="#666666" />;
+        return <DotsThree size={20} weight="regular" color="#757575" />;
     }
   };
 
@@ -827,7 +877,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
               flexShrink: 0,
             }}
           >
-            <ArrowLeft size={20} weight="bold" color="#2C2C2C" />
+            <ArrowLeft size={20} weight="regular" color="#2C2C2C" />
           </button>
 
           {/* Center Plant Image */}
@@ -880,7 +930,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
               flexShrink: 0,
             }}
           >
-            <Gear size={20} weight="bold" color="#2C2C2C" />
+            <Gear size={20} weight="regular" color="#2C2C2C" />
           </button>
         </div>
 
@@ -889,7 +939,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
           {/* Plant Name */}
           <h1
             style={{
-              fontFamily: 'var(--font-caveat), Caveat, cursive',
+              fontFamily: "'Caveat', cursive",
               fontSize: '1.75rem',
               fontWeight: 600,
               color: '#2D5016',
@@ -904,13 +954,13 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
             style={{
               fontFamily: "'Inter', sans-serif",
               fontSize: '14px',
-              color: '#666666',
+              color: '#757575',
               margin: '0 0 4px 0',
             }}
           >
             {[
               plantData.location,
-              `${daysSincePlanted} hari sejak ditanam`,
+              daysSincePlanted === 0 ? 'Ditanam hari ini' : `${daysSincePlanted} hari sejak ditanam`,
               plantData.species?.name || plantData.species?.scientific
             ].filter(Boolean).join(' • ')}
           </p>
@@ -921,7 +971,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
               style={{
                 fontFamily: "'Inter', sans-serif",
                 fontSize: '14px',
-                color: '#666666',
+                color: '#757575',
                 margin: '4px 0 0 0',
               }}
             >
@@ -949,7 +999,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
               fontSize: '1rem',
               fontFamily: "'Inter', sans-serif",
               fontWeight: activeTab === 'perawatan' ? 500 : 400,
-              color: activeTab === 'perawatan' ? '#7CB342' : '#666666',
+              color: activeTab === 'perawatan' ? '#7CB342' : '#757575',
               backgroundColor: activeTab === 'perawatan' ? '#FFFFFF' : 'transparent',
               border: 'none',
               borderRadius: '8px',
@@ -968,7 +1018,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
               fontSize: '1rem',
               fontFamily: "'Inter', sans-serif",
               fontWeight: activeTab === 'riwayat' ? 500 : 400,
-              color: activeTab === 'riwayat' ? '#7CB342' : '#666666',
+              color: activeTab === 'riwayat' ? '#7CB342' : '#757575',
               backgroundColor: activeTab === 'riwayat' ? '#FFFFFF' : 'transparent',
               border: 'none',
               borderRadius: '8px',
@@ -997,7 +1047,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                   fontFamily: "'Inter', sans-serif",
                   fontSize: '14px',
                   fontWeight: 400,
-                  color: '#666666',
+                  color: '#757575',
                   margin: '0 0 12px 0',
                 }}
               >
@@ -1011,114 +1061,124 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                 gap: '12px',
               }}>
                 {/* Penyiraman Card */}
-                <div
-                  onClick={handleWateringCardTap}
-                  style={{
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: '12px',
-                    padding: '16px',
-                    border: '1px solid #E0E0E0',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '12px',
-                  }}
-                >
-                  <div
-                    style={{
-                      width: '40px',
-                      height: '40px',
-                      borderRadius: '50%',
-                      backgroundColor: '#F5F5F5',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Drop size={24} weight="regular" color="#666666" />
-                  </div>
-                  <div>
-                    <h3
+                {(() => {
+                  const wateringStatus = getActionSubtitle(daysSinceWatered, wateringFrequencyDays, 'water');
+                  return (
+                    <div
+                      onClick={handleWateringCardTap}
                       style={{
-                        fontFamily: "'Inter', sans-serif",
-                        fontSize: '1rem',
-                        fontWeight: 600,
-                        color: '#2C2C2C',
-                        margin: '0 0 4px 0',
+                        backgroundColor: '#FFFFFF',
+                        borderRadius: '12px',
+                        padding: '16px',
+                        border: `1px solid ${wateringStatus.borderColor}20`,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '12px',
                       }}
                     >
-                      Penyiraman
-                    </h3>
-                    <p
-                      style={{
-                        fontFamily: "'Inter', sans-serif",
-                        fontSize: '14px',
-                        color: getActionSubtitle(daysSinceWatered, wateringFrequencyDays, 'water').color,
-                        margin: 0,
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                      }}
-                    >
-                      {getActionSubtitle(daysSinceWatered, wateringFrequencyDays, 'water').text}
-                    </p>
-                  </div>
-                </div>
+                      <div
+                        style={{
+                          width: '40px',
+                          height: '40px',
+                          borderRadius: '50%',
+                          backgroundColor: wateringStatus.iconBg,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <Drop size={20} weight="regular" color={wateringStatus.iconColor} />
+                      </div>
+                      <div>
+                        <h3
+                          style={{
+                            fontFamily: "'Inter', sans-serif",
+                            fontSize: '1rem',
+                            fontWeight: 600,
+                            color: '#2C2C2C',
+                            margin: '0 0 4px 0',
+                          }}
+                        >
+                          Penyiraman
+                        </h3>
+                        <p
+                          style={{
+                            fontFamily: "'Inter', sans-serif",
+                            fontSize: '14px',
+                            color: wateringStatus.color,
+                            margin: 0,
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          }}
+                        >
+                          {wateringStatus.text}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* Pemupukan Card */}
-                <div
-                  onClick={handleFertilizingCardTap}
-                  style={{
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: '12px',
-                    padding: '16px',
-                    border: '1px solid #E0E0E0',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '12px',
-                  }}
-                >
-                  <div
-                    style={{
-                      width: '40px',
-                      height: '40px',
-                      borderRadius: '50%',
-                      backgroundColor: '#F5F5F5',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Leaf size={24} weight="regular" color="#666666" />
-                  </div>
-                  <div>
-                    <h3
+                {(() => {
+                  const fertilizingStatus = getActionSubtitle(daysSinceFertilized, fertilizingFrequencyDays, 'fertilize');
+                  return (
+                    <div
+                      onClick={handleFertilizingCardTap}
                       style={{
-                        fontFamily: "'Inter', sans-serif",
-                        fontSize: '1rem',
-                        fontWeight: 600,
-                        color: '#2C2C2C',
-                        margin: '0 0 4px 0',
+                        backgroundColor: '#FFFFFF',
+                        borderRadius: '12px',
+                        padding: '16px',
+                        border: `1px solid ${fertilizingStatus.borderColor}20`,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '12px',
                       }}
                     >
-                      Pemupukan
-                    </h3>
-                    <p
-                      style={{
-                        fontFamily: "'Inter', sans-serif",
-                        fontSize: '14px',
-                        color: getActionSubtitle(daysSinceFertilized, fertilizingFrequencyDays, 'fertilize').color,
-                        margin: 0,
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                      }}
-                    >
-                      {getActionSubtitle(daysSinceFertilized, fertilizingFrequencyDays, 'fertilize').text}
-                    </p>
-                  </div>
-                </div>
+                      <div
+                        style={{
+                          width: '40px',
+                          height: '40px',
+                          borderRadius: '50%',
+                          backgroundColor: fertilizingStatus.iconBg,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <Leaf size={20} weight="regular" color={fertilizingStatus.iconColor} />
+                      </div>
+                      <div>
+                        <h3
+                          style={{
+                            fontFamily: "'Inter', sans-serif",
+                            fontSize: '1rem',
+                            fontWeight: 600,
+                            color: '#2C2C2C',
+                            margin: '0 0 4px 0',
+                          }}
+                        >
+                          Pemupukan
+                        </h3>
+                        <p
+                          style={{
+                            fontFamily: "'Inter', sans-serif",
+                            fontSize: '14px',
+                            color: fertilizingStatus.color,
+                            margin: 0,
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          }}
+                        >
+                          {fertilizingStatus.text}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* Pemangkasan Card */}
                 <div
@@ -1145,7 +1205,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                       justifyContent: 'center',
                     }}
                   >
-                    <Scissors size={24} weight="regular" color="#666666" />
+                    <Scissors size={20} weight="regular" color="#757575" />
                   </div>
                   <div>
                     <h3
@@ -1163,7 +1223,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                       style={{
                         fontFamily: "'Inter', sans-serif",
                         fontSize: '14px',
-                        color: '#666666',
+                        color: '#757575',
                         margin: 0,
                         whiteSpace: 'nowrap',
                         overflow: 'hidden',
@@ -1200,7 +1260,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                       justifyContent: 'center',
                     }}
                   >
-                    <DotsThree size={24} weight="bold" color="#666666" />
+                    <DotsThree size={20} weight="regular" color="#757575" />
                   </div>
                   <div>
                     <h3
@@ -1218,7 +1278,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                       style={{
                         fontFamily: "'Inter', sans-serif",
                         fontSize: '14px',
-                        color: '#666666',
+                        color: '#757575',
                         margin: 0,
                         whiteSpace: 'nowrap',
                         overflow: 'hidden',
@@ -1242,7 +1302,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                   justifyContent: 'center',
                   minHeight: 'calc(100vh - 450px)',
                 }}>
-                  <p style={{ fontFamily: "'Inter', sans-serif", color: '#666666' }}>
+                  <p style={{ fontFamily: "'Inter', sans-serif", color: '#757575' }}>
                     Memuat riwayat...
                   </p>
                 </div>
@@ -1274,7 +1334,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                     style={{
                       fontFamily: "'Inter', sans-serif",
                       fontSize: '1rem',
-                      color: '#666666',
+                      color: '#757575',
                       margin: 0,
                     }}
                   >
@@ -1324,69 +1384,91 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                           border: '1px solid #F5F5F5',
                           boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
                           marginBottom: '12px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '12px',
                           cursor: 'pointer',
                           transition: 'background-color 0.2s ease',
                         }}
                       >
-                        {/* Icon */}
-                        <div
-                          style={{
-                            width: '40px',
-                            height: '40px',
-                            borderRadius: '50%',
-                            backgroundColor: '#F5F5F5',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '1.25rem',
-                            flexShrink: 0,
-                          }}
-                        >
-                          {getActionIcon(entry.type)}
-                        </div>
+                        {/* Top row: Icon + Title + Time */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          {/* Icon */}
+                          <div
+                            style={{
+                              width: '40px',
+                              height: '40px',
+                              borderRadius: '50%',
+                              backgroundColor: '#F5F5F5',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '1.25rem',
+                              flexShrink: 0,
+                            }}
+                          >
+                            {getActionIcon(entry.type)}
+                          </div>
 
-                        {/* Content */}
-                        <div style={{ flex: 1 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <h4
-                              style={{
-                                fontFamily: "'Inter', sans-serif",
-                                fontSize: '1rem',
-                                fontWeight: 500,
-                                color: '#2C2C2C',
-                                margin: 0,
-                              }}
-                            >
-                              {entry.label}
-                            </h4>
-                            {entry.time && (
-                              <span
+                          {/* Title and Time */}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <h4
+                                style={{
+                                  fontFamily: "'Inter', sans-serif",
+                                  fontSize: '1rem',
+                                  fontWeight: 500,
+                                  color: '#2C2C2C',
+                                  margin: 0,
+                                }}
+                              >
+                                {entry.label}
+                              </h4>
+                              {entry.time && (
+                                <span
+                                  style={{
+                                    fontFamily: "'Inter', sans-serif",
+                                    fontSize: '14px',
+                                    color: '#999999',
+                                  }}
+                                >
+                                  {entry.time}
+                                </span>
+                              )}
+                            </div>
+                            {entry.notes && (
+                              <p
                                 style={{
                                   fontFamily: "'Inter', sans-serif",
                                   fontSize: '14px',
-                                  color: '#999999',
+                                  color: '#757575',
+                                  margin: '4px 0 0 0',
                                 }}
                               >
-                                {entry.time}
-                              </span>
+                                {entry.notes}
+                              </p>
                             )}
                           </div>
-                          {entry.notes && (
-                            <p
-                              style={{
-                                fontFamily: "'Inter', sans-serif",
-                                fontSize: '14px',
-                                color: '#666666',
-                                margin: '4px 0 0 0',
-                              }}
-                            >
-                              {entry.notes}
-                            </p>
-                          )}
                         </div>
+
+                        {/* Photo Preview - Small thumbnail (non-clickable, tap card to see detail) */}
+                        {entry.photoUrl && (
+                          <div
+                            style={{
+                              marginTop: '8px',
+                              marginLeft: '52px', // Align with content (40px icon + 12px gap)
+                            }}
+                          >
+                            <img
+                              src={entry.photoUrl}
+                              alt="Foto aksi"
+                              style={{
+                                width: '60px',
+                                height: '60px',
+                                objectFit: 'cover',
+                                borderRadius: '6px',
+                                display: 'block',
+                              }}
+                            />
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -1440,7 +1522,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                 style={{
                   fontFamily: "'Inter', sans-serif",
                   fontSize: '14px',
-                  color: '#666666',
+                  color: '#757575',
                   margin: 0,
                 }}
               >
@@ -1460,7 +1542,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                 flexShrink: 0,
               }}
             >
-              <ChatDots size={24} weight="regular" color="#666666" />
+              <ChatDots size={24} weight="regular" color="#757575" />
             </div>
           </div>
         </div>
@@ -1519,7 +1601,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
               >
                 <h2
                   style={{
-                    fontFamily: 'var(--font-caveat), Caveat, cursive',
+                    fontFamily: "'Caveat', cursive",
                     fontSize: '1.75rem',
                     fontWeight: 600,
                     color: '#2D5016',
@@ -1545,7 +1627,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                   <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                     <path
                       d="M15 5L5 15M5 5l10 10"
-                      stroke="#666666"
+                      stroke="#757575"
                       strokeWidth="2"
                       strokeLinecap="round"
                     />
@@ -1559,7 +1641,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                   fontFamily: "'Inter', sans-serif",
                   fontSize: '12px',
                   fontWeight: 500,
-                  color: '#666666',
+                  color: '#757575',
                   textTransform: 'uppercase',
                   letterSpacing: '0.5px',
                   marginBottom: '12px',
@@ -1675,7 +1757,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                   fontFamily: "'Inter', sans-serif",
                   fontSize: '12px',
                   fontWeight: 500,
-                  color: '#666666',
+                  color: '#757575',
                   textTransform: 'uppercase',
                   letterSpacing: '0.5px',
                   marginBottom: '12px',
@@ -1721,7 +1803,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                   fontFamily: "'Inter', sans-serif",
                   fontSize: '12px',
                   fontWeight: 500,
-                  color: '#666666',
+                  color: '#757575',
                   textTransform: 'uppercase',
                   letterSpacing: '0.5px',
                   marginBottom: '12px',
@@ -1812,6 +1894,68 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
               exit={{ scale: 0.8 }}
               src={plantData.photoUrl}
               alt={plantData.customName}
+              style={{
+                maxWidth: '90%',
+                maxHeight: '90%',
+                objectFit: 'contain',
+                borderRadius: '12px',
+              }}
+              onClick={(e) => e.stopPropagation()}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Timeline Photo Fullscreen Preview - must be above detail drawers (z-index 5001) */}
+      <AnimatePresence>
+        {timelinePhotoPreview && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.95)',
+              zIndex: 6500,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            onClick={() => setTimelinePhotoPreview(null)}
+          >
+            {/* Close Button */}
+            <button
+              onClick={() => setTimelinePhotoPreview(null)}
+              aria-label="Tutup"
+              style={{
+                position: 'absolute',
+                top: '24px',
+                right: '24px',
+                width: '48px',
+                height: '48px',
+                borderRadius: '50%',
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                border: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+              }}
+            >
+              <X size={28} weight="bold" color="#FFFFFF" />
+            </button>
+
+            {/* Full Image */}
+            <motion.img
+              initial={{ scale: 0.8 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.8 }}
+              src={timelinePhotoPreview}
+              alt="Foto aksi"
               style={{
                 maxWidth: '90%',
                 maxHeight: '90%',
@@ -1920,7 +2064,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                 <path
                   d="M15 5L5 15M5 5l10 10"
-                  stroke="#666666"
+                  stroke="#757575"
                   strokeWidth="2"
                   strokeLinecap="round"
                 />
@@ -2000,7 +2144,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
               {/* Title */}
               <h2
                 style={{
-                  fontFamily: 'var(--font-caveat), Caveat, cursive',
+                  fontFamily: "'Caveat', cursive",
                   fontSize: '1.75rem',
                   fontWeight: 600,
                   color: '#2D5016',
@@ -2015,7 +2159,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                 style={{
                   fontFamily: "'Inter', sans-serif",
                   fontSize: '14px',
-                  color: '#666666',
+                  color: '#757575',
                   margin: '0 0 24px 0',
                   lineHeight: 1.5,
                 }}
@@ -2033,7 +2177,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                     fontSize: '1rem',
                     fontFamily: "'Inter', sans-serif",
                     fontWeight: 600,
-                    color: '#666666',
+                    color: '#757575',
                     backgroundColor: '#F5F5F5',
                     border: 'none',
                     borderRadius: '12px',
@@ -2121,7 +2265,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
               >
                 <h2
                   style={{
-                    fontFamily: 'var(--font-caveat), Caveat, cursive',
+                    fontFamily: "'Caveat', cursive",
                     fontSize: '1.75rem',
                     fontWeight: 600,
                     color: '#2D5016',
@@ -2147,7 +2291,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                   <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                     <path
                       d="M15 5L5 15M5 5l10 10"
-                      stroke="#666666"
+                      stroke="#757575"
                       strokeWidth="2"
                       strokeLinecap="round"
                     />
@@ -2309,7 +2453,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
               >
                 <h2
                   style={{
-                    fontFamily: 'var(--font-caveat), Caveat, cursive',
+                    fontFamily: "'Caveat', cursive",
                     fontSize: '1.75rem',
                     fontWeight: 600,
                     color: '#2D5016',
@@ -2340,7 +2484,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                   <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                     <path
                       d="M15 5L5 15M5 5l10 10"
-                      stroke="#666666"
+                      stroke="#757575"
                       strokeWidth="2"
                       strokeLinecap="round"
                     />
@@ -2584,7 +2728,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
               >
                 <h2
                   style={{
-                    fontFamily: 'var(--font-caveat), Caveat, cursive',
+                    fontFamily: "'Caveat', cursive",
                     fontSize: '1.75rem',
                     fontWeight: 600,
                     color: '#2D5016',
@@ -2615,7 +2759,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                   <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                     <path
                       d="M15 5L5 15M5 5l10 10"
-                      stroke="#666666"
+                      stroke="#757575"
                       strokeWidth="2"
                       strokeLinecap="round"
                     />
@@ -2809,7 +2953,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
               >
                 <h2
                   style={{
-                    fontFamily: 'var(--font-caveat), Caveat, cursive',
+                    fontFamily: "'Caveat', cursive",
                     fontSize: '1.75rem',
                     fontWeight: 600,
                     color: '#2D5016',
@@ -2844,7 +2988,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                   <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                     <path
                       d="M15 5L5 15M5 5l10 10"
-                      stroke="#666666"
+                      stroke="#757575"
                       strokeWidth="2"
                       strokeLinecap="round"
                     />
@@ -3049,7 +3193,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
               >
                 <h2
                   style={{
-                    fontFamily: 'var(--font-caveat), Caveat, cursive',
+                    fontFamily: "'Caveat', cursive",
                     fontSize: '1.75rem',
                     fontWeight: 600,
                     color: '#2D5016',
@@ -3078,7 +3222,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                   <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                     <path
                       d="M15 5L5 15M5 5l10 10"
-                      stroke="#666666"
+                      stroke="#757575"
                       strokeWidth="2"
                       strokeLinecap="round"
                     />
@@ -3122,11 +3266,11 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                     ) : selectedHistoryEntry.type === 'fertilize' ? (
                       <Leaf size={20} weight="duotone" color="#16A34A" />
                     ) : selectedHistoryEntry.type === 'prune' ? (
-                      <Scissors size={20} weight="duotone" color="#666666" />
+                      <Scissors size={20} weight="duotone" color="#757575" />
                     ) : selectedHistoryEntry.type === 'harvest' ? (
-                      <Basket size={20} weight="duotone" color="#666666" />
+                      <Basket size={20} weight="duotone" color="#757575" />
                     ) : (
-                      <Drop size={20} weight="duotone" color="#666666" />
+                      <Drop size={20} weight="duotone" color="#757575" />
                     )}
                   </div>
 
@@ -3146,7 +3290,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                       style={{
                         fontFamily: "'Inter', sans-serif",
                         fontSize: '14px',
-                        color: '#666666',
+                        color: '#757575',
                       }}
                     >
                       {selectedHistoryEntry.dateFormatted}
@@ -3168,7 +3312,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                         fontFamily: "'Inter', sans-serif",
                         fontSize: '14px',
                         fontWeight: 500,
-                        color: '#666666',
+                        color: '#757575',
                         margin: '0 0 4px 0',
                       }}
                     >
@@ -3197,7 +3341,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                       fontFamily: "'Inter', sans-serif",
                       fontSize: '14px',
                       fontWeight: 500,
-                      color: '#666666',
+                      color: '#757575',
                       margin: '0 0 8px 0',
                     }}
                   >
@@ -3206,11 +3350,13 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                   <img
                     src={selectedHistoryEntry.photoUrl}
                     alt="Action photo"
+                    onClick={() => setTimelinePhotoPreview(selectedHistoryEntry.photoUrl)}
                     style={{
                       width: '100%',
                       borderRadius: '12px',
                       objectFit: 'cover',
                       maxHeight: '200px',
+                      cursor: 'pointer',
                     }}
                   />
                 </div>
@@ -3320,7 +3466,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                 {/* Title */}
                 <h2
                   style={{
-                    fontFamily: 'var(--font-caveat), Caveat, cursive',
+                    fontFamily: "'Caveat', cursive",
                     fontSize: '1.75rem',
                     fontWeight: 600,
                     color: '#2D5016',
@@ -3335,7 +3481,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                   style={{
                     fontFamily: "'Inter', sans-serif",
                     fontSize: '14px',
-                    color: '#666666',
+                    color: '#757575',
                     margin: '0 0 24px 0',
                     lineHeight: 1.5,
                   }}
@@ -3354,7 +3500,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                       fontSize: '1rem',
                       fontFamily: "'Inter', sans-serif",
                       fontWeight: 600,
-                      color: '#666666',
+                      color: '#757575',
                       backgroundColor: '#F5F5F5',
                       border: 'none',
                       borderRadius: '12px',

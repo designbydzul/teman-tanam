@@ -117,7 +117,7 @@ const ProfileModal = ({
                 cursor: 'pointer',
               }}
             >
-              <X size={20} weight="bold" color="#666666" />
+              <X size={20} weight="regular" color="#757575" />
             </button>
 
             {/* Profile Picture */}
@@ -152,7 +152,7 @@ const ProfileModal = ({
             {/* User Name */}
             <h2
               style={{
-                fontFamily: 'var(--font-caveat), Caveat, cursive',
+                fontFamily: "'Caveat', cursive",
                 fontSize: '1.75rem',
                 fontWeight: 600,
                 color: '#2D5016',
@@ -167,7 +167,7 @@ const ProfileModal = ({
               style={{
                 fontFamily: "'Inter', sans-serif",
                 fontSize: '14px',
-                color: '#666666',
+                color: '#757575',
                 margin: '0 0 32px 0',
               }}
             >

@@ -326,13 +326,13 @@ const Home = ({ userName }) => {
     if (urgentStatusCounts.perluDisiram > 0) {
       return {
         text: `${urgentStatusCounts.perluDisiram} tanaman perlu disiram`,
-        color: '#F57C00', // Orange
+        color: '#FF9800', // Orange warning
       };
     }
     if (urgentStatusCounts.perluDipupuk > 0) {
       return {
         text: `${urgentStatusCounts.perluDipupuk} tanaman perlu dipupuk`,
-        color: '#F57C00', // Orange
+        color: '#FF9800', // Orange warning
       };
     }
     if (urgentStatusCounts.siapDipanen > 0) {
@@ -846,8 +846,8 @@ const Home = ({ userName }) => {
                 setTimeout(() => setShowNetworkToast(false), 3000);
               }}
               style={{
-                width: '56px',
-                height: '56px',
+                width: '52px',
+                height: '52px',
                 borderRadius: '50%',
                 backgroundColor: networkStatus === 'online' ? '#F1F8E9' : networkStatus === 'reconnecting' ? '#FEF3C7' : '#FEE2E2',
                 border: 'none',
@@ -860,7 +860,7 @@ const Home = ({ userName }) => {
             >
               {networkStatus === 'online' ? (
                 // Online - Green WiFi icon
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                   <path
                     d="M5 12.55a11 11 0 0114.08 0M8.53 16.11a6 6 0 016.95 0M12 20h.01"
                     stroke="#2D5016"
@@ -871,17 +871,17 @@ const Home = ({ userName }) => {
                 </svg>
               ) : networkStatus === 'reconnecting' ? (
                 // Reconnecting - Orange sync/refresh icon
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                   <path
                     d="M21 12a9 9 0 11-3-6.71"
-                    stroke="#F59E0B"
+                    stroke="#FF9800"
                     strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   />
                   <path
                     d="M21 3v6h-6"
-                    stroke="#F59E0B"
+                    stroke="#FF9800"
                     strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -889,7 +889,7 @@ const Home = ({ userName }) => {
                 </svg>
               ) : (
                 // Offline - Red WiFi off icon with slash
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                   <path
                     d="M5 12.55a11 11 0 0114.08 0M8.53 16.11a6 6 0 016.95 0M12 20h.01"
                     stroke="#EF4444"
@@ -912,8 +912,8 @@ const Home = ({ userName }) => {
             <button
               onClick={() => setShowProfileModal(true)}
               style={{
-                width: '56px',
-                height: '56px',
+                width: '52px',
+                height: '52px',
                 borderRadius: '50%',
                 backgroundColor: '#F5F5F5',
                 border: 'none',
@@ -923,11 +923,11 @@ const Home = ({ userName }) => {
                 cursor: 'pointer',
               }}
             >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <rect x="3" y="3" width="7" height="7" rx="1" stroke="#666" strokeWidth="2" />
-                <rect x="14" y="3" width="7" height="7" rx="1" stroke="#666" strokeWidth="2" />
-                <rect x="3" y="14" width="7" height="7" rx="1" stroke="#666" strokeWidth="2" />
-                <rect x="14" y="14" width="7" height="7" rx="1" stroke="#666" strokeWidth="2" />
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <rect x="3" y="3" width="7" height="7" rx="1" stroke="#757575" strokeWidth="2" />
+                <rect x="14" y="3" width="7" height="7" rx="1" stroke="#757575" strokeWidth="2" />
+                <rect x="3" y="14" width="7" height="7" rx="1" stroke="#757575" strokeWidth="2" />
+                <rect x="14" y="14" width="7" height="7" rx="1" stroke="#757575" strokeWidth="2" />
               </svg>
             </button>
           </div>
@@ -1225,7 +1225,7 @@ const Home = ({ userName }) => {
                     fontFamily: "'Inter', sans-serif",
                     fontSize: '14px',
                     fontWeight: 500,
-                    color: '#666666',
+                    color: '#757575',
                   }}
                 >
                   {selectedPlantIds.size === filteredPlants.length ? 'Batal pilih' : 'Semua'}
@@ -1362,7 +1362,7 @@ const Home = ({ userName }) => {
                 fontFamily: "'Inter', sans-serif",
                 fontSize: '1.125rem',
                 fontWeight: 500,
-                color: '#666666',
+                color: '#757575',
                 margin: 0,
                 lineHeight: 1.6,
               }}
@@ -1386,7 +1386,7 @@ const Home = ({ userName }) => {
                 marginTop: '8px',
                 fontFamily: "'Inter', sans-serif",
                 fontSize: '14px',
-                color: '#666666',
+                color: '#757575',
                 textAlign: 'center',
                 margin: 0,
                 marginTop: '8px',
@@ -1416,7 +1416,7 @@ const Home = ({ userName }) => {
                   fontFamily: "'Inter', sans-serif",
                   fontSize: '14px',
                   fontWeight: 500,
-                  color: '#666666',
+                  color: '#757575',
                 }}
               >
                 Reset Filter
@@ -1636,7 +1636,7 @@ const Home = ({ userName }) => {
                 flexShrink: 0,
               }}
             >
-              <DotsThreeVertical size={24} weight="bold" color="#666666" />
+              <DotsThreeVertical size={24} weight="regular" color="#757575" />
             </button>
           </motion.div>
         )}
@@ -1946,7 +1946,7 @@ const Home = ({ userName }) => {
                 style={{
                   fontFamily: "'Inter', sans-serif",
                   fontSize: '14px',
-                  color: '#666666',
+                  color: '#757575',
                   margin: '0 0 12px 0',
                   lineHeight: '1.5',
                 }}
@@ -1961,7 +1961,7 @@ const Home = ({ userName }) => {
                 <div
                   style={{
                     backgroundColor: '#FEF3C7',
-                    border: '1px solid #F59E0B',
+                    border: '1px solid #FF9800',
                     borderRadius: '12px',
                     padding: '12px 16px',
                     margin: '0 0 20px 0',
@@ -2017,7 +2017,7 @@ const Home = ({ userName }) => {
                     fontFamily: "'Inter', sans-serif",
                     fontSize: '16px',
                     fontWeight: 600,
-                    color: '#666666',
+                    color: '#757575',
                   }}
                 >
                   Batal
@@ -2136,7 +2136,7 @@ const Home = ({ userName }) => {
                   <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                     <path
                       d="M15 5L5 15M5 5l10 10"
-                      stroke="#666666"
+                      stroke="#757575"
                       strokeWidth="2"
                       strokeLinecap="round"
                     />
@@ -2370,7 +2370,7 @@ const Home = ({ userName }) => {
 
               <h3
                 style={{
-                  fontFamily: 'var(--font-caveat), Caveat, cursive',
+                  fontFamily: "'Caveat', cursive",
                   fontSize: '1.5rem',
                   fontWeight: 600,
                   color: '#2D5016',
@@ -2384,7 +2384,7 @@ const Home = ({ userName }) => {
                 style={{
                   fontFamily: "'Inter', sans-serif",
                   fontSize: '14px',
-                  color: '#666666',
+                  color: '#757575',
                   margin: '0 0 24px 0',
                   lineHeight: 1.5,
                 }}
@@ -2408,7 +2408,7 @@ const Home = ({ userName }) => {
                     fontSize: '1rem',
                     fontFamily: "'Inter', sans-serif",
                     fontWeight: 600,
-                    color: '#666666',
+                    color: '#757575',
                     backgroundColor: '#F5F5F5',
                     border: 'none',
                     borderRadius: '12px',
@@ -2482,7 +2482,7 @@ const Home = ({ userName }) => {
                   fontFamily: "'Inter', sans-serif",
                   fontSize: '14px',
                   fontWeight: 400,
-                  color: '#666666',
+                  color: '#757575',
                   margin: 0,
                   lineHeight: 1.4,
                 }}
@@ -2506,7 +2506,7 @@ const Home = ({ userName }) => {
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                 <path
                   d="M15 5L5 15M5 5l10 10"
-                  stroke="#666666"
+                  stroke="#757575"
                   strokeWidth="2"
                   strokeLinecap="round"
                 />
@@ -2568,7 +2568,7 @@ const Home = ({ userName }) => {
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                 <path
                   d="M15 5L5 15M5 5l10 10"
-                  stroke="#666666"
+                  stroke="#757575"
                   strokeWidth="2"
                   strokeLinecap="round"
                 />
@@ -2671,7 +2671,7 @@ const Home = ({ userName }) => {
                   <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                     <path
                       d="M15 5L5 15M5 5l10 10"
-                      stroke="#666666"
+                      stroke="#757575"
                       strokeWidth="2"
                       strokeLinecap="round"
                     />
@@ -2886,7 +2886,7 @@ const Home = ({ userName }) => {
                   <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                     <path
                       d="M15 5L5 15M5 5l10 10"
-                      stroke="#666666"
+                      stroke="#757575"
                       strokeWidth="2"
                       strokeLinecap="round"
                     />

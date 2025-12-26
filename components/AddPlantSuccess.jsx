@@ -102,7 +102,7 @@ const AddPlantSuccess = ({ plantData, onViewDetails, onAddNew, onBackHome }) => 
             style={{
               fontFamily: "'Inter', sans-serif",
               fontSize: '14px',
-              color: '#666666',
+              color: '#757575',
               margin: 0,
               lineHeight: 1.6,
             }}
@@ -188,7 +188,7 @@ const AddPlantSuccess = ({ plantData, onViewDetails, onAddNew, onBackHome }) => 
             border: 'none',
             fontFamily: "'Inter', sans-serif",
             fontSize: '14px',
-            color: '#666666',
+            color: '#757575',
             cursor: 'pointer',
             textDecoration: 'underline',
           }}

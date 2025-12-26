@@ -268,13 +268,13 @@ const EditProfile = ({ onBack, userName, userEmail, userPhoto, onSave, onProfile
               cursor: 'pointer',
             }}
           >
-            <ArrowLeft size={16} weight="bold" color="#2D5016" />
+            <ArrowLeft size={20} weight="regular" color="#2C2C2C" />
           </button>
 
           {/* Title */}
           <h1
             style={{
-              fontFamily: 'var(--font-caveat), Caveat, cursive',
+              fontFamily: "'Caveat', cursive",
               fontSize: '1.75rem',
               fontWeight: 600,
               color: '#2D5016',
@@ -301,7 +301,7 @@ const EditProfile = ({ onBack, userName, userEmail, userPhoto, onSave, onProfile
               fontFamily: "'Inter', sans-serif",
               fontSize: '14px',
               fontWeight: 500,
-              color: '#666666',
+              color: '#757575',
               display: 'block',
               marginBottom: '12px',
             }}
@@ -311,7 +311,7 @@ const EditProfile = ({ onBack, userName, userEmail, userPhoto, onSave, onProfile
 
           <div
             style={{
-              border: photoError ? '2px dashed #FF5252' : '2px dashed #E0E0E0',
+              border: photoError ? '2px dashed #DC2626' : '2px dashed #E0E0E0',
               borderRadius: '12px',
               padding: '32px',
               display: 'flex',
@@ -341,7 +341,7 @@ const EditProfile = ({ onBack, userName, userEmail, userPhoto, onSave, onProfile
                   style={{
                     fontFamily: "'Inter', sans-serif",
                     fontSize: '14px',
-                    color: '#666666',
+                    color: '#757575',
                   }}
                 >
                   Memproses foto...
@@ -352,7 +352,7 @@ const EditProfile = ({ onBack, userName, userEmail, userPhoto, onSave, onProfile
                 style={{
                   width: '100px',
                   height: '100px',
-                  borderRadius: '24px',
+                  borderRadius: '16px',
                   overflow: 'hidden',
                   marginBottom: '16px',
                 }}
@@ -394,7 +394,7 @@ const EditProfile = ({ onBack, userName, userEmail, userPhoto, onSave, onProfile
                   fontFamily: "'Inter', sans-serif",
                   fontSize: '14px',
                   fontWeight: 500,
-                  color: '#666666',
+                  color: '#757575',
                 }}
               >
                 <UploadSimple size={20} weight="bold" />
@@ -409,7 +409,7 @@ const EditProfile = ({ onBack, userName, userEmail, userPhoto, onSave, onProfile
               style={{
                 fontFamily: "'Inter', sans-serif",
                 fontSize: '12px',
-                color: '#FF5252',
+                color: '#DC2626',
                 margin: '8px 0 0 0',
                 textAlign: 'center',
               }}
@@ -426,7 +426,7 @@ const EditProfile = ({ onBack, userName, userEmail, userPhoto, onSave, onProfile
               fontFamily: "'Inter', sans-serif",
               fontSize: '14px',
               fontWeight: 500,
-              color: '#666666',
+              color: '#757575',
               display: 'block',
               marginBottom: '8px',
             }}
@@ -473,7 +473,7 @@ const EditProfile = ({ onBack, userName, userEmail, userPhoto, onSave, onProfile
               fontFamily: "'Inter', sans-serif",
               fontSize: '14px',
               fontWeight: 500,
-              color: '#666666',
+              color: '#757575',
               display: 'block',
               marginBottom: '8px',
             }}
@@ -507,6 +507,7 @@ const EditProfile = ({ onBack, userName, userEmail, userPhoto, onSave, onProfile
       <div
         style={{
           padding: '24px',
+          paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 0px))',
           backgroundColor: '#FFFFFF',
           borderTop: '1px solid #F5F5F5',
           flexShrink: 0,
@@ -522,7 +523,7 @@ const EditProfile = ({ onBack, userName, userEmail, userPhoto, onSave, onProfile
             fontFamily: "'Inter', sans-serif",
             fontWeight: 600,
             color: '#FFFFFF',
-            backgroundColor: isValid && !isSaving ? '#7CB342' : '#CCCCCC',
+            backgroundColor: isValid && !isSaving ? '#7CB342' : '#E0E0E0',
             border: 'none',
             borderRadius: '12px',
             cursor: isValid && !isSaving ? 'pointer' : 'not-allowed',

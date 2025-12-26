@@ -161,7 +161,7 @@ const Onboarding = ({ onComplete }) => {
                 style={{
                   fontFamily: "'Inter', sans-serif",
                   fontSize: '0.875rem',
-                  color: '#F44336',
+                  color: '#DC2626',
                   marginTop: '8px',
                   marginBottom: 0,
                 }}
@@ -258,9 +258,7 @@ const Onboarding = ({ onComplete }) => {
             padding: '18px',
             borderRadius: '16px',
             border: 'none',
-            background: isValid
-              ? 'linear-gradient(to right, #7CB342, #689F38)'
-              : '#7CB342',
+            backgroundColor: isValid ? '#7CB342' : '#E0E0E0',
             color: '#FFFFFF',
             fontSize: '1.125rem',
             fontWeight: 600,

@@ -166,7 +166,7 @@ const AddPlant = ({ onClose, onSelectSpecies }) => {
                 }}
               >
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <path d="M12 4L4 12M4 4l8 8" stroke="#666666" strokeWidth="2" strokeLinecap="round" />
+                  <path d="M12 4L4 12M4 4l8 8" stroke="#757575" strokeWidth="2" strokeLinecap="round" />
                 </svg>
               </button>
             ) : (
@@ -176,8 +176,8 @@ const AddPlant = ({ onClose, onSelectSpecies }) => {
                 viewBox="0 0 24 24"
                 fill="none"
               >
-                <circle cx="11" cy="11" r="8" stroke="#666666" strokeWidth="2" />
-                <path d="M21 21l-4.35-4.35" stroke="#666666" strokeWidth="2" strokeLinecap="round" />
+                <circle cx="11" cy="11" r="8" stroke="#757575" strokeWidth="2" />
+                <path d="M21 21l-4.35-4.35" stroke="#757575" strokeWidth="2" strokeLinecap="round" />
               </svg>
             )}
           </div>
@@ -262,7 +262,7 @@ const AddPlant = ({ onClose, onSelectSpecies }) => {
                   fontFamily: "'Inter', sans-serif",
                   fontSize: '12px',
                   fontWeight: 400,
-                  color: '#666666',
+                  color: '#757575',
                   margin: 0,
                   textAlign: 'center',
                   overflow: 'hidden',
@@ -316,7 +316,7 @@ const AddPlant = ({ onClose, onSelectSpecies }) => {
                 fontFamily: "'Inter', sans-serif",
                 fontSize: '1.125rem',
                 fontWeight: 500,
-                color: '#666666',
+                color: '#757575',
                 margin: 0,
                 lineHeight: 1.6,
               }}
