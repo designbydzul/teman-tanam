@@ -107,7 +107,38 @@ export function useAuth(): UseAuthReturn {
         hasFetchedProfile.current = true;
         return true;
       } else {
-        debug.log('Profile exists but no display_name, needs onboarding');
+        // No display_name - but check if user has existing plants
+        // If they have plants, they've used the app before (possibly on another device)
+        debug.log('Profile exists but no display_name, checking for existing plants...');
+
+        const { data: existingPlants, error: plantsError } = await supabase
+          .from('plants')
+          .select('id')
+          .eq('user_id', userId)
+          .limit(1);
+
+        if (!plantsError && existingPlants && existingPlants.length > 0) {
+          debug.log('User has existing plants, skipping onboarding');
+          console.log('🔑 [AUTH] User has plants in DB, skipping onboarding for USER_ID:', userId);
+
+          // Update profile with a default display_name from email
+          const { data: { user: authUser } } = await supabase.auth.getUser();
+          const emailName = authUser?.email?.split('@')[0] || 'Teman';
+          const displayName = emailName.charAt(0).toUpperCase() + emailName.slice(1);
+
+          await supabase
+            .from('profiles')
+            .update({ display_name: displayName, updated_at: new Date().toISOString() })
+            .eq('id', userId);
+
+          setProfile({ ...data, display_name: displayName } as Profile);
+          setHasCompletedOnboarding(true);
+          localStorage.setItem(`onboarding_complete_${userId}`, 'true');
+          hasFetchedProfile.current = true;
+          return true;
+        }
+
+        debug.log('No existing plants, needs onboarding');
         setProfile(data as Profile);
         setHasCompletedOnboarding(false);
         hasFetchedProfile.current = true;
