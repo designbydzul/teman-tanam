@@ -28,7 +28,11 @@ export function useAuth(): UseAuthReturn {
 
   // Simple onboarding check - just look at onboarding_completed column
   const checkOnboardingStatus = useCallback(async (userId: string | undefined, forceRefetch = false): Promise<boolean> => {
-    console.log('🔍 [ONBOARDING] checkOnboardingStatus called:', userId);
+    console.log('🔍 [ONBOARDING] === checkOnboardingStatus START ===');
+    console.log('🔍 [ONBOARDING] userId:', userId);
+    console.log('🔍 [ONBOARDING] forceRefetch:', forceRefetch);
+    console.log('🔍 [ONBOARDING] hasFetchedProfile.current:', hasFetchedProfile.current);
+    console.log('🔍 [ONBOARDING] currentUserId.current:', currentUserId.current);
 
     if (!userId) {
       console.log('🔍 [ONBOARDING] No userId, returning false');
@@ -37,34 +41,28 @@ export function useAuth(): UseAuthReturn {
       return false;
     }
 
-    // Prevent duplicate fetches
+    // Prevent duplicate fetches - but log what's happening
     if (!forceRefetch && hasFetchedProfile.current && currentUserId.current === userId) {
-      console.log('🔍 [ONBOARDING] Using cached result:', hasCompletedOnboarding);
+      console.log('🔍 [ONBOARDING] SKIPPING fetch - using cached result:', hasCompletedOnboarding);
       return hasCompletedOnboarding;
     }
 
     currentUserId.current = userId;
-    console.log('🔍 [ONBOARDING] Fetching profile from Supabase...');
+    console.log('🔍 [ONBOARDING] Starting Supabase query...');
 
     try {
-      // Query with timeout
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Profile query timeout after 5s')), 5000);
-      });
+      // Direct query - no timeout wrapper for now to see what happens
+      console.log('🔍 [ONBOARDING] Calling supabase.from(profiles).select()...');
 
-      const queryPromise = supabase
+      const result = await supabase
         .from('profiles')
         .select('id, display_name, onboarding_completed, avatar_url, show_statistics, updated_at')
         .eq('id', userId)
         .maybeSingle();
 
-      const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
+      console.log('🔍 [ONBOARDING] Supabase returned:', JSON.stringify(result));
 
-      console.log('🔍 [ONBOARDING] Query completed:', {
-        hasData: !!data,
-        onboarding_completed: data?.onboarding_completed,
-        error: error?.message,
-      });
+      const { data, error } = result;
 
       if (error) {
         console.log('❌ [ONBOARDING] Profile fetch error:', error.message);
@@ -85,24 +83,23 @@ export function useAuth(): UseAuthReturn {
 
       // Check onboarding_completed column
       const completed = data.onboarding_completed === true;
+      console.log('🔍 [ONBOARDING] onboarding_completed value:', data.onboarding_completed, '(type:', typeof data.onboarding_completed, ')');
       console.log(completed ? '✅ [ONBOARDING] Completed - going to Home' : '❌ [ONBOARDING] Not completed - SHOWING onboarding');
 
       setProfile(data as Profile);
       setHasCompletedOnboarding(completed);
       hasFetchedProfile.current = true;
+      console.log('🔍 [ONBOARDING] === checkOnboardingStatus END (success) ===');
       return completed;
     } catch (err) {
       const errorMsg = (err as Error).message;
-      console.log('🚨 [ONBOARDING] Error:', errorMsg);
-
-      // On timeout/error, check if we have a cached value
-      if (errorMsg.includes('timeout')) {
-        console.log('🚨 [ONBOARDING] Query timed out - defaulting to show onboarding');
-      }
+      console.log('🚨 [ONBOARDING] CATCH block - Error:', errorMsg);
+      console.log('🚨 [ONBOARDING] Full error:', err);
 
       setHasCompletedOnboarding(false);
       setProfile(null);
       hasFetchedProfile.current = true;
+      console.log('🔍 [ONBOARDING] === checkOnboardingStatus END (error) ===');
       return false;
     }
   }, [hasCompletedOnboarding]);
