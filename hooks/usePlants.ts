@@ -282,6 +282,8 @@ export function usePlants(): UsePlantsReturn {
 
       // ONLINE MODE: Fetch from Supabase
       debug.log('ONLINE: Fetching plants for user:', user.id);
+      // DEBUG: Log user_id for cross-device sync debugging
+      console.log('🌱 [FETCH] Fetching plants for USER_ID:', user.id);
 
       // Fetch plants with joins
       let plantsData: PlantRaw[] | null = null;
@@ -339,6 +341,8 @@ export function usePlants(): UsePlantsReturn {
       }
 
       debug.log('Plants count:', plantsData?.length);
+      // DEBUG: Log fetched plants count
+      console.log('🌱 [FETCH] Found', plantsData?.length, 'plants for USER_ID:', user.id);
 
       // Fetch last actions for each plant
       const plantIds = plantsData?.map(p => p.id) || [];
@@ -530,6 +534,9 @@ export function usePlants(): UsePlantsReturn {
       };
 
       debug.log('addPlant: Inserting data');
+      // DEBUG: Log user_id when adding plant
+      console.log('🌱 [ADD] Adding plant for USER_ID:', user.id);
+      console.log('🌱 [ADD] Plant name:', insertData.name);
 
       const { data, error } = await supabase
         .from('plants')
@@ -543,6 +550,8 @@ export function usePlants(): UsePlantsReturn {
       }
 
       debug.log('addPlant: SUCCESS');
+      // DEBUG: Confirm plant was added
+      console.log('🌱 [ADD] SUCCESS - Plant ID:', data.id, 'for USER_ID:', user.id);
 
       // Upload photo if present
       if (plantData.photoBlob) {

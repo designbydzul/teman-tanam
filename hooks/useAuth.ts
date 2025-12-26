@@ -164,6 +164,9 @@ export function useAuth(): UseAuthReturn {
 
         if (currentSession) {
           debug.log('User is authenticated:', currentSession.user?.email);
+          // DEBUG: Log user_id for cross-device sync debugging
+          console.log('🔑 [AUTH] USER_ID on login:', currentSession.user?.id);
+          console.log('🔑 [AUTH] Email:', currentSession.user?.email);
           setUser(currentSession.user);
           await checkOnboardingStatus(currentSession.user?.id);
         } else {
@@ -193,6 +196,9 @@ export function useAuth(): UseAuthReturn {
 
       if (event === 'SIGNED_IN' && newSession) {
         debug.log('User signed in:', newSession.user?.email);
+        // DEBUG: Log user_id for cross-device sync debugging
+        console.log('🔑 [AUTH] SIGNED_IN - USER_ID:', newSession.user?.id);
+        console.log('🔑 [AUTH] SIGNED_IN - Email:', newSession.user?.email);
         setUser(newSession.user);
         await checkOnboardingStatus(newSession.user?.id);
         // Clear any OAuth tokens from URL hash
