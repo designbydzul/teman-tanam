@@ -85,6 +85,50 @@ export function useAuth(): UseAuthReturn {
       // No profile found - create one
       if (!data) {
         debug.log('No profile found, creating one...');
+        console.log('🔍 [ONBOARDING] No profile found, will create one and check for plants');
+
+        // First check if user has existing plants before creating profile
+        console.log('🔍 [ONBOARDING] Checking for existing plants for new profile user:', userId);
+        const { data: existingPlantsForNewUser, error: plantsCheckError } = await supabase
+          .from('plants')
+          .select('id')
+          .eq('user_id', userId)
+          .limit(1);
+
+        console.log('🔍 [ONBOARDING] Plants check for new profile:', {
+          plantsFound: existingPlantsForNewUser?.length || 0,
+          error: plantsCheckError?.message || null,
+        });
+
+        if (!plantsCheckError && existingPlantsForNewUser && existingPlantsForNewUser.length > 0) {
+          // User has plants but no profile - create profile with display_name and skip onboarding
+          console.log('✅ [ONBOARDING] New profile user has plants! Skipping onboarding');
+          const { data: { user: authUser } } = await supabase.auth.getUser();
+          const emailName = authUser?.email?.split('@')[0] || 'Teman';
+          const displayName = emailName.charAt(0).toUpperCase() + emailName.slice(1);
+
+          const { data: newProfile, error: createError } = await supabase
+            .from('profiles')
+            .upsert({
+              id: userId,
+              display_name: displayName,
+              updated_at: new Date().toISOString(),
+            }, { onConflict: 'id' })
+            .select()
+            .single();
+
+          if (createError) {
+            debug.error('Error creating profile:', createError);
+          }
+
+          setProfile((newProfile || { id: userId, display_name: displayName }) as Profile);
+          setHasCompletedOnboarding(true);
+          localStorage.setItem(`onboarding_complete_${userId}`, 'true');
+          hasFetchedProfile.current = true;
+          return true;
+        }
+
+        // No plants - create empty profile and show onboarding
         const { data: newProfile, error: createError } = await supabase
           .from('profiles')
           .upsert({
@@ -103,6 +147,7 @@ export function useAuth(): UseAuthReturn {
         }
 
         debug.log('Profile created:', newProfile);
+        console.log('❌ [ONBOARDING] New profile, no plants - SHOWING onboarding');
         setProfile(newProfile as Profile);
         setHasCompletedOnboarding(false);
         hasFetchedProfile.current = true;
@@ -166,13 +211,17 @@ export function useAuth(): UseAuthReturn {
     } catch (err) {
       const error = err as Error;
       const isTimeoutError = error.message?.includes('timeout') || error.message?.includes('abort');
+      console.log('🔍 [ONBOARDING] CATCH block - error:', error.message);
 
       // Check localStorage cache before assuming not onboarded
       const cachedStatus = localStorage.getItem(`onboarding_complete_${userId}`);
+      console.log('🔍 [ONBOARDING] Cached status in localStorage:', cachedStatus);
+
       if (cachedStatus === 'true') {
         if (!isTimeoutError) {
           debug.log('Profile fetch failed but using cached onboarding status');
         }
+        console.log('🔍 [ONBOARDING] Using cached TRUE - skipping onboarding');
         setHasCompletedOnboarding(true);
         hasFetchedProfile.current = true;
         return true;
@@ -181,6 +230,7 @@ export function useAuth(): UseAuthReturn {
       if (!isTimeoutError) {
         debug.warn('Profile fetch failed and no cached status:', error.message);
       }
+      console.log('❌ [ONBOARDING] Error occurred, no cache - SHOWING onboarding');
       setHasCompletedOnboarding(false);
       setProfile(null);
       hasFetchedProfile.current = true;
