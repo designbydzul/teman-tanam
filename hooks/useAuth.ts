@@ -30,9 +30,6 @@ export function useAuth(): UseAuthReturn {
   const checkOnboardingStatus = useCallback(async (userId: string | undefined, forceRefetch = false): Promise<boolean> => {
     console.log('🔍 [ONBOARDING] === checkOnboardingStatus START ===');
     console.log('🔍 [ONBOARDING] userId:', userId);
-    console.log('🔍 [ONBOARDING] forceRefetch:', forceRefetch);
-    console.log('🔍 [ONBOARDING] hasFetchedProfile.current:', hasFetchedProfile.current);
-    console.log('🔍 [ONBOARDING] currentUserId.current:', currentUserId.current);
 
     if (!userId) {
       console.log('🔍 [ONBOARDING] No userId, returning false');
@@ -41,26 +38,39 @@ export function useAuth(): UseAuthReturn {
       return false;
     }
 
-    // Prevent duplicate fetches - but log what's happening
+    // Prevent duplicate fetches
     if (!forceRefetch && hasFetchedProfile.current && currentUserId.current === userId) {
-      console.log('🔍 [ONBOARDING] SKIPPING fetch - using cached result:', hasCompletedOnboarding);
+      console.log('🔍 [ONBOARDING] Using cached result:', hasCompletedOnboarding);
       return hasCompletedOnboarding;
     }
 
     currentUserId.current = userId;
-    console.log('🔍 [ONBOARDING] Starting Supabase query...');
 
     try {
-      // Direct query - no timeout wrapper for now to see what happens
-      console.log('🔍 [ONBOARDING] Calling supabase.from(profiles).select()...');
+      // First, verify we have a valid session before querying
+      console.log('🔍 [ONBOARDING] Checking session...');
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
 
-      const result = await supabase
+      if (!currentSession) {
+        console.log('🔍 [ONBOARDING] No session yet - cannot query profiles');
+        return false;
+      }
+      console.log('🔍 [ONBOARDING] Session valid, querying profiles...');
+
+      // Query with timeout to prevent hanging
+      const timeoutMs = 8000;
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Profile query timeout')), timeoutMs)
+      );
+
+      const queryPromise = supabase
         .from('profiles')
         .select('id, display_name, onboarding_completed, avatar_url, show_statistics, updated_at')
         .eq('id', userId)
         .maybeSingle();
 
-      console.log('🔍 [ONBOARDING] Supabase returned:', JSON.stringify(result));
+      const result = await Promise.race([queryPromise, timeoutPromise]);
+      console.log('🔍 [ONBOARDING] Query result:', JSON.stringify(result));
 
       const { data, error } = result;
 
