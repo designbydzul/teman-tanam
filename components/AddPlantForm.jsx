@@ -93,13 +93,8 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
   };
 
   const handleDateSelect = (date) => {
-    if (date === 'Pilih Tanggal') {
-      // Trigger native date picker
-      dateInputRef.current?.showPicker?.();
-      dateInputRef.current?.click();
-    } else {
-      setFormData({ ...formData, plantedDate: date, customDate: '' });
-    }
+    // Only used for "Hari ini" button now
+    setFormData({ ...formData, plantedDate: date, customDate: '' });
   };
 
   const handleCustomDateChange = (e) => {
@@ -356,10 +351,8 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
                     Hari ini
                   </button>
 
-                  {/* Pilih Tanggal / Selected Date button */}
-                  <button
-                    type="button"
-                    onClick={() => handleDateSelect('Pilih Tanggal')}
+                  {/* Pilih Tanggal / Selected Date - use label wrapping input for iOS compatibility */}
+                  <label
                     style={{
                       padding: '12px 24px',
                       fontSize: '1rem',
@@ -371,27 +364,33 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
                       borderRadius: '24px',
                       cursor: 'pointer',
                       transition: 'all 0.2s ease',
+                      display: 'inline-block',
+                      position: 'relative',
                     }}
                   >
                     {formData.customDate ? formData.plantedDate : 'Pilih Tanggal'}
-                  </button>
+                    {/* Native date input - visible but transparent, overlays the label */}
+                    <input
+                      ref={dateInputRef}
+                      type="date"
+                      value={formData.customDate}
+                      max={new Date().toISOString().split('T')[0]}
+                      onChange={handleCustomDateChange}
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        opacity: 0,
+                        cursor: 'pointer',
+                        // Remove default styling
+                        border: 'none',
+                        background: 'transparent',
+                      }}
+                    />
+                  </label>
                 </div>
-
-                {/* Hidden Date Input */}
-                <input
-                  ref={dateInputRef}
-                  type="date"
-                  value={formData.customDate}
-                  max={new Date().toISOString().split('T')[0]}
-                  onChange={handleCustomDateChange}
-                  style={{
-                    position: 'absolute',
-                    opacity: 0,
-                    pointerEvents: 'none',
-                    width: 0,
-                    height: 0,
-                  }}
-                />
               </div>
 
               {/* Notes (Optional) */}
