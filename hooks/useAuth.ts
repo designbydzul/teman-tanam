@@ -29,9 +29,11 @@ export function useAuth(): UseAuthReturn {
   // Check if user has a profile with display_name (completed onboarding)
   const checkOnboardingStatus = useCallback(async (userId: string | undefined, forceRefetch = false): Promise<boolean> => {
     debug.log('checkOnboardingStatus called with userId:', userId);
+    console.log('🔍 [ONBOARDING] checkOnboardingStatus called with userId:', userId);
 
     if (!userId) {
       debug.log('No userId, setting hasCompletedOnboarding to false');
+      console.log('🔍 [ONBOARDING] No userId provided, returning false');
       setHasCompletedOnboarding(false);
       setProfile(null);
       return false;
@@ -40,7 +42,9 @@ export function useAuth(): UseAuthReturn {
     // Prevent duplicate fetches for the same user within the same session
     if (!forceRefetch && hasFetchedProfile.current && currentUserId.current === userId) {
       debug.log('Already fetched profile for this user this session, skipping');
-      return localStorage.getItem(`onboarding_complete_${userId}`) === 'true';
+      const cached = localStorage.getItem(`onboarding_complete_${userId}`) === 'true';
+      console.log('🔍 [ONBOARDING] Using cached result:', cached);
+      return cached;
     }
 
     currentUserId.current = userId;
@@ -62,6 +66,12 @@ export function useAuth(): UseAuthReturn {
       const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
 
       debug.log('Profile fetch result:', { data, error: error?.message });
+      console.log('🔍 [ONBOARDING] Profile fetch result:', {
+        hasProfile: !!data,
+        hasDisplayName: !!data?.display_name,
+        displayName: data?.display_name,
+        error: error?.message,
+      });
 
       // Check if there's a real error
       const hasError = error && (error.message || error.code || Object.keys(error).length > 0);
@@ -110,6 +120,8 @@ export function useAuth(): UseAuthReturn {
         // No display_name - but check if user has existing plants
         // If they have plants, they've used the app before (possibly on another device)
         debug.log('Profile exists but no display_name, checking for existing plants...');
+        console.log('🔍 [ONBOARDING] No display_name found, checking for existing plants...');
+        console.log('🔍 [ONBOARDING] Querying plants for USER_ID:', userId);
 
         const { data: existingPlants, error: plantsError } = await supabase
           .from('plants')
@@ -117,9 +129,15 @@ export function useAuth(): UseAuthReturn {
           .eq('user_id', userId)
           .limit(1);
 
+        console.log('🔍 [ONBOARDING] Plants query result:', {
+          plantsFound: existingPlants?.length || 0,
+          error: plantsError?.message || null,
+          plants: existingPlants,
+        });
+
         if (!plantsError && existingPlants && existingPlants.length > 0) {
           debug.log('User has existing plants, skipping onboarding');
-          console.log('🔑 [AUTH] User has plants in DB, skipping onboarding for USER_ID:', userId);
+          console.log('✅ [ONBOARDING] DECISION: Has plants, SKIPPING onboarding for USER_ID:', userId);
 
           // Update profile with a default display_name from email
           const { data: { user: authUser } } = await supabase.auth.getUser();
@@ -139,6 +157,7 @@ export function useAuth(): UseAuthReturn {
         }
 
         debug.log('No existing plants, needs onboarding');
+        console.log('❌ [ONBOARDING] DECISION: No plants found, SHOWING onboarding for USER_ID:', userId);
         setProfile(data as Profile);
         setHasCompletedOnboarding(false);
         hasFetchedProfile.current = true;
