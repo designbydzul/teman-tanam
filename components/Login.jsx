@@ -1,14 +1,12 @@
 /**
  * Login Screen Component
  *
- * Passwordless authentication via magic link email
- * Also supports Google OAuth sign-in
+ * Google OAuth sign-in only
  * Design matches Figma specifications exactly
  */
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import MagicLinkModal from './MagicLinkModal';
 import { auth } from '@/lib/supabase';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { WifiSlash } from '@phosphor-icons/react';
@@ -17,55 +15,8 @@ import { createDebugger } from '@/lib/debug';
 const debug = createDebugger('Login');
 
 const Login = ({ onLogin }) => {
-  const [email, setEmail] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [showModal, setShowModal] = useState(false);
-  const [inputFocused, setInputFocused] = useState(false);
   const [error, setError] = useState('');
   const { isOnline } = useOnlineStatus();
-
-  // Disable buttons when offline or loading
-  const isButtonDisabled = !isOnline || isLoading;
-
-  const handleEmailSubmit = async (e) => {
-    // Prevent all default behaviors
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-
-    // Don't proceed if already loading or no email
-    if (isLoading || !email) return;
-
-    setIsLoading(true);
-    setError('');
-
-    debug.log('Sending magic link to:', email);
-
-    try {
-      const result = await auth.sendMagicLink(email);
-      debug.log('Magic link sent successfully:', result);
-      setShowModal(true);
-    } catch (err) {
-      debug.error('Magic link error:', err);
-      setError(err.message || 'Gagal mengirim magic link. Coba lagi.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleResendMagicLink = async (emailToResend) => {
-    try {
-      await auth.sendMagicLink(emailToResend);
-    } catch (err) {
-      debug.error('Resend error:', err);
-      throw err;
-    }
-  };
-
-  const handleModalClose = () => {
-    setShowModal(false);
-  };
 
   const handleGoogleLogin = async () => {
     try {
@@ -144,14 +95,11 @@ const Login = ({ onLogin }) => {
         )}
       </AnimatePresence>
 
-      {/* Login Form */}
-      <motion.form
+      {/* Login Section */}
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.2 }}
-        onSubmit={handleEmailSubmit}
-        action="javascript:void(0)"
-        method="post"
         style={{
           width: '100%',
           maxWidth: '360px',
@@ -160,44 +108,6 @@ const Login = ({ onLogin }) => {
           gap: '20px',
         }}
       >
-        {/* Email Label */}
-        <label
-          htmlFor="email"
-          style={{
-            fontFamily: "'Inter', sans-serif",
-            fontSize: '1rem',
-            fontWeight: 400,
-            color: '#757575', // Gray 600
-            marginBottom: '-8px',
-          }}
-        >
-          Email Kamu
-        </label>
-
-        {/* Email Input */}
-        <input
-          id="email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="emailkamu@email.com"
-          required
-          style={{
-            width: '100%',
-            padding: '16px 20px',
-            fontSize: '1rem',
-            fontFamily: "'Inter', sans-serif",
-            color: '#2C2C2C',
-            backgroundColor: '#FAFAFA',
-            border: inputFocused || email ? '2px solid #7CB342' : '2px solid transparent',
-            borderRadius: '12px',
-            outline: 'none',
-            transition: 'border-color 200ms, background-color 200ms',
-          }}
-          onFocus={() => setInputFocused(true)}
-          onBlur={() => setInputFocused(false)}
-        />
-
         {/* Error Message */}
         {error && (
           <p
@@ -207,52 +117,13 @@ const Login = ({ onLogin }) => {
               fontFamily: "'Inter', sans-serif",
               fontSize: '14px',
               color: '#DC2626',
-              margin: '-8px 0 0 0',
+              margin: 0,
               textAlign: 'center',
             }}
           >
             {error}
           </p>
         )}
-
-        {/* Submit Button - Masuk atau Daftar */}
-        <button
-          type="submit"
-          disabled={isButtonDisabled || !email}
-          onClick={handleEmailSubmit}
-          aria-label={isLoading ? 'Mengirim magic link' : 'Masuk atau daftar dengan email'}
-          aria-busy={isLoading}
-          style={{
-            width: '100%',
-            padding: '18px',
-            fontSize: '1.125rem',
-            fontWeight: 600,
-            fontFamily: "'Inter', sans-serif",
-            color: '#FFFFFF',
-            backgroundColor: !isOnline ? '#CCCCCC' : (isLoading ? '#9CCC65' : '#7CB342'),
-            border: 'none',
-            borderRadius: '12px',
-            cursor: isButtonDisabled || !email ? 'not-allowed' : 'pointer',
-            transition: 'all 200ms',
-            opacity: isButtonDisabled || !email ? 0.6 : 1,
-          }}
-          onMouseEnter={(e) => {
-            if (!isButtonDisabled && email) {
-              e.target.style.backgroundColor = '#689F38';
-              e.target.style.transform = 'translateY(-2px)';
-              e.target.style.boxShadow = '0 4px 12px rgba(124, 179, 66, 0.3)';
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (isOnline) {
-              e.target.style.backgroundColor = '#7CB342';
-            }
-            e.target.style.transform = 'translateY(0)';
-            e.target.style.boxShadow = 'none';
-          }}
-        >
-          {isLoading ? 'Mengirim...' : 'Masuk atau Daftar'}
-        </button>
 
         {/* Google Sign-In Button */}
         <button
@@ -316,9 +187,9 @@ const Login = ({ onLogin }) => {
           </svg>
           Lanjutkan dengan Google
         </button>
-      </motion.form>
+      </motion.div>
 
-      {/* Info Text - Optional */}
+      {/* Info Text */}
       <motion.p
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -332,16 +203,8 @@ const Login = ({ onLogin }) => {
           lineHeight: 1.6,
         }}
       >
-        Kami akan mengirimkan magic link ke email Anda untuk masuk tanpa password
+        Masuk dengan akun Google Anda untuk melanjutkan
       </motion.p>
-
-      {/* Magic Link Modal */}
-      <MagicLinkModal
-        isOpen={showModal}
-        onClose={handleModalClose}
-        email={email}
-        onResend={handleResendMagicLink}
-      />
     </main>
   );
 };

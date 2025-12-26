@@ -29,26 +29,6 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 
 // Auth helper functions for browser
 export const auth = {
-  // Send magic link to email
-  async sendMagicLink(email: string) {
-    debug.log('sendMagicLink called with email:', email);
-
-    const { data, error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
-
-    if (error) {
-      debug.error('Error sending magic link:', error.message);
-      throw error;
-    }
-
-    debug.log('Magic link sent successfully!');
-    return data;
-  },
-
   // Sign in with Google
   async signInWithGoogle() {
     const { data, error } = await supabase.auth.signInWithOAuth({
