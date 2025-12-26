@@ -27,9 +27,11 @@ export function useAuth(): UseAuthReturn {
   const currentUserId = useRef<string | null>(null);
 
   // Simple onboarding check - just look at onboarding_completed column
-  const checkOnboardingStatus = useCallback(async (userId: string | undefined, forceRefetch = false): Promise<boolean> => {
+  // Pass accessToken to avoid Supabase client auth issues
+  const checkOnboardingStatus = useCallback(async (userId: string | undefined, accessToken?: string, forceRefetch = false): Promise<boolean> => {
     console.log('🔍 [ONBOARDING] === checkOnboardingStatus START ===');
     console.log('🔍 [ONBOARDING] userId:', userId);
+    console.log('🔍 [ONBOARDING] hasAccessToken:', !!accessToken);
 
     if (!userId) {
       console.log('🔍 [ONBOARDING] No userId, returning false');
@@ -47,17 +49,29 @@ export function useAuth(): UseAuthReturn {
     currentUserId.current = userId;
 
     try {
-      // Small delay to let auth state propagate to Supabase client
-      // This prevents the query from hanging when auth headers aren't ready
-      console.log('🔍 [ONBOARDING] Waiting for auth to settle...');
-      await new Promise(resolve => setTimeout(resolve, 500));
+      console.log('🔍 [ONBOARDING] Fetching profile...');
 
-      console.log('🔍 [ONBOARDING] Querying profiles...');
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, display_name, onboarding_completed, avatar_url, show_statistics, updated_at')
-        .eq('id', userId)
-        .maybeSingle();
+      // Use fetch directly with access token to avoid Supabase client hanging
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+      const response = await fetch(
+        `${supabaseUrl}/rest/v1/profiles?id=eq.${userId}&select=id,display_name,onboarding_completed,avatar_url,show_statistics,updated_at`,
+        {
+          headers: {
+            'apikey': supabaseKey || '',
+            'Authorization': `Bearer ${accessToken || supabaseKey}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      const result = await response.json();
+      console.log('🔍 [ONBOARDING] Fetch result:', result);
+
+      // Result is an array, get first item
+      const data = Array.isArray(result) ? result[0] : null;
+      const error = !response.ok ? { message: result.message || 'Fetch failed' } : null;
 
       console.log('🔍 [ONBOARDING] Query result:', { data, error: error?.message });
 
@@ -131,7 +145,7 @@ export function useAuth(): UseAuthReturn {
           console.log('🔑 [AUTH] USER_ID on login:', currentSession.user?.id);
           console.log('🔑 [AUTH] Email:', currentSession.user?.email);
           setUser(currentSession.user);
-          await checkOnboardingStatus(currentSession.user?.id);
+          await checkOnboardingStatus(currentSession.user?.id, currentSession.access_token);
         } else {
           debug.log('No session found - user not authenticated');
         }
@@ -163,7 +177,7 @@ export function useAuth(): UseAuthReturn {
         console.log('🔑 [AUTH] SIGNED_IN - USER_ID:', newSession.user?.id);
         console.log('🔑 [AUTH] SIGNED_IN - Email:', newSession.user?.email);
         setUser(newSession.user);
-        await checkOnboardingStatus(newSession.user?.id);
+        await checkOnboardingStatus(newSession.user?.id, newSession.access_token);
         // Clear any OAuth tokens from URL hash
         if (window.location.hash && window.location.hash.includes('access_token')) {
           window.history.replaceState(null, '', window.location.pathname);
@@ -183,7 +197,7 @@ export function useAuth(): UseAuthReturn {
         debug.log('Initial session event');
         if (newSession) {
           setUser(newSession.user);
-          await checkOnboardingStatus(newSession.user?.id);
+          await checkOnboardingStatus(newSession.user?.id, newSession.access_token);
         }
         setLoading(false);
       }
@@ -323,8 +337,8 @@ export function useAuth(): UseAuthReturn {
 
   // Refresh onboarding status
   const refreshOnboardingStatus = async (): Promise<boolean> => {
-    if (user) {
-      return await checkOnboardingStatus(user.id);
+    if (user && session) {
+      return await checkOnboardingStatus(user.id, session.access_token);
     }
     return false;
   };
