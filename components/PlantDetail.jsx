@@ -1068,9 +1068,9 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                       onClick={handleWateringCardTap}
                       style={{
                         backgroundColor: '#FFFFFF',
-                        borderRadius: '12px',
+                        borderRadius: '16px',
                         padding: '16px',
-                        border: `1px solid ${wateringStatus.borderColor}20`,
+                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
                         cursor: 'pointer',
                         display: 'flex',
                         flexDirection: 'column',
@@ -1128,9 +1128,9 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                       onClick={handleFertilizingCardTap}
                       style={{
                         backgroundColor: '#FFFFFF',
-                        borderRadius: '12px',
+                        borderRadius: '16px',
                         padding: '16px',
-                        border: `1px solid ${fertilizingStatus.borderColor}20`,
+                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
                         cursor: 'pointer',
                         display: 'flex',
                         flexDirection: 'column',
@@ -1185,9 +1185,9 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                   onClick={handlePruningCardTap}
                   style={{
                     backgroundColor: '#FFFFFF',
-                    borderRadius: '12px',
+                    borderRadius: '16px',
                     padding: '16px',
-                    border: '1px solid #E0E0E0',
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
                     cursor: 'pointer',
                     display: 'flex',
                     flexDirection: 'column',
@@ -1240,9 +1240,9 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                   onClick={handleOtherActionCardTap}
                   style={{
                     backgroundColor: '#FFFFFF',
-                    borderRadius: '12px',
+                    borderRadius: '16px',
                     padding: '16px',
-                    border: '1px solid #E0E0E0',
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
                     cursor: 'pointer',
                     display: 'flex',
                     flexDirection: 'column',
@@ -1381,8 +1381,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                           backgroundColor: '#FFFFFF',
                           borderRadius: '16px',
                           padding: '16px',
-                          border: '1px solid #F5F5F5',
-                          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
+                          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
                           marginBottom: '12px',
                           cursor: 'pointer',
                           transition: 'background-color 0.2s ease',
@@ -1496,9 +1495,9 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
           <div
             style={{
               backgroundColor: '#FFFFFF',
-              borderRadius: '12px',
+              borderRadius: '16px',
               padding: '16px',
-              border: '1px solid #E0E0E0',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
