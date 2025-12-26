@@ -181,7 +181,7 @@ const ProfileModal = ({
                 onClick={() => handleMenuAction('edit-profile')}
                 style={{
                   width: '100%',
-                  padding: '16px',
+                  padding: '12px 16px',
                   backgroundColor: '#FFFFFF',
                   border: '1px solid #E0E0E0',
                   borderRadius: '12px',
@@ -194,7 +194,20 @@ const ProfileModal = ({
                 onMouseEnter={(e) => (e.target.style.backgroundColor = '#F5F5F5')}
                 onMouseLeave={(e) => (e.target.style.backgroundColor = '#FFFFFF')}
               >
-                <PencilSimple size={24} weight="regular" color="#2C2C2C" />
+                <div
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '50%',
+                    backgroundColor: '#FAFAFA',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  <PencilSimple size={20} weight="regular" color="#757575" />
+                </div>
                 <span
                   style={{
                     fontFamily: "'Inter', sans-serif",
@@ -212,7 +225,7 @@ const ProfileModal = ({
                 onClick={() => handleMenuAction('location-settings')}
                 style={{
                   width: '100%',
-                  padding: '16px',
+                  padding: '12px 16px',
                   backgroundColor: '#FFFFFF',
                   border: '1px solid #E0E0E0',
                   borderRadius: '12px',
@@ -225,7 +238,20 @@ const ProfileModal = ({
                 onMouseEnter={(e) => (e.target.style.backgroundColor = '#F5F5F5')}
                 onMouseLeave={(e) => (e.target.style.backgroundColor = '#FFFFFF')}
               >
-                <MapPin size={24} weight="regular" color="#2C2C2C" />
+                <div
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '50%',
+                    backgroundColor: '#FAFAFA',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  <MapPin size={20} weight="regular" color="#757575" />
+                </div>
                 <span
                   style={{
                     fontFamily: "'Inter', sans-serif",
@@ -243,7 +269,7 @@ const ProfileModal = ({
                 onClick={() => handleMenuAction('help-community')}
                 style={{
                   width: '100%',
-                  padding: '16px',
+                  padding: '12px 16px',
                   backgroundColor: '#FFFFFF',
                   border: '1px solid #E0E0E0',
                   borderRadius: '12px',
@@ -256,7 +282,20 @@ const ProfileModal = ({
                 onMouseEnter={(e) => (e.target.style.backgroundColor = '#F5F5F5')}
                 onMouseLeave={(e) => (e.target.style.backgroundColor = '#FFFFFF')}
               >
-                <Question size={24} weight="regular" color="#2C2C2C" />
+                <div
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '50%',
+                    backgroundColor: '#FAFAFA',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  <Question size={20} weight="regular" color="#757575" />
+                </div>
                 <span
                   style={{
                     fontFamily: "'Inter', sans-serif",
@@ -274,7 +313,7 @@ const ProfileModal = ({
                 onClick={() => handleMenuAction('tutorial')}
                 style={{
                   width: '100%',
-                  padding: '16px',
+                  padding: '12px 16px',
                   backgroundColor: '#FFFFFF',
                   border: '1px solid #E0E0E0',
                   borderRadius: '12px',
@@ -287,7 +326,20 @@ const ProfileModal = ({
                 onMouseEnter={(e) => (e.target.style.backgroundColor = '#F5F5F5')}
                 onMouseLeave={(e) => (e.target.style.backgroundColor = '#FFFFFF')}
               >
-                <Play size={24} weight="fill" color="#2C2C2C" />
+                <div
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '50%',
+                    backgroundColor: '#FAFAFA',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  <Play size={20} weight="fill" color="#757575" />
+                </div>
                 <span
                   style={{
                     fontFamily: "'Inter', sans-serif",
@@ -304,7 +356,7 @@ const ProfileModal = ({
               <div
                 style={{
                   width: '100%',
-                  padding: '16px',
+                  padding: '12px 16px',
                   backgroundColor: '#FFFFFF',
                   border: '1px solid #E0E0E0',
                   borderRadius: '12px',
@@ -314,7 +366,20 @@ const ProfileModal = ({
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <ChartBar size={24} weight="regular" color="#2C2C2C" />
+                  <div
+                    style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '50%',
+                      backgroundColor: '#FAFAFA',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <ChartBar size={20} weight="regular" color="#757575" />
+                  </div>
                   <span
                     style={{
                       fontFamily: "'Inter', sans-serif",
@@ -362,7 +427,7 @@ const ProfileModal = ({
                 onClick={() => handleMenuAction('logout')}
                 style={{
                   width: '100%',
-                  padding: '16px',
+                  padding: '12px 16px',
                   backgroundColor: '#FEF2F2',
                   border: '1px solid #FEE2E2',
                   borderRadius: '12px',
@@ -373,7 +438,20 @@ const ProfileModal = ({
                   marginTop: '12px',
                 }}
               >
-                <SignOut size={24} weight="regular" color="#DC2626" />
+                <div
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '50%',
+                    backgroundColor: '#FEE2E2',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  <SignOut size={20} weight="regular" color="#DC2626" />
+                </div>
                 <span
                   style={{
                     fontFamily: "'Inter', sans-serif",

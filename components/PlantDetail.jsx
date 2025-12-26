@@ -374,7 +374,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
   };
 
   // Helper function to get action label in Indonesian
-  const getActionLabel = (actionType) => {
+  const getActionLabel = (actionType, notes = '') => {
     switch (actionType) {
       case 'siram':
         return 'Penyiraman';
@@ -384,10 +384,26 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
         return 'Pemangkasan';
       case 'panen':
         return 'Panen';
+      case 'lainnya':
+        // Extract custom action name from notes (format: "[CustomName] optional notes" or "[CustomName]")
+        const match = notes?.match(/^\[([^\]]+)\]/);
+        if (match) {
+          return match[1]; // Return the custom name
+        }
+        return 'Lainnya';
       default:
         // Capitalize first letter for custom actions
         return actionType.charAt(0).toUpperCase() + actionType.slice(1);
     }
+  };
+
+  // Helper to extract clean notes (without the [CustomName] prefix for lainnya actions)
+  const getCleanNotes = (actionType, notes) => {
+    if (actionType === 'lainnya' && notes) {
+      // Remove the [CustomName] prefix from notes
+      return notes.replace(/^\[[^\]]+\]\s*/, '').trim() || null;
+    }
+    return notes;
   };
 
   // Helper function to map DB action type to UI type for icons
@@ -423,8 +439,8 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
     entries: actions.map(action => ({
       type: mapActionTypeForIcon(action.action_type),
       actionType: action.action_type, // Keep original action type
-      label: getActionLabel(action.action_type),
-      notes: action.notes,
+      label: getActionLabel(action.action_type, action.notes), // Pass notes to extract custom name for 'lainnya'
+      notes: getCleanNotes(action.action_type, action.notes), // Clean notes (remove [CustomName] prefix)
       id: action.id,
       time: formatTime(action.created_at),
       createdAt: action.created_at, // Full timestamp
@@ -949,7 +965,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
             {plantData.customName}
           </h1>
 
-          {/* Metadata Row */}
+          {/* Metadata Row: Time • Location • Notes */}
           <p
             style={{
               fontFamily: "'Inter', sans-serif",
@@ -959,25 +975,11 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
             }}
           >
             {[
-              plantData.location,
               daysSincePlanted === 0 ? 'Ditanam hari ini' : `${daysSincePlanted} hari sejak ditanam`,
-              plantData.species?.name || plantData.species?.scientific
+              plantData.location,
+              plantData.notes
             ].filter(Boolean).join(' • ')}
           </p>
-
-          {/* Notes - Only show if exists */}
-          {plantData.notes && (
-            <p
-              style={{
-                fontFamily: "'Inter', sans-serif",
-                fontSize: '14px',
-                color: '#757575',
-                margin: '4px 0 0 0',
-              }}
-            >
-              {plantData.notes}
-            </p>
-          )}
 
         </div>
 
@@ -1057,7 +1059,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
               {/* 2x2 Action Cards Grid */}
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(2, 1fr)',
+                gridTemplateColumns: '1fr 1fr',
                 gap: '12px',
               }}>
                 {/* Penyiraman Card */}
@@ -1068,13 +1070,13 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                       onClick={handleWateringCardTap}
                       style={{
                         backgroundColor: '#FFFFFF',
-                        borderRadius: '16px',
+                        borderRadius: '12px',
+                        border: '1px solid #E4E4E7',
                         padding: '16px',
-                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
                         cursor: 'pointer',
                         display: 'flex',
                         flexDirection: 'column',
-                        gap: '12px',
+                        alignItems: 'flex-start',
                       }}
                     >
                       <div
@@ -1082,15 +1084,15 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                           width: '40px',
                           height: '40px',
                           borderRadius: '50%',
-                          backgroundColor: wateringStatus.iconBg,
+                          backgroundColor: '#FAFAFA',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                         }}
                       >
-                        <Drop size={20} weight="regular" color={wateringStatus.iconColor} />
+                        <Drop size={20} weight="regular" color="#757575" />
                       </div>
-                      <div>
+                      <div style={{ marginTop: 'auto', paddingTop: '16px' }}>
                         <h3
                           style={{
                             fontFamily: "'Inter', sans-serif",
@@ -1108,9 +1110,6 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                             fontSize: '14px',
                             color: wateringStatus.color,
                             margin: 0,
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
                           }}
                         >
                           {wateringStatus.text}
@@ -1128,13 +1127,13 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                       onClick={handleFertilizingCardTap}
                       style={{
                         backgroundColor: '#FFFFFF',
-                        borderRadius: '16px',
+                        borderRadius: '12px',
+                        border: '1px solid #E4E4E7',
                         padding: '16px',
-                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
                         cursor: 'pointer',
                         display: 'flex',
                         flexDirection: 'column',
-                        gap: '12px',
+                        alignItems: 'flex-start',
                       }}
                     >
                       <div
@@ -1142,15 +1141,15 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                           width: '40px',
                           height: '40px',
                           borderRadius: '50%',
-                          backgroundColor: fertilizingStatus.iconBg,
+                          backgroundColor: '#FAFAFA',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                         }}
                       >
-                        <Leaf size={20} weight="regular" color={fertilizingStatus.iconColor} />
+                        <Leaf size={20} weight="regular" color="#757575" />
                       </div>
-                      <div>
+                      <div style={{ marginTop: 'auto', paddingTop: '16px' }}>
                         <h3
                           style={{
                             fontFamily: "'Inter', sans-serif",
@@ -1168,9 +1167,6 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                             fontSize: '14px',
                             color: fertilizingStatus.color,
                             margin: 0,
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
                           }}
                         >
                           {fertilizingStatus.text}
@@ -1185,13 +1181,13 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                   onClick={handlePruningCardTap}
                   style={{
                     backgroundColor: '#FFFFFF',
-                    borderRadius: '16px',
+                    borderRadius: '12px',
+                    border: '1px solid #E4E4E7',
                     padding: '16px',
-                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
                     cursor: 'pointer',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '12px',
+                    alignItems: 'flex-start',
                   }}
                 >
                   <div
@@ -1199,7 +1195,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                       width: '40px',
                       height: '40px',
                       borderRadius: '50%',
-                      backgroundColor: '#F5F5F5',
+                      backgroundColor: '#FAFAFA',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -1207,7 +1203,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                   >
                     <Scissors size={20} weight="regular" color="#757575" />
                   </div>
-                  <div>
+                  <div style={{ marginTop: 'auto', paddingTop: '16px' }}>
                     <h3
                       style={{
                         fontFamily: "'Inter', sans-serif",
@@ -1225,12 +1221,9 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                         fontSize: '14px',
                         color: '#757575',
                         margin: 0,
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
                       }}
                     >
-                      Pangkas daun tanaman
+                      Pangkas daun
                     </p>
                   </div>
                 </div>
@@ -1240,13 +1233,13 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                   onClick={handleOtherActionCardTap}
                   style={{
                     backgroundColor: '#FFFFFF',
-                    borderRadius: '16px',
+                    borderRadius: '12px',
+                    border: '1px solid #E4E4E7',
                     padding: '16px',
-                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
                     cursor: 'pointer',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '12px',
+                    alignItems: 'flex-start',
                   }}
                 >
                   <div
@@ -1254,7 +1247,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                       width: '40px',
                       height: '40px',
                       borderRadius: '50%',
-                      backgroundColor: '#F5F5F5',
+                      backgroundColor: '#FAFAFA',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -1262,7 +1255,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                   >
                     <DotsThree size={20} weight="regular" color="#757575" />
                   </div>
-                  <div>
+                  <div style={{ marginTop: 'auto', paddingTop: '16px' }}>
                     <h3
                       style={{
                         fontFamily: "'Inter', sans-serif",
@@ -1280,12 +1273,9 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                         fontSize: '14px',
                         color: '#757575',
                         margin: 0,
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
                       }}
                     >
-                      Catat aksi lainya
+                      Catat aksi
                     </p>
                   </div>
                 </div>
@@ -1379,82 +1369,58 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                         }}
                         style={{
                           backgroundColor: '#FFFFFF',
-                          borderRadius: '16px',
+                          borderRadius: '12px',
+                          border: '1px solid #E4E4E7',
                           padding: '16px',
-                          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
                           marginBottom: '12px',
                           cursor: 'pointer',
-                          transition: 'background-color 0.2s ease',
+                          display: 'flex',
+                          alignItems: (entry.notes || entry.photoUrl) ? 'flex-start' : 'center',
+                          gap: '12px',
                         }}
                       >
-                        {/* Top row: Icon + Title + Time */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          {/* Icon */}
-                          <div
-                            style={{
-                              width: '40px',
-                              height: '40px',
-                              borderRadius: '50%',
-                              backgroundColor: '#F5F5F5',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              fontSize: '1.25rem',
-                              flexShrink: 0,
-                            }}
-                          >
-                            {getActionIcon(entry.type)}
-                          </div>
-
-                          {/* Title and Time */}
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                              <h4
-                                style={{
-                                  fontFamily: "'Inter', sans-serif",
-                                  fontSize: '1rem',
-                                  fontWeight: 500,
-                                  color: '#2C2C2C',
-                                  margin: 0,
-                                }}
-                              >
-                                {entry.label}
-                              </h4>
-                              {entry.time && (
-                                <span
-                                  style={{
-                                    fontFamily: "'Inter', sans-serif",
-                                    fontSize: '14px',
-                                    color: '#999999',
-                                  }}
-                                >
-                                  {entry.time}
-                                </span>
-                              )}
-                            </div>
-                            {entry.notes && (
-                              <p
-                                style={{
-                                  fontFamily: "'Inter', sans-serif",
-                                  fontSize: '14px',
-                                  color: '#757575',
-                                  margin: '4px 0 0 0',
-                                }}
-                              >
-                                {entry.notes}
-                              </p>
-                            )}
-                          </div>
+                        {/* Left side: Icon */}
+                        <div
+                          style={{
+                            width: '40px',
+                            height: '40px',
+                            borderRadius: '50%',
+                            backgroundColor: '#FAFAFA',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0,
+                          }}
+                        >
+                          {getActionIcon(entry.type)}
                         </div>
 
-                        {/* Photo Preview - Small thumbnail (non-clickable, tap card to see detail) */}
-                        {entry.photoUrl && (
-                          <div
+                        {/* Middle: Title, Notes, Photo */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <h4
                             style={{
-                              marginTop: '8px',
-                              marginLeft: '52px', // Align with content (40px icon + 12px gap)
+                              fontFamily: "'Inter', sans-serif",
+                              fontSize: '1rem',
+                              fontWeight: 600,
+                              color: '#2C2C2C',
+                              margin: 0,
                             }}
                           >
+                            {entry.label}
+                          </h4>
+                          {entry.notes && (
+                            <p
+                              style={{
+                                fontFamily: "'Inter', sans-serif",
+                                fontSize: '14px',
+                                color: '#666666',
+                                margin: '4px 0 0 0',
+                              }}
+                            >
+                              {entry.notes}
+                            </p>
+                          )}
+                          {entry.photoUrl && (
                             <img
                               src={entry.photoUrl}
                               alt="Foto aksi"
@@ -1464,10 +1430,24 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                                 objectFit: 'cover',
                                 borderRadius: '6px',
                                 display: 'block',
+                                marginTop: '8px',
                               }}
                             />
-                          </div>
-                        )}
+                          )}
+                        </div>
+
+                        {/* Right side: Time */}
+                        <p
+                          style={{
+                            fontFamily: "'Inter', sans-serif",
+                            fontSize: '14px',
+                            color: '#757575',
+                            margin: 0,
+                            flexShrink: 0,
+                          }}
+                        >
+                          {entry.time}
+                        </p>
                       </div>
                     ))}
                   </div>
@@ -1482,67 +1462,58 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
         <div
           style={{
             position: 'fixed',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            padding: '16px',
-            paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))',
+            bottom: 'calc(16px + env(safe-area-inset-bottom, 0px))',
+            left: '16px',
+            right: '16px',
             backgroundColor: '#FFFFFF',
-            boxShadow: '0 -2px 10px rgba(0, 0, 0, 0.05)',
+            borderRadius: '12px',
+            border: '1px solid #E4E4E7',
+            padding: '16px',
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            cursor: 'pointer',
             zIndex: 100,
           }}
+          onClick={() => handleMenuAction('diagnose')}
         >
-          <div
-            style={{
-              backgroundColor: '#FFFFFF',
-              borderRadius: '16px',
-              padding: '16px',
-              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              cursor: 'pointer',
-            }}
-            onClick={() => handleMenuAction('diagnose')}
-          >
-            <div>
-              <h3
-                style={{
-                  fontFamily: "'Inter', sans-serif",
-                  fontSize: '1rem',
-                  fontWeight: 600,
-                  color: '#2C2C2C',
-                  margin: '0 0 4px 0',
-                }}
-              >
-                Tanya Tanam
-              </h3>
-              <p
-                style={{
-                  fontFamily: "'Inter', sans-serif",
-                  fontSize: '14px',
-                  color: '#757575',
-                  margin: 0,
-                }}
-              >
-                Ngobrol dengan {plantData.customName}
-              </p>
-            </div>
-
-            <div
+          <div>
+            <h3
               style={{
-                width: '48px',
-                height: '48px',
-                borderRadius: '50%',
-                backgroundColor: '#F5F5F5',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
+                fontFamily: "'Inter', sans-serif",
+                fontSize: '1rem',
+                fontWeight: 600,
+                color: '#2C2C2C',
+                margin: '0 0 4px 0',
               }}
             >
-              <ChatDots size={24} weight="regular" color="#757575" />
-            </div>
+              Tanya Tanam
+            </h3>
+            <p
+              style={{
+                fontFamily: "'Inter', sans-serif",
+                fontSize: '14px',
+                color: '#757575',
+                margin: 0,
+              }}
+            >
+              Ngobrol dengan {plantData.customName}
+            </p>
+          </div>
+
+          <div
+            style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '50%',
+              backgroundColor: '#FAFAFA',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <ChatDots size={20} weight="regular" color="#757575" />
           </div>
         </div>
       )}
@@ -1612,8 +1583,8 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                 <button
                   onClick={() => setShowMenu(false)}
                   style={{
-                    width: '32px',
-                    height: '32px',
+                    width: '40px',
+                    height: '40px',
                     borderRadius: '50%',
                     backgroundColor: '#F5F5F5',
                     border: 'none',
@@ -2276,8 +2247,8 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                 <button
                   onClick={() => setShowWateringDrawer(false)}
                   style={{
-                    width: '32px',
-                    height: '32px',
+                    width: '40px',
+                    height: '40px',
                     borderRadius: '50%',
                     backgroundColor: '#F5F5F5',
                     border: 'none',
@@ -2469,8 +2440,8 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                     setFertilizingPhotoPreview(null);
                   }}
                   style={{
-                    width: '32px',
-                    height: '32px',
+                    width: '40px',
+                    height: '40px',
                     borderRadius: '50%',
                     backgroundColor: '#F5F5F5',
                     border: 'none',
@@ -2744,8 +2715,8 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                     setPruningPhotoPreview(null);
                   }}
                   style={{
-                    width: '32px',
-                    height: '32px',
+                    width: '40px',
+                    height: '40px',
                     borderRadius: '50%',
                     backgroundColor: '#F5F5F5',
                     border: 'none',
@@ -2973,8 +2944,8 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                     setOtherActionPhotoPreview(null);
                   }}
                   style={{
-                    width: '32px',
-                    height: '32px',
+                    width: '40px',
+                    height: '40px',
                     borderRadius: '50%',
                     backgroundColor: '#F5F5F5',
                     border: 'none',
@@ -3135,7 +3106,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
         )}
       </AnimatePresence>
 
-      {/* History Detail Drawer */}
+      {/* History Detail Drawer - Clean Layout */}
       <AnimatePresence>
         {showHistoryDetailDrawer && selectedHistoryEntry && (
           <>
@@ -3207,8 +3178,8 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                     setSelectedHistoryEntry(null);
                   }}
                   style={{
-                    width: '32px',
-                    height: '32px',
+                    width: '40px',
+                    height: '40px',
                     borderRadius: '50%',
                     backgroundColor: '#F5F5F5',
                     border: 'none',
@@ -3229,132 +3200,59 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                 </button>
               </div>
 
-              {/* Action Info Card */}
-              <div
+              {/* Timestamp */}
+              <p
                 style={{
-                  backgroundColor: '#FAFAFA',
-                  borderRadius: '12px',
-                  padding: '16px',
-                  marginBottom: '16px',
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '14px',
+                  color: '#757575',
+                  margin: '0 0 16px 0',
                 }}
               >
-                {/* Action Type with Icon, Title and Date in a row */}
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    gap: '12px',
-                    marginBottom: selectedHistoryEntry.notes ? '12px' : '0',
-                  }}
-                >
-                  {/* Icon */}
-                  <div
-                    style={{
-                      width: '40px',
-                      height: '40px',
-                      borderRadius: '50%',
-                      backgroundColor: selectedHistoryEntry.type === 'water' ? '#EFF6FF' : '#F0FDF4',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                    }}
-                  >
-                    {selectedHistoryEntry.type === 'water' ? (
-                      <Drop size={20} weight="duotone" color="#3B82F6" />
-                    ) : selectedHistoryEntry.type === 'fertilize' ? (
-                      <Leaf size={20} weight="duotone" color="#16A34A" />
-                    ) : selectedHistoryEntry.type === 'prune' ? (
-                      <Scissors size={20} weight="duotone" color="#757575" />
-                    ) : selectedHistoryEntry.type === 'harvest' ? (
-                      <Basket size={20} weight="duotone" color="#757575" />
-                    ) : (
-                      <Drop size={20} weight="duotone" color="#757575" />
-                    )}
-                  </div>
+                {selectedHistoryEntry.dateFormatted}
+                {selectedHistoryEntry.time && `, ${selectedHistoryEntry.time}`}
+              </p>
 
-                  {/* Title and Date stacked */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                    <span
-                      style={{
-                        fontFamily: "'Inter', sans-serif",
-                        fontSize: '1rem',
-                        fontWeight: 600,
-                        color: '#2C2C2C',
-                      }}
-                    >
-                      {selectedHistoryEntry.label}
-                    </span>
-                    <span
-                      style={{
-                        fontFamily: "'Inter', sans-serif",
-                        fontSize: '14px',
-                        color: '#757575',
-                      }}
-                    >
-                      {selectedHistoryEntry.dateFormatted}
-                      {selectedHistoryEntry.time && `, ${selectedHistoryEntry.time}`}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Notes */}
-                {selectedHistoryEntry.notes && (
-                  <div
-                    style={{
-                      borderTop: '1px solid #E0E0E0',
-                      paddingTop: '12px',
-                    }}
-                  >
-                    <p
-                      style={{
-                        fontFamily: "'Inter', sans-serif",
-                        fontSize: '14px',
-                        fontWeight: 500,
-                        color: '#757575',
-                        margin: '0 0 4px 0',
-                      }}
-                    >
-                      Catatan:
-                    </p>
-                    <p
-                      style={{
-                        fontFamily: "'Inter', sans-serif",
-                        fontSize: '14px',
-                        color: '#2C2C2C',
-                        margin: 0,
-                        lineHeight: 1.5,
-                      }}
-                    >
-                      {selectedHistoryEntry.notes}
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* Photo (if any) */}
-              {selectedHistoryEntry.photoUrl && (
-                <div style={{ marginBottom: '20px' }}>
+              {/* Notes (if any) */}
+              {selectedHistoryEntry.notes && (
+                <div style={{ marginBottom: '16px' }}>
                   <p
                     style={{
                       fontFamily: "'Inter', sans-serif",
                       fontSize: '14px',
                       fontWeight: 500,
                       color: '#757575',
-                      margin: '0 0 8px 0',
+                      margin: '0 0 4px 0',
                     }}
                   >
-                    Foto:
+                    Catatan:
                   </p>
+                  <p
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: '14px',
+                      color: '#2C2C2C',
+                      margin: 0,
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    {selectedHistoryEntry.notes}
+                  </p>
+                </div>
+              )}
+
+              {/* Photo (if any) */}
+              {selectedHistoryEntry.photoUrl && (
+                <div style={{ marginBottom: '20px' }}>
                   <img
                     src={selectedHistoryEntry.photoUrl}
                     alt="Action photo"
                     onClick={() => setTimelinePhotoPreview(selectedHistoryEntry.photoUrl)}
                     style={{
                       width: '100%',
-                      borderRadius: '12px',
+                      borderRadius: '8px',
                       objectFit: 'cover',
-                      maxHeight: '200px',
+                      maxHeight: '250px',
                       cursor: 'pointer',
                     }}
                   />

@@ -2170,17 +2170,29 @@ const Home = ({ userName }) => {
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '16px',
+                    gap: '12px',
                     width: '100%',
-                    padding: '16px',
+                    padding: '12px 0',
                     backgroundColor: 'transparent',
                     border: 'none',
-                    borderRadius: '12px',
                     cursor: selectedPlantIds.size > 0 ? 'pointer' : 'not-allowed',
                     opacity: selectedPlantIds.size === 0 ? 0.5 : 1,
                   }}
                 >
-                  <Drop size={24} weight="regular" color="#3B82F6" />
+                  <div
+                    style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '10px',
+                      backgroundColor: '#F0F0F0',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Drop size={20} weight="regular" color="#757575" />
+                  </div>
                   <span
                     style={{
                       fontFamily: "'Inter', sans-serif",
@@ -2203,17 +2215,29 @@ const Home = ({ userName }) => {
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '16px',
+                    gap: '12px',
                     width: '100%',
-                    padding: '16px',
+                    padding: '12px 0',
                     backgroundColor: 'transparent',
                     border: 'none',
-                    borderRadius: '12px',
                     cursor: selectedPlantIds.size > 0 ? 'pointer' : 'not-allowed',
                     opacity: selectedPlantIds.size === 0 ? 0.5 : 1,
                   }}
                 >
-                  <Leaf size={24} weight="regular" color="#16A34A" />
+                  <div
+                    style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '10px',
+                      backgroundColor: '#F0F0F0',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Leaf size={20} weight="regular" color="#757575" />
+                  </div>
                   <span
                     style={{
                       fontFamily: "'Inter', sans-serif",
@@ -2223,6 +2247,96 @@ const Home = ({ userName }) => {
                     }}
                   >
                     Beri Pupuk
+                  </span>
+                </button>
+
+                {/* Pangkas Tanaman */}
+                <button
+                  onClick={() => {
+                    setShowMoreMenu(false);
+                    showBulkActionConfirmation('pangkas');
+                  }}
+                  disabled={selectedPlantIds.size === 0}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    width: '100%',
+                    padding: '12px 0',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    cursor: selectedPlantIds.size > 0 ? 'pointer' : 'not-allowed',
+                    opacity: selectedPlantIds.size === 0 ? 0.5 : 1,
+                  }}
+                >
+                  <div
+                    style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '10px',
+                      backgroundColor: '#F0F0F0',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Scissors size={20} weight="regular" color="#757575" />
+                  </div>
+                  <span
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: '16px',
+                      fontWeight: 500,
+                      color: '#2C2C2C',
+                    }}
+                  >
+                    Pangkas Tanaman
+                  </span>
+                </button>
+
+                {/* Aksi Lainnya */}
+                <button
+                  onClick={() => {
+                    setShowMoreMenu(false);
+                    showBulkActionConfirmation('lainnya');
+                  }}
+                  disabled={selectedPlantIds.size === 0}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    width: '100%',
+                    padding: '12px 0',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    cursor: selectedPlantIds.size > 0 ? 'pointer' : 'not-allowed',
+                    opacity: selectedPlantIds.size === 0 ? 0.5 : 1,
+                  }}
+                >
+                  <div
+                    style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '10px',
+                      backgroundColor: '#F0F0F0',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <DotsThree size={20} weight="regular" color="#757575" />
+                  </div>
+                  <span
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: '16px',
+                      fontWeight: 500,
+                      color: '#2C2C2C',
+                    }}
+                  >
+                    Aksi Lainnya
                   </span>
                 </button>
 
@@ -2267,16 +2381,29 @@ const Home = ({ userName }) => {
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '16px',
+                    gap: '12px',
                     width: '100%',
-                    padding: '16px',
+                    padding: '12px 16px',
                     backgroundColor: '#FEF2F2',
                     border: 'none',
                     borderRadius: '12px',
                     cursor: 'pointer',
                   }}
                 >
-                  <Trash size={24} weight="regular" color="#DC2626" />
+                  <div
+                    style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '10px',
+                      backgroundColor: '#FEE2E2',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Trash size={20} weight="regular" color="#DC2626" />
+                  </div>
                   <span
                     style={{
                       fontFamily: "'Inter', sans-serif",

@@ -422,7 +422,7 @@ const EditPlant = ({ plant, onClose, onSave, onDelete }) => {
                   style={{
                     backgroundColor: '#FAFAFA',
                     borderRadius: '12px',
-                    padding: '12px 16px',
+                    padding: '16px',
                     marginBottom: '8px',
                     display: 'flex',
                     alignItems: 'center',
@@ -497,7 +497,7 @@ const EditPlant = ({ plant, onClose, onSave, onDelete }) => {
                   style={{
                     backgroundColor: '#FAFAFA',
                     borderRadius: '12px',
-                    padding: '12px 16px',
+                    padding: '16px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
