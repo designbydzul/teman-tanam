@@ -29,12 +29,7 @@ export function useAuth(): UseAuthReturn {
   // Simple onboarding check - just look at onboarding_completed column
   // Pass accessToken to avoid Supabase client auth issues
   const checkOnboardingStatus = useCallback(async (userId: string | undefined, accessToken?: string, forceRefetch = false): Promise<boolean> => {
-    console.log('🔍 [ONBOARDING] === checkOnboardingStatus START ===');
-    console.log('🔍 [ONBOARDING] userId:', userId);
-    console.log('🔍 [ONBOARDING] hasAccessToken:', !!accessToken);
-
     if (!userId) {
-      console.log('🔍 [ONBOARDING] No userId, returning false');
       setHasCompletedOnboarding(false);
       setProfile(null);
       return false;
@@ -42,14 +37,13 @@ export function useAuth(): UseAuthReturn {
 
     // Prevent duplicate fetches
     if (!forceRefetch && hasFetchedProfile.current && currentUserId.current === userId) {
-      console.log('🔍 [ONBOARDING] Using cached result:', hasCompletedOnboarding);
       return hasCompletedOnboarding;
     }
 
     currentUserId.current = userId;
 
     try {
-      console.log('🔍 [ONBOARDING] Fetching profile...');
+      debug.log('Fetching profile for onboarding check...');
 
       // Use fetch directly with access token to avoid Supabase client hanging
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -67,16 +61,12 @@ export function useAuth(): UseAuthReturn {
       );
 
       const result = await response.json();
-      console.log('🔍 [ONBOARDING] Fetch result:', result);
 
       // Result is an array, get first item
       const data = Array.isArray(result) ? result[0] : null;
-      const error = !response.ok ? { message: result.message || 'Fetch failed' } : null;
 
-      console.log('🔍 [ONBOARDING] Query result:', { data, error: error?.message });
-
-      if (error) {
-        console.log('❌ [ONBOARDING] Profile fetch error:', error.message);
+      if (!response.ok) {
+        debug.error('Profile fetch error:', result.message);
         setHasCompletedOnboarding(false);
         setProfile(null);
         hasFetchedProfile.current = true;
@@ -85,7 +75,7 @@ export function useAuth(): UseAuthReturn {
 
       // No profile exists - show onboarding
       if (!data) {
-        console.log('❌ [ONBOARDING] No profile found - SHOWING onboarding');
+        debug.log('No profile found - showing onboarding');
         setHasCompletedOnboarding(false);
         setProfile(null);
         hasFetchedProfile.current = true;
@@ -94,23 +84,17 @@ export function useAuth(): UseAuthReturn {
 
       // Check onboarding_completed column
       const completed = data.onboarding_completed === true;
-      console.log('🔍 [ONBOARDING] onboarding_completed value:', data.onboarding_completed, '(type:', typeof data.onboarding_completed, ')');
-      console.log(completed ? '✅ [ONBOARDING] Completed - going to Home' : '❌ [ONBOARDING] Not completed - SHOWING onboarding');
+      debug.log('Onboarding status:', completed ? 'completed' : 'not completed');
 
       setProfile(data as Profile);
       setHasCompletedOnboarding(completed);
       hasFetchedProfile.current = true;
-      console.log('🔍 [ONBOARDING] === checkOnboardingStatus END (success) ===');
       return completed;
     } catch (err) {
-      const errorMsg = (err as Error).message;
-      console.log('🚨 [ONBOARDING] CATCH block - Error:', errorMsg);
-      console.log('🚨 [ONBOARDING] Full error:', err);
-
+      debug.error('Profile fetch error:', err);
       setHasCompletedOnboarding(false);
       setProfile(null);
       hasFetchedProfile.current = true;
-      console.log('🔍 [ONBOARDING] === checkOnboardingStatus END (error) ===');
       return false;
     }
   }, [hasCompletedOnboarding]);
@@ -141,9 +125,6 @@ export function useAuth(): UseAuthReturn {
 
         if (currentSession) {
           debug.log('User is authenticated:', currentSession.user?.email);
-          // DEBUG: Log user_id for cross-device sync debugging
-          console.log('🔑 [AUTH] USER_ID on login:', currentSession.user?.id);
-          console.log('🔑 [AUTH] Email:', currentSession.user?.email);
           setUser(currentSession.user);
           await checkOnboardingStatus(currentSession.user?.id, currentSession.access_token);
         } else {
@@ -173,9 +154,6 @@ export function useAuth(): UseAuthReturn {
 
       if (event === 'SIGNED_IN' && newSession) {
         debug.log('User signed in:', newSession.user?.email);
-        // DEBUG: Log user_id for cross-device sync debugging
-        console.log('🔑 [AUTH] SIGNED_IN - USER_ID:', newSession.user?.id);
-        console.log('🔑 [AUTH] SIGNED_IN - Email:', newSession.user?.email);
         setUser(newSession.user);
         await checkOnboardingStatus(newSession.user?.id, newSession.access_token);
         // Clear any OAuth tokens from URL hash
@@ -283,7 +261,7 @@ export function useAuth(): UseAuthReturn {
       return { success: false, error: 'Tidak ada user yang login' };
     }
 
-    console.log('🔍 [ONBOARDING] completeOnboarding called:', { displayName, locationNames });
+    debug.log('completeOnboarding called:', { displayName, locationCount: locationNames.length });
 
     try {
       // 1. Update profile with display_name AND onboarding_completed = true
@@ -299,11 +277,11 @@ export function useAuth(): UseAuthReturn {
         .single();
 
       if (profileError) {
-        console.log('❌ [ONBOARDING] Profile update error:', profileError.message);
+        debug.error('Profile update error:', profileError);
         throw profileError;
       }
 
-      console.log('✅ [ONBOARDING] Profile updated with onboarding_completed=true');
+      debug.log('Profile updated with onboarding_completed=true');
 
       // 2. Insert locations into the locations table
       if (locationNames && locationNames.length > 0) {
@@ -318,7 +296,7 @@ export function useAuth(): UseAuthReturn {
           .insert(locationsToInsert);
 
         if (locError) {
-          console.log('⚠️ [ONBOARDING] Locations insert error:', locError.message);
+          debug.error('Locations insert error:', locError);
         }
       }
 
@@ -330,7 +308,7 @@ export function useAuth(): UseAuthReturn {
       return { success: true, profile: profileData as Profile };
     } catch (err) {
       const error = err as Error;
-      console.log('❌ [ONBOARDING] completeOnboarding error:', error.message);
+      debug.error('completeOnboarding error:', error);
       return { success: false, error: error.message || 'Gagal menyimpan. Coba lagi.' };
     }
   };
