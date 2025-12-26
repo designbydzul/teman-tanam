@@ -885,7 +885,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
         </div>
 
         {/* Plant Info - Centered */}
-        <div style={{ padding: '0 16px', textAlign: 'center', marginBottom: '24px' }}>
+        <div style={{ padding: '0 16px', textAlign: 'center', marginBottom: '16px' }}>
           {/* Plant Name */}
           <h1
             style={{
@@ -893,7 +893,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
               fontSize: '1.75rem',
               fontWeight: 600,
               color: '#2D5016',
-              margin: '16px 0 4px 0',
+              margin: '0 0 4px',
             }}
           >
             {plantData.customName}
