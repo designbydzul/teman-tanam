@@ -97,9 +97,26 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
     setFormData({ ...formData, plantedDate: date, customDate: '' });
   };
 
+  const [dateError, setDateError] = useState('');
+
   const handleCustomDateChange = (e) => {
     const selectedDate = e.target.value;
     if (selectedDate) {
+      // Validate: no future dates allowed
+      const today = new Date().toISOString().split('T')[0];
+      if (selectedDate > today) {
+        setDateError('Tanggal tidak boleh di masa depan');
+        // Reset to today
+        const todayObj = new Date();
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+        const formattedToday = `${todayObj.getDate()} ${months[todayObj.getMonth()]} ${todayObj.getFullYear()}`;
+        setFormData({ ...formData, plantedDate: formattedToday, customDate: today });
+        // Clear error after 3 seconds
+        setTimeout(() => setDateError(''), 3000);
+        return;
+      }
+
+      setDateError('');
       // Format the date for display (e.g., "11 Des 2025")
       const dateObj = new Date(selectedDate);
       const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
@@ -391,6 +408,20 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
                     />
                   </label>
                 </div>
+
+                {/* Date error message */}
+                {dateError && (
+                  <p
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: '14px',
+                      color: '#DC2626',
+                      margin: '8px 0 0 0',
+                    }}
+                  >
+                    {dateError}
+                  </p>
+                )}
               </div>
 
               {/* Notes (Optional) */}
