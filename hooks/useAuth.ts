@@ -13,7 +13,7 @@ const debug = createDebugger('useAuth');
  * useAuth Hook
  *
  * Manages authentication state and provides auth functions.
- * Checks if user has completed onboarding by looking for display_name in profiles table.
+ * Checks if user has completed onboarding by looking at onboarding_completed column in profiles table.
  */
 export function useAuth(): UseAuthReturn {
   const [user, setUser] = useState<User | null>(null);
@@ -26,261 +26,71 @@ export function useAuth(): UseAuthReturn {
   const hasFetchedProfile = useRef(false);
   const currentUserId = useRef<string | null>(null);
 
-  // Check if user has a profile with display_name (completed onboarding)
+  // Simple onboarding check - just look at onboarding_completed column
   const checkOnboardingStatus = useCallback(async (userId: string | undefined, forceRefetch = false): Promise<boolean> => {
-    debug.log('checkOnboardingStatus called with userId:', userId);
-    console.log('🔍 [ONBOARDING] checkOnboardingStatus called with userId:', userId);
+    console.log('🔍 [ONBOARDING] checkOnboardingStatus called:', userId);
 
     if (!userId) {
-      debug.log('No userId, setting hasCompletedOnboarding to false');
-      console.log('🔍 [ONBOARDING] No userId provided, returning false');
       setHasCompletedOnboarding(false);
       setProfile(null);
       return false;
     }
 
-    // Prevent duplicate fetches for the same user within the same session
+    // Prevent duplicate fetches
     if (!forceRefetch && hasFetchedProfile.current && currentUserId.current === userId) {
-      debug.log('Already fetched profile for this user this session, skipping');
-      const cached = localStorage.getItem(`onboarding_complete_${userId}`) === 'true';
-      console.log('🔍 [ONBOARDING] Using cached result:', cached);
-      return cached;
+      console.log('🔍 [ONBOARDING] Using cached result');
+      return hasCompletedOnboarding;
     }
 
     currentUserId.current = userId;
 
-    // Use timeout instead of AbortController to avoid browser console errors
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error('Profile fetch timeout')), TIMEOUTS.PROFILE_FETCH);
-    });
-
     try {
-      debug.log('Fetching profile from Supabase...');
-
-      const fetchPromise = supabase
+      // Simple query - just get the profile
+      const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .maybeSingle();
 
-      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
-
-      debug.log('Profile fetch result:', { data, error: error?.message });
-      console.log('🔍 [ONBOARDING] Profile fetch result:', {
+      console.log('🔍 [ONBOARDING] Profile result:', {
         hasProfile: !!data,
-        hasDisplayName: !!data?.display_name,
-        displayName: data?.display_name,
+        onboarding_completed: data?.onboarding_completed,
         error: error?.message,
       });
 
-      // Check if there's a real error
-      const hasError = error && (error.message || error.code || Object.keys(error).length > 0);
-      if (hasError) {
-        debug.error('Profile check error:', error);
+      if (error) {
+        console.log('❌ [ONBOARDING] Profile fetch error:', error.message);
         setHasCompletedOnboarding(false);
         setProfile(null);
+        hasFetchedProfile.current = true;
         return false;
       }
 
-      // No profile found - create one
+      // No profile exists - show onboarding
       if (!data) {
-        debug.log('No profile found, creating one...');
-        console.log('🔍 [ONBOARDING] No profile found, will create one and check for plants');
-
-        // First check if user has existing plants before creating profile
-        console.log('🔍 [ONBOARDING] Checking for existing plants for new profile user:', userId);
-        const { data: existingPlantsForNewUser, error: plantsCheckError } = await supabase
-          .from('plants')
-          .select('id')
-          .eq('user_id', userId)
-          .limit(1);
-
-        console.log('🔍 [ONBOARDING] Plants check for new profile:', {
-          plantsFound: existingPlantsForNewUser?.length || 0,
-          error: plantsCheckError?.message || null,
-        });
-
-        if (!plantsCheckError && existingPlantsForNewUser && existingPlantsForNewUser.length > 0) {
-          // User has plants but no profile - create profile with display_name and skip onboarding
-          console.log('✅ [ONBOARDING] New profile user has plants! Skipping onboarding');
-          const { data: { user: authUser } } = await supabase.auth.getUser();
-          const emailName = authUser?.email?.split('@')[0] || 'Teman';
-          const displayName = emailName.charAt(0).toUpperCase() + emailName.slice(1);
-
-          const { data: newProfile, error: createError } = await supabase
-            .from('profiles')
-            .upsert({
-              id: userId,
-              display_name: displayName,
-              updated_at: new Date().toISOString(),
-            }, { onConflict: 'id' })
-            .select()
-            .single();
-
-          if (createError) {
-            debug.error('Error creating profile:', createError);
-          }
-
-          setProfile((newProfile || { id: userId, display_name: displayName }) as Profile);
-          setHasCompletedOnboarding(true);
-          localStorage.setItem(`onboarding_complete_${userId}`, 'true');
-          hasFetchedProfile.current = true;
-          return true;
-        }
-
-        // No plants - create empty profile and show onboarding
-        const { data: newProfile, error: createError } = await supabase
-          .from('profiles')
-          .upsert({
-            id: userId,
-            updated_at: new Date().toISOString(),
-          }, { onConflict: 'id' })
-          .select()
-          .single();
-
-        if (createError) {
-          debug.error('Error creating profile:', createError);
-          setHasCompletedOnboarding(false);
-          setProfile(null);
-          hasFetchedProfile.current = true;
-          return false;
-        }
-
-        debug.log('Profile created:', newProfile);
-        console.log('❌ [ONBOARDING] New profile, no plants - SHOWING onboarding');
-        setProfile(newProfile as Profile);
+        console.log('❌ [ONBOARDING] No profile found - SHOWING onboarding');
         setHasCompletedOnboarding(false);
+        setProfile(null);
         hasFetchedProfile.current = true;
         return false;
       }
 
-      if (data.display_name) {
-        debug.log('Profile has display_name, onboarding complete');
-        setProfile(data as Profile);
-        setHasCompletedOnboarding(true);
-        localStorage.setItem(`onboarding_complete_${userId}`, 'true');
-        hasFetchedProfile.current = true;
-        return true;
-      } else {
-        // No display_name - but check if user has existing plants
-        // If they have plants, they've used the app before (possibly on another device)
-        debug.log('Profile exists but no display_name, checking for existing plants...');
-        console.log('🔍 [ONBOARDING] No display_name found, checking for existing plants...');
-        console.log('🔍 [ONBOARDING] Querying plants for USER_ID:', userId);
+      // Check onboarding_completed column
+      const completed = data.onboarding_completed === true;
+      console.log(completed ? '✅ [ONBOARDING] Completed - going to Home' : '❌ [ONBOARDING] Not completed - SHOWING onboarding');
 
-        const { data: existingPlants, error: plantsError } = await supabase
-          .from('plants')
-          .select('id')
-          .eq('user_id', userId)
-          .limit(1);
-
-        console.log('🔍 [ONBOARDING] Plants query result:', {
-          plantsFound: existingPlants?.length || 0,
-          error: plantsError?.message || null,
-          plants: existingPlants,
-        });
-
-        if (!plantsError && existingPlants && existingPlants.length > 0) {
-          debug.log('User has existing plants, skipping onboarding');
-          console.log('✅ [ONBOARDING] DECISION: Has plants, SKIPPING onboarding for USER_ID:', userId);
-
-          // Update profile with a default display_name from email
-          const { data: { user: authUser } } = await supabase.auth.getUser();
-          const emailName = authUser?.email?.split('@')[0] || 'Teman';
-          const displayName = emailName.charAt(0).toUpperCase() + emailName.slice(1);
-
-          await supabase
-            .from('profiles')
-            .update({ display_name: displayName, updated_at: new Date().toISOString() })
-            .eq('id', userId);
-
-          setProfile({ ...data, display_name: displayName } as Profile);
-          setHasCompletedOnboarding(true);
-          localStorage.setItem(`onboarding_complete_${userId}`, 'true');
-          hasFetchedProfile.current = true;
-          return true;
-        }
-
-        debug.log('No existing plants, needs onboarding');
-        console.log('❌ [ONBOARDING] DECISION: No plants found, SHOWING onboarding for USER_ID:', userId);
-        setProfile(data as Profile);
-        setHasCompletedOnboarding(false);
-        hasFetchedProfile.current = true;
-        return false;
-      }
+      setProfile(data as Profile);
+      setHasCompletedOnboarding(completed);
+      hasFetchedProfile.current = true;
+      return completed;
     } catch (err) {
-      const error = err as Error;
-      console.log('🚨 [ONBOARDING] CATCH block triggered - error:', error.message);
-
-      // Check localStorage cache first
-      const cachedStatus = localStorage.getItem(`onboarding_complete_${userId}`);
-      console.log('🔍 [ONBOARDING] Cached status:', cachedStatus);
-
-      if (cachedStatus === 'true') {
-        console.log('✅ [ONBOARDING] Cache is TRUE - skipping onboarding');
-        setHasCompletedOnboarding(true);
-        hasFetchedProfile.current = true;
-        return true;
-      }
-
-      // CRITICAL: Profile fetch failed, but we MUST check for plants!
-      // User with plants should NEVER see onboarding
-      console.log('🔍 [ONBOARDING] No cache. Querying plants table as final decision...');
-
-      // Direct plants query - NO nested try-catch, let errors bubble naturally
-      const { data: existingPlants, error: plantsError } = await supabase
-        .from('plants')
-        .select('id')
-        .eq('user_id', userId)
-        .limit(1);
-
-      console.log('🔍 [ONBOARDING] Plants query result:', {
-        success: !plantsError,
-        plantsFound: existingPlants?.length ?? 0,
-        plants: existingPlants,
-        error: plantsError?.message ?? 'none',
-      });
-
-      // If user has plants, SKIP onboarding
-      if (!plantsError && existingPlants && existingPlants.length > 0) {
-        console.log('✅ [ONBOARDING] User has plants! SKIPPING onboarding');
-
-        // Try to set display_name from email (don't await, fire and forget)
-        const { data: { user: authUser } } = await supabase.auth.getUser();
-        const emailName = authUser?.email?.split('@')[0] || 'Teman';
-        const displayName = emailName.charAt(0).toUpperCase() + emailName.slice(1);
-
-        // Fire and forget - don't block on this
-        supabase
-          .from('profiles')
-          .upsert({
-            id: userId,
-            display_name: displayName,
-            updated_at: new Date().toISOString(),
-          }, { onConflict: 'id' })
-          .then(() => console.log('🔍 [ONBOARDING] Profile updated with display_name'));
-
-        setProfile({ id: userId, display_name: displayName, avatar_url: null, show_statistics: true, updated_at: new Date().toISOString() } as Profile);
-        setHasCompletedOnboarding(true);
-        localStorage.setItem(`onboarding_complete_${userId}`, 'true');
-        hasFetchedProfile.current = true;
-        return true;
-      }
-
-      // Log why we're showing onboarding
-      if (plantsError) {
-        console.log('❌ [ONBOARDING] Plants query failed:', plantsError.message);
-      } else {
-        console.log('❌ [ONBOARDING] No plants found (length:', existingPlants?.length ?? 0, ')');
-      }
-
-      console.log('❌ [ONBOARDING] Final decision: SHOWING onboarding');
+      console.log('🚨 [ONBOARDING] Error:', (err as Error).message);
       setHasCompletedOnboarding(false);
       setProfile(null);
       hasFetchedProfile.current = true;
       return false;
     }
-  }, []);
+  }, [hasCompletedOnboarding]);
 
   // Initialize auth state
   useEffect(() => {
@@ -444,56 +254,35 @@ export function useAuth(): UseAuthReturn {
     }
   };
 
-  // Helper to add timeout to promises
-  const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> => {
-    const timeout = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('Request timeout')), ms)
-    );
-    return Promise.race([promise, timeout]);
-  };
-
   // Complete onboarding
   const completeOnboarding = async (displayName: string, locationNames: string[] = []) => {
     if (!user) {
       return { success: false, error: 'Tidak ada user yang login' };
     }
 
-    debug.log('completeOnboarding called:', { displayName, locationNames });
+    console.log('🔍 [ONBOARDING] completeOnboarding called:', { displayName, locationNames });
 
     try {
-      // 1. Update profile with display_name
-      let profileData: Profile | null = null;
-      try {
-        const result = await withTimeout(
-          Promise.resolve(
-            supabase
-              .from('profiles')
-              .upsert({
-                id: user.id,
-                display_name: displayName,
-                updated_at: new Date().toISOString(),
-              }, { onConflict: 'id' })
-              .select()
-              .single()
-          ),
-          TIMEOUTS.ONBOARDING_REQUEST
-        );
+      // 1. Update profile with display_name AND onboarding_completed = true
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .upsert({
+          id: user.id,
+          display_name: displayName,
+          onboarding_completed: true,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'id' })
+        .select()
+        .single();
 
-        if (result.error) {
-          debug.error('Profile update error:', result.error);
-          throw result.error;
-        }
-        profileData = result.data as Profile;
-        debug.log('Profile updated:', profileData);
-      } catch (profileErr) {
-        debug.error('Profile update failed or timed out:', profileErr);
-        profileData = { id: user.id, display_name: displayName, avatar_url: null, show_statistics: true, updated_at: new Date().toISOString() };
-        debug.log('Using fallback profile data');
+      if (profileError) {
+        console.log('❌ [ONBOARDING] Profile update error:', profileError.message);
+        throw profileError;
       }
 
-      // 2. Insert locations into the locations table
-      debug.log('locationNames received:', locationNames);
+      console.log('✅ [ONBOARDING] Profile updated with onboarding_completed=true');
 
+      // 2. Insert locations into the locations table
       if (locationNames && locationNames.length > 0) {
         const locationsToInsert = locationNames.map((name, index) => ({
           user_id: user.id,
@@ -501,49 +290,25 @@ export function useAuth(): UseAuthReturn {
           order_index: index,
         }));
 
-        debug.log('Inserting locations:', locationsToInsert);
+        const { error: locError } = await supabase
+          .from('locations')
+          .insert(locationsToInsert);
 
-        try {
-          const locResult = await withTimeout(
-            Promise.resolve(
-              supabase
-                .from('locations')
-                .insert(locationsToInsert)
-                .select()
-            ),
-            TIMEOUTS.ONBOARDING_REQUEST
-          );
-
-          if (locResult.error) {
-            debug.error('Locations INSERT ERROR:', locResult.error);
-          } else {
-            debug.log('Locations inserted successfully!', locResult.data);
-          }
-        } catch (locErr) {
-          debug.error('Locations insert timed out or failed:', locErr);
+        if (locError) {
+          console.log('⚠️ [ONBOARDING] Locations insert error:', locError.message);
         }
       }
 
-      // Always set onboarding as complete
-      setProfile(profileData);
+      // Update local state
+      setProfile(profileData as Profile);
       setHasCompletedOnboarding(true);
-      localStorage.setItem(`onboarding_complete_${user.id}`, 'true');
       localStorage.setItem('userName', displayName);
 
-      return { success: true, profile: profileData };
+      return { success: true, profile: profileData as Profile };
     } catch (err) {
       const error = err as Error;
-      debug.error('Onboarding error:', error);
-
-      // Even on error, try to complete onboarding locally
-      debug.log('Attempting local fallback for onboarding');
-      const fallbackProfile: Profile = { id: user.id, display_name: displayName, avatar_url: null, show_statistics: true, updated_at: new Date().toISOString() };
-      setProfile(fallbackProfile);
-      setHasCompletedOnboarding(true);
-      localStorage.setItem(`onboarding_complete_${user.id}`, 'true');
-      localStorage.setItem('userName', displayName);
-
-      return { success: true, profile: fallbackProfile };
+      console.log('❌ [ONBOARDING] completeOnboarding error:', error.message);
+      return { success: false, error: error.message || 'Gagal menyimpan. Coba lagi.' };
     }
   };
 

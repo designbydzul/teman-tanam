@@ -10,6 +10,7 @@ export interface Profile {
   display_name: string | null;
   avatar_url: string | null;
   show_statistics: boolean;
+  onboarding_completed: boolean;
   updated_at: string;
 }
 
