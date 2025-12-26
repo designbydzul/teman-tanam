@@ -47,31 +47,19 @@ export function useAuth(): UseAuthReturn {
     currentUserId.current = userId;
 
     try {
-      // Query profiles with timeout to prevent hanging
-      // Note: Don't call getSession() here - it can hang during auth flow
-      console.log('🔍 [ONBOARDING] Querying profiles directly...');
+      // Small delay to let auth state propagate to Supabase client
+      // This prevents the query from hanging when auth headers aren't ready
+      console.log('🔍 [ONBOARDING] Waiting for auth to settle...');
+      await new Promise(resolve => setTimeout(resolve, 500));
 
-      const timeoutMs = 8000;
-      let timeoutId: ReturnType<typeof setTimeout>;
-
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        timeoutId = setTimeout(() => reject(new Error('Profile query timeout')), timeoutMs);
-      });
-
-      const queryPromise = supabase
+      console.log('🔍 [ONBOARDING] Querying profiles...');
+      const { data, error } = await supabase
         .from('profiles')
         .select('id, display_name, onboarding_completed, avatar_url, show_statistics, updated_at')
         .eq('id', userId)
-        .maybeSingle()
-        .then(result => {
-          clearTimeout(timeoutId);
-          return result;
-        });
+        .maybeSingle();
 
-      const result = await Promise.race([queryPromise, timeoutPromise]);
-      console.log('🔍 [ONBOARDING] Query result:', JSON.stringify(result));
-
-      const { data, error } = result;
+      console.log('🔍 [ONBOARDING] Query result:', { data, error: error?.message });
 
       if (error) {
         console.log('❌ [ONBOARDING] Profile fetch error:', error.message);
