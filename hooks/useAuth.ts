@@ -47,27 +47,26 @@ export function useAuth(): UseAuthReturn {
     currentUserId.current = userId;
 
     try {
-      // First, verify we have a valid session before querying
-      console.log('🔍 [ONBOARDING] Checking session...');
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      // Query profiles with timeout to prevent hanging
+      // Note: Don't call getSession() here - it can hang during auth flow
+      console.log('🔍 [ONBOARDING] Querying profiles directly...');
 
-      if (!currentSession) {
-        console.log('🔍 [ONBOARDING] No session yet - cannot query profiles');
-        return false;
-      }
-      console.log('🔍 [ONBOARDING] Session valid, querying profiles...');
-
-      // Query with timeout to prevent hanging
       const timeoutMs = 8000;
-      const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('Profile query timeout')), timeoutMs)
-      );
+      let timeoutId: ReturnType<typeof setTimeout>;
+
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error('Profile query timeout')), timeoutMs);
+      });
 
       const queryPromise = supabase
         .from('profiles')
         .select('id, display_name, onboarding_completed, avatar_url, show_statistics, updated_at')
         .eq('id', userId)
-        .maybeSingle();
+        .maybeSingle()
+        .then(result => {
+          clearTimeout(timeoutId);
+          return result;
+        });
 
       const result = await Promise.race([queryPromise, timeoutPromise]);
       console.log('🔍 [ONBOARDING] Query result:', JSON.stringify(result));
