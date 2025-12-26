@@ -210,27 +210,71 @@ export function useAuth(): UseAuthReturn {
       }
     } catch (err) {
       const error = err as Error;
-      const isTimeoutError = error.message?.includes('timeout') || error.message?.includes('abort');
-      console.log('🔍 [ONBOARDING] CATCH block - error:', error.message);
+      console.log('🚨 [ONBOARDING] CATCH block triggered - error:', error.message);
 
-      // Check localStorage cache before assuming not onboarded
+      // Check localStorage cache first
       const cachedStatus = localStorage.getItem(`onboarding_complete_${userId}`);
-      console.log('🔍 [ONBOARDING] Cached status in localStorage:', cachedStatus);
+      console.log('🔍 [ONBOARDING] Cached status:', cachedStatus);
 
       if (cachedStatus === 'true') {
-        if (!isTimeoutError) {
-          debug.log('Profile fetch failed but using cached onboarding status');
-        }
-        console.log('🔍 [ONBOARDING] Using cached TRUE - skipping onboarding');
+        console.log('✅ [ONBOARDING] Cache is TRUE - skipping onboarding');
         setHasCompletedOnboarding(true);
         hasFetchedProfile.current = true;
         return true;
       }
 
-      if (!isTimeoutError) {
-        debug.warn('Profile fetch failed and no cached status:', error.message);
+      // CRITICAL: Profile fetch failed, but we MUST check for plants!
+      // User with plants should NEVER see onboarding
+      console.log('🔍 [ONBOARDING] No cache. Querying plants table as final decision...');
+
+      // Direct plants query - NO nested try-catch, let errors bubble naturally
+      const { data: existingPlants, error: plantsError } = await supabase
+        .from('plants')
+        .select('id')
+        .eq('user_id', userId)
+        .limit(1);
+
+      console.log('🔍 [ONBOARDING] Plants query result:', {
+        success: !plantsError,
+        plantsFound: existingPlants?.length ?? 0,
+        plants: existingPlants,
+        error: plantsError?.message ?? 'none',
+      });
+
+      // If user has plants, SKIP onboarding
+      if (!plantsError && existingPlants && existingPlants.length > 0) {
+        console.log('✅ [ONBOARDING] User has plants! SKIPPING onboarding');
+
+        // Try to set display_name from email (don't await, fire and forget)
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        const emailName = authUser?.email?.split('@')[0] || 'Teman';
+        const displayName = emailName.charAt(0).toUpperCase() + emailName.slice(1);
+
+        // Fire and forget - don't block on this
+        supabase
+          .from('profiles')
+          .upsert({
+            id: userId,
+            display_name: displayName,
+            updated_at: new Date().toISOString(),
+          }, { onConflict: 'id' })
+          .then(() => console.log('🔍 [ONBOARDING] Profile updated with display_name'));
+
+        setProfile({ id: userId, display_name: displayName, avatar_url: null, show_statistics: true, updated_at: new Date().toISOString() } as Profile);
+        setHasCompletedOnboarding(true);
+        localStorage.setItem(`onboarding_complete_${userId}`, 'true');
+        hasFetchedProfile.current = true;
+        return true;
       }
-      console.log('❌ [ONBOARDING] Error occurred, no cache - SHOWING onboarding');
+
+      // Log why we're showing onboarding
+      if (plantsError) {
+        console.log('❌ [ONBOARDING] Plants query failed:', plantsError.message);
+      } else {
+        console.log('❌ [ONBOARDING] No plants found (length:', existingPlants?.length ?? 0, ')');
+      }
+
+      console.log('❌ [ONBOARDING] Final decision: SHOWING onboarding');
       setHasCompletedOnboarding(false);
       setProfile(null);
       hasFetchedProfile.current = true;

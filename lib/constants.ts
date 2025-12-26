@@ -105,7 +105,7 @@ export const CACHE_KEYS = {
 
 // Timeout values (in milliseconds)
 export const TIMEOUTS = {
-  PROFILE_FETCH: 5000,
+  PROFILE_FETCH: 10000, // Increased to 10 seconds for slow connections
   SAFETY_LOADING: 10000,
   ONBOARDING_REQUEST: 20000,
   ACTION_TOAST: 3000,
