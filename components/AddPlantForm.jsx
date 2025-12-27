@@ -10,7 +10,7 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
     customName: '',
     location: '',
     customLocation: '',
-    plantedDate: 'Hari ini',
+    startedDate: 'Hari ini',
     customDate: '',
     notes: '',
     photo: null,
@@ -94,7 +94,7 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
 
   const handleDateSelect = (date) => {
     // Only used for "Hari ini" button now
-    setFormData({ ...formData, plantedDate: date, customDate: '' });
+    setFormData({ ...formData, startedDate: date, customDate: '' });
   };
 
   const [dateError, setDateError] = useState('');
@@ -110,7 +110,7 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
         const todayObj = new Date();
         const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
         const formattedToday = `${todayObj.getDate()} ${months[todayObj.getMonth()]} ${todayObj.getFullYear()}`;
-        setFormData({ ...formData, plantedDate: formattedToday, customDate: today });
+        setFormData({ ...formData, startedDate: formattedToday, customDate: today });
         // Clear error after 3 seconds
         setTimeout(() => setDateError(''), 3000);
         return;
@@ -121,7 +121,7 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
       const dateObj = new Date(selectedDate);
       const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
       const formattedDate = `${dateObj.getDate()} ${months[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
-      setFormData({ ...formData, plantedDate: formattedDate, customDate: selectedDate });
+      setFormData({ ...formData, startedDate: formattedDate, customDate: selectedDate });
     }
   };
 
@@ -307,7 +307,7 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
                     marginBottom: '12px',
                   }}
                 >
-                  Ditanam dimana?
+                  Dirawat dimana?
                 </label>
                 <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                   {[...locationOptions, 'Tambah Tempat'].map((location, index) => (
@@ -334,7 +334,7 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
                 </div>
               </div>
 
-              {/* Planted Date Pills */}
+              {/* Started Date Pills */}
               <div style={{ marginBottom: '24px' }}>
                 <label
                   style={{
@@ -345,7 +345,7 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
                     marginBottom: '12px',
                   }}
                 >
-                  Ditanam kapan?
+                  Mulai dirawat kapan?
                 </label>
                 <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                   {/* Hari ini button */}
@@ -357,9 +357,9 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
                       fontSize: '1rem',
                       fontFamily: "'Inter', sans-serif",
                       fontWeight: 500,
-                      color: formData.plantedDate === 'Hari ini' ? '#2D5016' : '#757575',
-                      backgroundColor: formData.plantedDate === 'Hari ini' ? '#F1F8E9' : 'transparent',
-                      border: formData.plantedDate === 'Hari ini' ? '2px solid #7CB342' : '2px solid #E0E0E0',
+                      color: formData.startedDate === 'Hari ini' ? '#2D5016' : '#757575',
+                      backgroundColor: formData.startedDate === 'Hari ini' ? '#F1F8E9' : 'transparent',
+                      border: formData.startedDate === 'Hari ini' ? '2px solid #7CB342' : '2px solid #E0E0E0',
                       borderRadius: '24px',
                       cursor: 'pointer',
                       transition: 'all 0.2s ease',
@@ -385,7 +385,7 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
                       position: 'relative',
                     }}
                   >
-                    {formData.customDate ? formData.plantedDate : 'Pilih Tanggal'}
+                    {formData.customDate ? formData.startedDate : 'Pilih Tanggal'}
                     {/* Native date input - visible but transparent, overlays the label */}
                     <input
                       ref={dateInputRef}

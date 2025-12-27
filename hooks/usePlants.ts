@@ -117,7 +117,7 @@ export function usePlants(): UsePlantsReturn {
 
   // Calculate harvest status
   const calculateHarvestStatus = (
-    plantedDate: string | null | undefined,
+    startedDate: string | null | undefined,
     daysToHarvest: number | null | undefined,
     category: string | null | undefined
   ): HarvestStatus => {
@@ -125,20 +125,20 @@ export function usePlants(): UsePlantsReturn {
       category.toLowerCase().includes(cat)
     );
 
-    if (!isHarvestable || !daysToHarvest || !plantedDate) {
+    if (!isHarvestable || !daysToHarvest || !startedDate) {
       return { isReadyToHarvest: false, daysUntilHarvest: null };
     }
 
-    const planted = new Date(plantedDate);
+    const started = new Date(startedDate);
     const today = startOfDay(new Date());
-    const plantedDay = startOfDay(planted);
-    const daysSincePlanted = differenceInDays(today, plantedDay);
-    const daysUntilHarvest = Math.max(0, daysToHarvest - daysSincePlanted);
+    const startedDay = startOfDay(started);
+    const daysSinceStarted = differenceInDays(today, startedDay);
+    const daysUntilHarvest = Math.max(0, daysToHarvest - daysSinceStarted);
 
     return {
-      isReadyToHarvest: daysSincePlanted >= daysToHarvest,
+      isReadyToHarvest: daysSinceStarted >= daysToHarvest,
       daysUntilHarvest,
-      daysSincePlanted,
+      daysSinceStarted,
     };
   };
 
@@ -178,8 +178,8 @@ export function usePlants(): UsePlantsReturn {
 
       const wateringStatus = calculateCareStatus(actions[ACTION_TYPES.WATER], wateringFrequencyDays, ACTION_TYPES.WATER);
       const fertilizingStatus = calculateCareStatus(actions[ACTION_TYPES.FERTILIZE], fertilizingFrequencyDays, ACTION_TYPES.FERTILIZE);
-      const plantedDate = plant.planted_date || plant.created_at;
-      const harvestStatus = calculateHarvestStatus(plantedDate, daysToHarvest, species?.category);
+      const startedDate = plant.started_date || plant.created_at;
+      const harvestStatus = calculateHarvestStatus(startedDate, daysToHarvest, species?.category);
       const overallStatus = calculateOverallStatus(wateringStatus, fertilizingStatus, harvestStatus);
 
       // Parse species info from notes if available
@@ -235,7 +235,7 @@ export function usePlants(): UsePlantsReturn {
         // Custom frequencies (null = use species default)
         customWateringDays: plant.custom_watering_days ?? null,
         customFertilizingDays: plant.custom_fertilizing_days ?? null,
-        plantedDate: plant.planted_date ? new Date(plant.planted_date) : new Date(plant.created_at),
+        startedDate: plant.started_date ? new Date(plant.started_date) : new Date(plant.created_at),
         lastWatered: actions[ACTION_TYPES.WATER] ? new Date(actions[ACTION_TYPES.WATER]) : null,
         lastFertilized: actions[ACTION_TYPES.FERTILIZE] ? new Date(actions[ACTION_TYPES.FERTILIZE]) : null,
         wateringStatus,
@@ -456,7 +456,7 @@ export function usePlants(): UsePlantsReturn {
           location_id: plantData.locationId || null,
           name: plantData.customName || plantData.name,
           photo_url: offlinePhoto,
-          planted_date: plantData.plantedDate || now.toISOString(),
+          started_date: plantData.startedDate || now.toISOString(),
           notes: notesWithSpecies || null,
           status: 'active',
           created_at: now.toISOString(),
@@ -497,7 +497,7 @@ export function usePlants(): UsePlantsReturn {
         location_id: plantData.locationId || null,
         name: plantData.customName || plantData.name,
         photo_url: null as string | null,
-        planted_date: plantData.plantedDate || new Date().toISOString(),
+        started_date: plantData.startedDate || new Date().toISOString(),
         notes: notesWithSpecies || null,
         status: 'active',
       };

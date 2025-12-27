@@ -128,7 +128,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
       emoji: '🌱',
     },
     location: sourcePlant.location,
-    plantedDate: sourcePlant.plantedDate || sourcePlant.createdAt || new Date(),
+    startedDate: sourcePlant.startedDate || sourcePlant.createdAt || new Date(),
     photoUrl: sourcePlant.photoUrl || sourcePlant.photoPreview || sourcePlant.image || null,
     lastWatered: lastActionOverrides.lastWatered || sourcePlant.lastWatered || null,
     lastFertilized: lastActionOverrides.lastFertilized || sourcePlant.lastFertilized || null,
@@ -136,9 +136,9 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
     notes: sourcePlant.notes || '',
   } : null;
 
-  // Calculate days since planted
-  const daysSincePlanted = plantData?.plantedDate
-    ? Math.floor((new Date() - new Date(plantData.plantedDate)) / (1000 * 60 * 60 * 24))
+  // Calculate days since started caring
+  const daysSinceStarted = plantData?.startedDate
+    ? Math.floor((new Date() - new Date(plantData.startedDate)) / (1000 * 60 * 60 * 24))
     : 0;
 
   // Get care schedule from species (null if not available)
@@ -977,7 +977,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
             }}
           >
             {[
-              daysSincePlanted === 0 ? 'Ditanam hari ini' : `${daysSincePlanted} hari sejak ditanam`,
+              daysSinceStarted === 0 ? 'Dirawat sejak hari ini' : `${daysSinceStarted} hari merawat`,
               plantData.location,
               plantData.notes
             ].filter(Boolean).join(' • ')}

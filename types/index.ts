@@ -43,7 +43,7 @@ export interface PlantRaw {
   location_id: string | null;
   name: string | null;
   photo_url: string | null;
-  planted_date: string | null;
+  started_date: string | null;
   notes: string | null;
   status: string;
   created_at: string;
@@ -71,7 +71,7 @@ export interface CareStatus {
 export interface HarvestStatus {
   isReadyToHarvest: boolean;
   daysUntilHarvest: number | null;
-  daysSincePlanted?: number;
+  daysSinceStarted?: number;
 }
 
 // Transformed plant for UI
@@ -98,7 +98,7 @@ export interface Plant {
   // Custom care frequencies (overrides species defaults when set)
   customWateringDays: number | null;
   customFertilizingDays: number | null;
-  plantedDate: Date;
+  startedDate: Date;
   lastWatered: Date | null;
   lastFertilized: Date | null;
   wateringStatus: CareStatus;
@@ -176,7 +176,7 @@ export interface AddPlantData {
   speciesName?: string;
   speciesEmoji?: string;
   locationId?: string | null;
-  plantedDate?: string;
+  startedDate?: string;
   notes?: string;
   photoBlob?: Blob;
 }

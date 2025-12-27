@@ -26,7 +26,7 @@ interface PlantData {
     fertilizingFrequencyDays?: number;
   } | null;
   location?: string | null;
-  plantedDate?: Date | null;
+  startedDate?: Date | null;
   notes?: string | null;
   lastWatered?: Date | null;
   lastFertilized?: Date | null;
@@ -54,7 +54,7 @@ export interface EnhancedPlantContext {
   name: string;
   species: string | null;
   speciesCommon: string | null;
-  age: number | null;
+  careDuration: number | null;
   location: string | null;
   notes: string | null;
 
@@ -232,9 +232,9 @@ export function buildEnhancedPlantContext(
   const location = plant.location || null;
   const notes = plant.notes || null;
 
-  // Age calculation
-  const age = plant.plantedDate
-    ? Math.floor((now.getTime() - new Date(plant.plantedDate).getTime()) / (1000 * 60 * 60 * 24))
+  // Care duration calculation
+  const careDuration = plant.startedDate
+    ? Math.floor((now.getTime() - new Date(plant.startedDate).getTime()) / (1000 * 60 * 60 * 24))
     : null;
 
   // Watering info
@@ -289,7 +289,7 @@ export function buildEnhancedPlantContext(
     name,
     species,
     speciesCommon,
-    age,
+    careDuration,
     location,
     notes,
     lastWatered,
@@ -329,9 +329,9 @@ export function formatContextForAI(context: EnhancedPlantContext): string {
     parts.push(`Jenis: ${context.species}`);
   }
 
-  // Age and location
-  if (context.age !== null) {
-    parts.push(`Umur: ${context.age} hari`);
+  // Care duration and location
+  if (context.careDuration !== null) {
+    parts.push(`Bersama user: ${context.careDuration} hari`);
   }
   if (context.location) {
     parts.push(`Lokasi: ${context.location}`);

@@ -691,7 +691,7 @@ const Home = ({ userName }) => {
       speciesEmoji: plantData.species?.emoji || '🌱', // Store emoji directly
       locationId: locationId,
       notes: plantData.notes || '',
-      plantedDate: plantData.customDate || new Date().toISOString(),
+      startedDate: plantData.customDate || new Date().toISOString(),
       photoBlob: plantData.photoBlob || null, // Compressed photo blob for upload
     };
 
@@ -726,7 +726,7 @@ const Home = ({ userName }) => {
         customName: newPlantData.customName,
         species: newPlantData.species,
         location: newPlantData.location,
-        plantedDate: newPlantData.plantedDate || new Date(),
+        startedDate: newPlantData.startedDate || new Date(),
         image: newPlantData.photoPreview || null,
         photoUrl: newPlantData.photoPreview || null,
         notes: newPlantData.notes || '',

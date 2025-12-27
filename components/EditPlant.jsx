@@ -9,7 +9,7 @@ const EditPlant = ({ plant, onClose, onSave, onDelete }) => {
     customName: '',
     location: '',
     customLocation: '',
-    plantedDate: '',
+    startedDate: '',
     customDate: '',
     notes: '',
     photo: null,
@@ -42,16 +42,16 @@ const EditPlant = ({ plant, onClose, onSave, onDelete }) => {
   // Initialize form with plant data
   useEffect(() => {
     if (plant) {
-      // Safely parse planted date with validation
-      let plantedDateStr = '';
-      if (plant.plantedDate) {
+      // Safely parse started date with validation
+      let startedDateStr = '';
+      if (plant.startedDate) {
         try {
-          const date = new Date(plant.plantedDate);
+          const date = new Date(plant.startedDate);
           if (!isNaN(date.getTime())) {
-            plantedDateStr = date.toISOString().split('T')[0];
+            startedDateStr = date.toISOString().split('T')[0];
           }
         } catch (e) {
-          console.warn('[EditPlant] Invalid planted date:', plant.plantedDate);
+          console.warn('[EditPlant] Invalid started date:', plant.startedDate);
         }
       }
 
@@ -59,14 +59,14 @@ const EditPlant = ({ plant, onClose, onSave, onDelete }) => {
       const plantLocation = plant.location || '';
 
       // Format the date for display if exists
-      const formattedDate = plantedDateStr ? formatDateForDisplay(plantedDateStr) : 'Hari ini';
+      const formattedDate = startedDateStr ? formatDateForDisplay(startedDateStr) : 'Hari ini';
 
       setFormData({
         customName: plant.customName || plant.name || '',
         location: plantLocation,
         customLocation: '',
-        plantedDate: formattedDate,
-        customDate: plantedDateStr,
+        startedDate: formattedDate,
+        customDate: startedDateStr,
         notes: plant.notes || '',
         photo: null,
         customWateringDays: plant.customWateringDays != null ? String(plant.customWateringDays) : '',
@@ -113,7 +113,7 @@ const EditPlant = ({ plant, onClose, onSave, onDelete }) => {
       dateInputRef.current?.showPicker?.();
       dateInputRef.current?.click();
     } else {
-      setFormData({ ...formData, plantedDate: date, customDate: '' });
+      setFormData({ ...formData, startedDate: date, customDate: '' });
     }
   };
 
@@ -122,7 +122,7 @@ const EditPlant = ({ plant, onClose, onSave, onDelete }) => {
     if (selectedDate) {
       // Format the date for display (e.g., "11 Des 2025")
       const formattedDate = formatDateForDisplay(selectedDate);
-      setFormData({ ...formData, plantedDate: formattedDate, customDate: selectedDate });
+      setFormData({ ...formData, startedDate: formattedDate, customDate: selectedDate });
     }
   };
 
@@ -144,7 +144,7 @@ const EditPlant = ({ plant, onClose, onSave, onDelete }) => {
         customName: formData.customName.trim() || plant.customName || plant.name,
         name: formData.customName.trim() || plant.customName || plant.name,
         location: finalLocation,
-        plantedDate: formData.customDate || (formData.plantedDate === 'Hari ini' ? new Date() : plant.plantedDate),
+        startedDate: formData.customDate || (formData.startedDate === 'Hari ini' ? new Date() : plant.startedDate),
         notes: formData.notes,
         photoUrl: photoPreview,
         photoPreview: photoPreview,
@@ -325,7 +325,7 @@ const EditPlant = ({ plant, onClose, onSave, onDelete }) => {
                 </div>
               </div>
 
-              {/* Planted Date - Native Date Input */}
+              {/* Started Date - Native Date Input */}
               <div style={{ marginBottom: '24px' }}>
                 <label
                   style={{
@@ -336,7 +336,7 @@ const EditPlant = ({ plant, onClose, onSave, onDelete }) => {
                     marginBottom: '8px',
                   }}
                 >
-                  Tanggal Ditanam
+                  Mulai Dirawat
                 </label>
                 <input
                   ref={dateInputRef}

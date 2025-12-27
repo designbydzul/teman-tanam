@@ -18,12 +18,12 @@ import OfflineModal from './OfflineModal';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
 
-// Helper function to calculate days since planted
-const calculateDaysSincePlanted = (plantedDate) => {
-  if (!plantedDate) return null;
-  const planted = new Date(plantedDate);
+// Helper function to calculate days since started caring
+const calculateDaysSinceStarted = (startedDate) => {
+  if (!startedDate) return null;
+  const started = new Date(startedDate);
   const today = new Date();
-  const diffTime = Math.abs(today - planted);
+  const diffTime = Math.abs(today - started);
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   return diffDays;
 };
@@ -255,7 +255,7 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
       },
       speciesEmoji: selectedPlant.species?.emoji || '🌱',
       location: selectedPlant.location || null,
-      plantedDate: selectedPlant.plantedDate || null,
+      startedDate: selectedPlant.startedDate || null,
       coverPhotoUrl: selectedPlant.photoUrl || (selectedPlant.image !== null && selectedPlant.image) || null,
       notes: selectedPlant.notes || null,
       lastWatered: selectedPlant.lastWatered || null,
@@ -266,9 +266,9 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
     }
     : null;
 
-  // Calculate days since planted
-  const daysSincePlanted = plantData?.plantedDate
-    ? Math.floor((new Date() - new Date(plantData.plantedDate)) / (1000 * 60 * 60 * 24))
+  // Calculate days since started caring
+  const daysSinceStarted = plantData?.startedDate
+    ? Math.floor((new Date() - new Date(plantData.startedDate)) / (1000 * 60 * 60 * 24))
     : null;
 
   // Auto-scroll to bottom when new messages
@@ -652,7 +652,7 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
                       >
                         {[
                           plantData.location,
-                          daysSincePlanted !== null ? (daysSincePlanted === 0 ? 'Ditanam hari ini' : `${daysSincePlanted} hari sejak ditanam`) : null
+                          daysSinceStarted !== null ? (daysSinceStarted === 0 ? 'Dirawat sejak hari ini' : `${daysSinceStarted} hari merawat`) : null
                         ].filter(Boolean).join(' • ') || 'Tanaman'}
                       </p>
                     </div>
