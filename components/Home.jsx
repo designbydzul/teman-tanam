@@ -16,7 +16,6 @@ import {
   CaretDown,
   GearSix,
   Check,
-  Basket,
   Scissors,
 } from '@phosphor-icons/react';
 import AddPlant from './AddPlant';
@@ -313,7 +312,7 @@ const Home = ({ userName }) => {
     const counts = {
       perluDisiram: 0,
       perluDipupuk: 0,
-      siapDipanen: 0,
+      terawat: 0,
     };
 
     plants.forEach(plant => {
@@ -321,15 +320,15 @@ const Home = ({ userName }) => {
         counts.perluDisiram++;
       } else if (plant.status === 'Perlu dipupuk') {
         counts.perluDipupuk++;
-      } else if (plant.status === 'Siap dipanen') {
-        counts.siapDipanen++;
+      } else if (plant.status === 'Terawat' || plant.status === 'Baik Baik Saja') {
+        counts.terawat++;
       }
     });
 
     return counts;
   }, [plants]);
 
-  // Get most urgent status message (priority order: disiram > dipupuk > dipanen)
+  // Get most urgent status message (priority order: disiram > dipupuk)
   const urgentSummary = React.useMemo(() => {
     if (urgentStatusCounts.perluDisiram > 0) {
       return {
@@ -343,12 +342,6 @@ const Home = ({ userName }) => {
         color: '#FF9800', // Orange warning
       };
     }
-    if (urgentStatusCounts.siapDipanen > 0) {
-      return {
-        text: `${urgentStatusCounts.siapDipanen} tanaman siap dipanen`,
-        color: '#4CAF50', // Green
-      };
-    }
     return null; // No urgent status, hide the line
   }, [urgentStatusCounts]);
 
@@ -357,13 +350,13 @@ const Home = ({ userName }) => {
     const totalPlants = plants.length;
     const needsWatering = urgentStatusCounts.perluDisiram;
     const needsFertilizing = urgentStatusCounts.perluDipupuk;
-    const readyToHarvest = urgentStatusCounts.siapDipanen;
+    const terawatCount = urgentStatusCounts.terawat;
 
     return [
       { label: 'Tanaman', value: totalPlants, Icon: Plant },
       { label: 'Penyiraman', value: needsWatering, Icon: Drop },
       { label: 'Pemupukan', value: needsFertilizing, Icon: Leaf },
-      { label: 'Siap Panen', value: readyToHarvest, Icon: Basket },
+      { label: 'Terawat', value: terawatCount, Icon: Check },
     ];
   }, [plants.length, urgentStatusCounts]);
 
