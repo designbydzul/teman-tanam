@@ -1278,62 +1278,59 @@ const Home = ({ userName }) => {
             >
               <div
                 style={{
-                  position: 'relative',
                   padding: '16px 24px',
                   borderBottom: '1px solid #F0F0F0',
                 }}
               >
-                <input
-                  type="text"
-                  placeholder="Cari tanaman..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onFocus={() => setSearchFocused(true)}
-                  onBlur={() => setSearchFocused(false)}
-                  autoFocus
-                  style={{
-                    width: '100%',
-                    padding: '14px 80px 14px 16px',
-                    fontSize: '1rem',
-                    fontFamily: "'Inter', sans-serif",
-                    color: '#2C2C2C',
-                    backgroundColor: '#FAFAFA',
-                    border: searchFocused || searchQuery ? '2px solid #7CB342' : '2px solid #E0E0E0',
-                    borderRadius: '12px',
-                    outline: 'none',
-                    transition: 'border-color 200ms',
-                  }}
-                />
-                {/* Single X button - clears text if present, closes search if empty */}
-                <motion.button
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => {
-                    if (searchQuery) {
-                      setSearchQuery('');
-                    } else {
-                      setShowSearchInput(false);
-                    }
-                  }}
-                  style={{
-                    position: 'absolute',
-                    right: '36px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    width: '28px',
-                    height: '28px',
-                    borderRadius: '50%',
-                    backgroundColor: colors.gray200,
-                    border: 'none',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                  }}
-                >
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <path d="M11 3L3 11M3 3l8 8" stroke={colors.gray600} strokeWidth="2" strokeLinecap="round" />
-                  </svg>
-                </motion.button>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type="text"
+                    placeholder="Cari tanaman..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    autoFocus
+                    style={{
+                      width: '100%',
+                      padding: '14px 80px 14px 16px',
+                      fontSize: '1rem',
+                      fontFamily: "'Inter', sans-serif",
+                      color: '#2C2C2C',
+                      backgroundColor: '#FAFAFA',
+                      border: '2px solid #7CB342',
+                      borderRadius: '12px',
+                      outline: 'none',
+                    }}
+                  />
+                  {/* Single X button - clears text if present, closes search if empty */}
+                  <button
+                    onClick={() => {
+                      if (searchQuery) {
+                        setSearchQuery('');
+                      } else {
+                        setShowSearchInput(false);
+                      }
+                    }}
+                    style={{
+                      position: 'absolute',
+                      right: '10px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      width: '28px',
+                      height: '28px',
+                      borderRadius: '50%',
+                      backgroundColor: colors.gray200,
+                      border: 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <path d="M11 3L3 11M3 3l8 8" stroke={colors.gray600} strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                  </button>
+                </div>
               </div>
             </motion.div>
           )}
