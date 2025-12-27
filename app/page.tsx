@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Splash from '../components/Splash';
 import AuthScreen from '../components/AuthScreen';
+import ForgotPassword from '../components/ForgotPassword';
 import Onboarding from '../components/Onboarding';
 import Home from '../components/Home';
 import ErrorBoundary from '../components/ErrorBoundary';
@@ -13,6 +14,9 @@ const debug = createDebugger('Page');
 
 export default function Page() {
   const [showSplash, setShowSplash] = useState(true);
+  const [authScreen, setAuthScreen] = useState<'login' | 'forgot-password'>('login');
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
   const {
     isAuthenticated,
     hasCompletedOnboarding,
@@ -101,11 +105,44 @@ export default function Page() {
     return <Splash onComplete={() => {}} />;
   }
 
-  // Show auth screen if not logged in
-  if (!isAuthenticated) {
+  // Show forgot password screen - keep showing even if authenticated (during password reset flow)
+  if (authScreen === 'forgot-password' || isResettingPassword) {
     return (
       <ErrorBoundary>
-        <AuthScreen onLogin={handleLogin} />
+        <ForgotPassword
+          initialEmail={forgotPasswordEmail}
+          onNavigate={(screen: string) => {
+            setAuthScreen(screen as 'login' | 'forgot-password');
+            setIsResettingPassword(false);
+            if (screen === 'login') {
+              setForgotPasswordEmail('');
+            }
+          }}
+          onStartReset={() => setIsResettingPassword(true)}
+          onResetComplete={() => {
+            setIsResettingPassword(false);
+            setAuthScreen('login');
+            setForgotPasswordEmail('');
+          }}
+        />
+      </ErrorBoundary>
+    );
+  }
+
+  // Show auth screen if not logged in
+  if (!isAuthenticated) {
+    // Show login/signup screen
+    return (
+      <ErrorBoundary>
+        <AuthScreen
+          onLogin={handleLogin}
+          onNavigate={(screen: string, email?: string) => {
+            setAuthScreen(screen as 'login' | 'forgot-password');
+            if (screen === 'forgot-password' && email) {
+              setForgotPasswordEmail(email);
+            }
+          }}
+        />
       </ErrorBoundary>
     );
   }

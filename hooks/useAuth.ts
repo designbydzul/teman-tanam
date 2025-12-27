@@ -115,6 +115,11 @@ export function useAuth(): UseAuthReturn {
 
         if (error) {
           debug.error('Session error:', error);
+          // Clear invalid session (e.g., invalid refresh token)
+          if (error.message?.includes('Refresh Token') || error.message?.includes('Invalid')) {
+            debug.log('Clearing invalid session...');
+            await supabase.auth.signOut();
+          }
           setSession(null);
           setUser(null);
           setLoading(false);

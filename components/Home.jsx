@@ -96,9 +96,9 @@ const Home = ({ userName }) => {
   const [showHomeStats, setShowHomeStats] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('showHomeStats');
-      return saved !== null ? JSON.parse(saved) : true; // Default: show stats
+      return saved !== null ? JSON.parse(saved) : false; // Default: hide stats
     }
-    return true;
+    return false;
   });
 
   // Sync showHomeStats with profile from database when it loads

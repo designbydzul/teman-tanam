@@ -29,11 +29,10 @@ const FLOW_STATES = {
   EMAIL: 'email', // Initial state - email input only
   LOGIN: 'login', // Email exists - show password for login
   SIGNUP: 'signup', // Email doesn't exist - show password + confirm for signup
-  FORGOT_PASSWORD: 'forgot-password', // Forgot password flow
-  SUCCESS: 'success', // Success message (signup confirmation or password reset sent)
+  SUCCESS: 'success', // Success message (signup confirmation)
 };
 
-const AuthScreen = ({ onLogin }) => {
+const AuthScreen = ({ onLogin, onNavigate }) => {
   // Form state
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -44,6 +43,7 @@ const AuthScreen = ({ onLogin }) => {
   // Flow state
   const [flowState, setFlowState] = useState(FLOW_STATES.EMAIL);
   const [error, setError] = useState('');
+  const [errorField, setErrorField] = useState(''); // 'email', 'password', or 'confirmPassword'
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
@@ -54,20 +54,28 @@ const AuthScreen = ({ onLogin }) => {
   const isPasswordValid = password.length >= 8;
   const doPasswordsMatch = password === confirmPassword && confirmPassword.length > 0;
 
+  // Clear error helper
+  const clearError = () => {
+    setError('');
+    setErrorField('');
+  };
+
   // Check if email exists in database
   const checkEmailExists = async () => {
     if (!email.trim()) {
       setError('Email harus diisi');
+      setErrorField('email');
       return;
     }
 
     if (!isEmailValid) {
       setError('Email gak valid nih');
+      setErrorField('email');
       return;
     }
 
     setIsLoading(true);
-    setError('');
+    clearError();
 
     try {
       const response = await fetch('/api/auth/check-email', {
@@ -86,10 +94,12 @@ const AuthScreen = ({ onLogin }) => {
         }
       } else {
         setError(data.error || 'Gagal cek email');
+        setErrorField('email');
       }
     } catch (err) {
       debug.error('Check email error:', err);
       setError('Gagal cek email. Coba lagi ya!');
+      setErrorField('email');
     } finally {
       setIsLoading(false);
     }
@@ -99,11 +109,12 @@ const AuthScreen = ({ onLogin }) => {
   const handleLogin = async () => {
     if (!password.trim()) {
       setError('Password harus diisi');
+      setErrorField('password');
       return;
     }
 
     setIsLoading(true);
-    setError('');
+    clearError();
 
     try {
       const { data, error: loginError } = await auth.signInWithPassword(
@@ -119,12 +130,14 @@ const AuthScreen = ({ onLogin }) => {
           errorMessage = 'Email belum dikonfirmasi. Cek inbox kamu ya!';
         }
         setError(errorMessage);
+        setErrorField('password');
       } else {
         onLogin?.();
       }
     } catch (err) {
       debug.error('Login error:', err);
       setError('Gagal login. Coba lagi ya!');
+      setErrorField('password');
     } finally {
       setIsLoading(false);
     }
@@ -134,21 +147,24 @@ const AuthScreen = ({ onLogin }) => {
   const handleSignup = async () => {
     if (!password.trim()) {
       setError('Password harus diisi');
+      setErrorField('password');
       return;
     }
 
     if (password.length < 8) {
       setError('Password minimal 8 karakter');
+      setErrorField('password');
       return;
     }
 
     if (password !== confirmPassword) {
       setError('Password gak sama');
+      setErrorField('confirmPassword');
       return;
     }
 
     setIsLoading(true);
-    setError('');
+    clearError();
 
     try {
       const { data, error: signUpError } = await auth.signUp(
@@ -158,13 +174,17 @@ const AuthScreen = ({ onLogin }) => {
 
       if (signUpError) {
         let errorMessage = signUpError.message;
+        let field = 'password';
         if (signUpError.message.includes('already registered')) {
           errorMessage = 'Email ini sudah terdaftar';
+          field = 'email';
           setFlowState(FLOW_STATES.LOGIN);
         } else if (signUpError.message.includes('Password should be')) {
           errorMessage = 'Password minimal 8 karakter';
+          field = 'password';
         }
         setError(errorMessage);
+        setErrorField(field);
       } else {
         // Check if email confirmation is required
         if (!data.session) {
@@ -177,30 +197,7 @@ const AuthScreen = ({ onLogin }) => {
     } catch (err) {
       debug.error('Signup error:', err);
       setError('Gagal daftar. Coba lagi ya!');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Handle forgot password
-  const handleForgotPassword = async () => {
-    setIsLoading(true);
-    setError('');
-
-    try {
-      const { error: resetError } = await auth.resetPasswordForEmail(
-        email.trim().toLowerCase()
-      );
-
-      if (resetError) {
-        setError('Gagal kirim email reset. Coba lagi ya!');
-      } else {
-        setSuccessMessage(`Link reset password sudah dikirim ke ${email}. Cek inbox kamu ya!`);
-        setFlowState(FLOW_STATES.SUCCESS);
-      }
-    } catch (err) {
-      debug.error('Forgot password error:', err);
-      setError('Gagal kirim email reset. Coba lagi ya!');
+      setErrorField('password');
     } finally {
       setIsLoading(false);
     }
@@ -209,11 +206,12 @@ const AuthScreen = ({ onLogin }) => {
   // Handle Google login
   const handleGoogleLogin = async () => {
     try {
-      setError('');
+      clearError();
       await auth.signInWithGoogle();
     } catch (err) {
       debug.error('Google login error:', err);
       setError(err.message || 'Gagal login dengan Google');
+      setErrorField('');
     }
   };
 
@@ -222,7 +220,7 @@ const AuthScreen = ({ onLogin }) => {
     setFlowState(FLOW_STATES.EMAIL);
     setPassword('');
     setConfirmPassword('');
-    setError('');
+    clearError();
   };
 
   // Handle form submit
@@ -235,8 +233,6 @@ const AuthScreen = ({ onLogin }) => {
       handleLogin();
     } else if (flowState === FLOW_STATES.SIGNUP) {
       handleSignup();
-    } else if (flowState === FLOW_STATES.FORGOT_PASSWORD) {
-      handleForgotPassword();
     }
   };
 
@@ -246,13 +242,11 @@ const AuthScreen = ({ onLogin }) => {
       if (flowState === FLOW_STATES.EMAIL) return 'Mengecek...';
       if (flowState === FLOW_STATES.LOGIN) return 'Login...';
       if (flowState === FLOW_STATES.SIGNUP) return 'Mendaftar...';
-      if (flowState === FLOW_STATES.FORGOT_PASSWORD) return 'Mengirim...';
     }
 
     if (flowState === FLOW_STATES.EMAIL) return 'Lanjut';
     if (flowState === FLOW_STATES.LOGIN) return 'Login';
     if (flowState === FLOW_STATES.SIGNUP) return 'Daftar';
-    if (flowState === FLOW_STATES.FORGOT_PASSWORD) return 'Kirim Link Reset';
 
     return 'Lanjut';
   };
@@ -424,37 +418,12 @@ const AuthScreen = ({ onLogin }) => {
           display: 'flex',
           flexDirection: 'column',
           gap: '16px',
-          padding: '0 24px',
+          padding: '0 8px',
         }}
       >
-        {/* Error Message */}
-        <AnimatePresence>
-          {error && (
-            <motion.p
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              role="alert"
-              aria-live="polite"
-              style={{
-                fontFamily: "'Inter', sans-serif",
-                fontSize: '14px',
-                color: '#DC2626',
-                margin: 0,
-                textAlign: 'center',
-                padding: '12px',
-                backgroundColor: '#FEF2F2',
-                borderRadius: '8px',
-              }}
-            >
-              {error}
-            </motion.p>
-          )}
-        </AnimatePresence>
-
         {/* Change Email Link - shown after email is checked */}
         <AnimatePresence>
-          {flowState !== FLOW_STATES.EMAIL && flowState !== FLOW_STATES.FORGOT_PASSWORD && (
+          {flowState !== FLOW_STATES.EMAIL && (
             <motion.button
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -482,36 +451,6 @@ const AuthScreen = ({ onLogin }) => {
           )}
         </AnimatePresence>
 
-        {/* Back from Forgot Password */}
-        <AnimatePresence>
-          {flowState === FLOW_STATES.FORGOT_PASSWORD && (
-            <motion.button
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              type="button"
-              onClick={() => setFlowState(FLOW_STATES.LOGIN)}
-              style={{
-                background: 'none',
-                border: 'none',
-                padding: 0,
-                fontFamily: "'Inter', sans-serif",
-                fontSize: '14px',
-                color: '#7CB342',
-                fontWeight: 500,
-                cursor: 'pointer',
-                textAlign: 'left',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-              }}
-            >
-              <ArrowLeft size={16} weight="bold" />
-              Kembali ke login
-            </motion.button>
-          )}
-        </AnimatePresence>
-
         {/* Email Input */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
           <label
@@ -529,18 +468,37 @@ const AuthScreen = ({ onLogin }) => {
             id="email"
             type="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              if (errorField === 'email') clearError();
+            }}
             placeholder="Email kamu"
             disabled={!isOnline || isLoading || flowState !== FLOW_STATES.EMAIL}
             autoFocus={flowState === FLOW_STATES.EMAIL}
           />
+          {/* Email error message */}
+          <AnimatePresence>
+            {error && errorField === 'email' && (
+              <motion.span
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -5 }}
+                role="alert"
+                style={{
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '12px',
+                  color: '#DC2626',
+                }}
+              >
+                {error}
+              </motion.span>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Password Fields - animated */}
         <AnimatePresence>
-          {(flowState === FLOW_STATES.LOGIN ||
-            flowState === FLOW_STATES.SIGNUP ||
-            flowState === FLOW_STATES.FORGOT_PASSWORD) && (
+          {(flowState === FLOW_STATES.LOGIN || flowState === FLOW_STATES.SIGNUP) && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
@@ -548,14 +506,13 @@ const AuthScreen = ({ onLogin }) => {
               transition={{ duration: 0.3 }}
               style={{ overflow: 'hidden' }}
             >
-              {flowState !== FLOW_STATES.FORGOT_PASSWORD && (
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '16px',
-                  }}
-                >
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '16px',
+                }}
+              >
                   {/* Password Input */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     <label
@@ -573,7 +530,10 @@ const AuthScreen = ({ onLogin }) => {
                       id="password"
                       type={showPassword ? 'text' : 'password'}
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        if (errorField === 'password') clearError();
+                      }}
                       placeholder="Password"
                       disabled={!isOnline || isLoading}
                       autoFocus
@@ -602,8 +562,18 @@ const AuthScreen = ({ onLogin }) => {
                         </button>
                       }
                     />
-                    {/* Password hint for signup */}
-                    {flowState === FLOW_STATES.SIGNUP && (
+                    {/* Password error message */}
+                    {error && errorField === 'password' ? (
+                      <span
+                        style={{
+                          fontFamily: "'Inter', sans-serif",
+                          fontSize: '12px',
+                          color: '#DC2626',
+                        }}
+                      >
+                        {error}
+                      </span>
+                    ) : flowState === FLOW_STATES.SIGNUP ? (
                       <span
                         style={{
                           fontFamily: "'Inter', sans-serif",
@@ -613,7 +583,7 @@ const AuthScreen = ({ onLogin }) => {
                       >
                         Minimal 8 karakter
                       </span>
-                    )}
+                    ) : null}
                   </div>
 
                   {/* Confirm Password - only for signup */}
@@ -634,7 +604,10 @@ const AuthScreen = ({ onLogin }) => {
                         id="confirmPassword"
                         type={showConfirmPassword ? 'text' : 'password'}
                         value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        onChange={(e) => {
+                          setConfirmPassword(e.target.value);
+                          if (errorField === 'confirmPassword') clearError();
+                        }}
                         placeholder="Ulangi password"
                         disabled={!isOnline || isLoading}
                         rightIcon={
@@ -664,7 +637,18 @@ const AuthScreen = ({ onLogin }) => {
                           </button>
                         }
                       />
-                      {confirmPassword && !doPasswordsMatch && (
+                      {/* Confirm password error */}
+                      {error && errorField === 'confirmPassword' ? (
+                        <span
+                          style={{
+                            fontFamily: "'Inter', sans-serif",
+                            fontSize: '12px',
+                            color: '#DC2626',
+                          }}
+                        >
+                          {error}
+                        </span>
+                      ) : confirmPassword && !doPasswordsMatch ? (
                         <span
                           style={{
                             fontFamily: "'Inter', sans-serif",
@@ -674,7 +658,7 @@ const AuthScreen = ({ onLogin }) => {
                         >
                           Password gak sama
                         </span>
-                      )}
+                      ) : null}
                     </div>
                   )}
 
@@ -682,10 +666,7 @@ const AuthScreen = ({ onLogin }) => {
                   {flowState === FLOW_STATES.LOGIN && (
                     <button
                       type="button"
-                      onClick={() => {
-                        setFlowState(FLOW_STATES.FORGOT_PASSWORD);
-                        setError('');
-                      }}
+                      onClick={() => onNavigate?.('forgot-password', email)}
                       style={{
                         background: 'none',
                         border: 'none',
@@ -703,22 +684,6 @@ const AuthScreen = ({ onLogin }) => {
                     </button>
                   )}
                 </div>
-              )}
-
-              {/* Forgot password info text */}
-              {flowState === FLOW_STATES.FORGOT_PASSWORD && (
-                <p
-                  style={{
-                    fontFamily: "'Inter', sans-serif",
-                    fontSize: '14px',
-                    color: '#757575',
-                    margin: '0 0 8px 0',
-                    lineHeight: 1.5,
-                  }}
-                >
-                  Kami akan kirim link reset password ke email kamu.
-                </p>
-              )}
             </motion.div>
           )}
         </AnimatePresence>
