@@ -18,16 +18,6 @@ import OfflineModal from './OfflineModal';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
 
-// Helper function to calculate days since started caring
-const calculateDaysSinceStarted = (startedDate) => {
-  if (!startedDate) return null;
-  const started = new Date(startedDate);
-  const today = new Date();
-  const diffTime = Math.abs(today - started);
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  return diffDays;
-};
-
 // Helper to get chat storage key for a plant
 const getChatStorageKey = (plantId) => `tanyaTanam_chat_${plantId}`;
 
@@ -266,10 +256,14 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
     }
     : null;
 
-  // Calculate days since started caring
-  const daysSinceStarted = plantData?.startedDate
-    ? Math.floor((new Date() - new Date(plantData.startedDate)) / (1000 * 60 * 60 * 24))
-    : null;
+  // Calculate days since started caring (with validation)
+  const daysSinceStarted = (() => {
+    if (!plantData?.startedDate) return null;
+    const startDate = new Date(plantData.startedDate);
+    if (isNaN(startDate.getTime())) return null;
+    const days = Math.floor((new Date() - startDate) / (1000 * 60 * 60 * 24));
+    return days >= 0 ? days : null;
+  })();
 
   // Auto-scroll to bottom when new messages
   useEffect(() => {
@@ -652,7 +646,7 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
                       >
                         {[
                           plantData.location,
-                          daysSinceStarted !== null ? (daysSinceStarted === 0 ? 'Dirawat sejak hari ini' : `${daysSinceStarted} hari merawat`) : null
+                          daysSinceStarted === 0 ? 'Baru mulai hari ini!' : (daysSinceStarted != null ? `${daysSinceStarted} hari merawat` : null)
                         ].filter(Boolean).join(' • ') || 'Tanaman'}
                       </p>
                     </div>

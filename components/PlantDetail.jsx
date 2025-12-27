@@ -136,10 +136,14 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
     notes: sourcePlant.notes || '',
   } : null;
 
-  // Calculate days since started caring
-  const daysSinceStarted = plantData?.startedDate
-    ? Math.floor((new Date() - new Date(plantData.startedDate)) / (1000 * 60 * 60 * 24))
-    : 0;
+  // Calculate days since started caring (with validation)
+  const daysSinceStarted = (() => {
+    if (!plantData?.startedDate) return null;
+    const startDate = new Date(plantData.startedDate);
+    if (isNaN(startDate.getTime())) return null;
+    const days = Math.floor((new Date() - startDate) / (1000 * 60 * 60 * 24));
+    return days >= 0 ? days : null;
+  })();
 
   // Get care schedule from species (null if not available)
   const wateringFrequencyDays = sourcePlant?.species?.wateringFrequencyDays || null;
@@ -977,7 +981,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
             }}
           >
             {[
-              daysSinceStarted === 0 ? 'Dirawat sejak hari ini' : `${daysSinceStarted} hari merawat`,
+              daysSinceStarted === 0 ? 'Baru mulai hari ini! 🌱' : (daysSinceStarted != null ? `${daysSinceStarted} hari merawat` : null),
               plantData.location,
               plantData.notes
             ].filter(Boolean).join(' • ')}
