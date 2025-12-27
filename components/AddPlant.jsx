@@ -1,36 +1,53 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-
-// Plant species data
-const PLANT_SPECIES = [
-  { id: 'labuh', name: 'Labuh', scientific: 'Cucurbita pepo', emoji: '🎃' },
-  { id: 'kentang', name: 'Kentang', scientific: 'Solanum tuberosum', emoji: '🥔' },
-  { id: 'wortel', name: 'Wortel', scientific: 'Daucus carota', emoji: '🥕' },
-  { id: 'brokoli', name: 'Brokoli', scientific: 'Brassica oleracea', emoji: '🥦' },
-  { id: 'kacang-hijau', name: 'Kacang Hijau', scientific: 'Vigna radiata', emoji: '🫘' },
-  { id: 'paprika', name: 'Paprika', scientific: 'Capsicum annuum', emoji: '🫑' },
-  { id: 'bawang-merah', name: 'Bawang Merah', scientific: 'Allium cepa', emoji: '🧅' },
-  { id: 'bayam', name: 'Bayam', scientific: 'Spinacia oleracea', emoji: '🥬' },
-  { id: 'kembang-kol', name: 'Kembang Kol', scientific: 'Brassica oleracea', emoji: '🥬' },
-  { id: 'tomat', name: 'Tomat', scientific: 'Solanum lycopersicum', emoji: '🍅' },
-  { id: 'kubis', name: 'Kubis', scientific: 'Brassica oleracea', emoji: '🥬' },
-  { id: 'terong', name: 'Terong', scientific: 'Solanum melongena', emoji: '🍆' },
-  { id: 'cabai', name: 'Cabai', scientific: 'Capsicum frutescens', emoji: '🌶️' },
-  { id: 'jagung', name: 'Jagung', scientific: 'Zea mays', emoji: '🌽' },
-  { id: 'selada', name: 'Selada', scientific: 'Lactuca sativa', emoji: '🥗' },
-  { id: 'mentimun', name: 'Mentimun', scientific: 'Cucumis sativus', emoji: '🥒' },
-  { id: 'bawang-putih', name: 'Bawang Putih', scientific: 'Allium sativum', emoji: '🧄' },
-  { id: 'labu-siam', name: 'Labu Siam', scientific: 'Sechium edule', emoji: '🥒' },
-  { id: 'kangkung', name: 'Kangkung', scientific: 'Ipomoea aquatica', emoji: '🥬' },
-  { id: 'sawi', name: 'Sawi', scientific: 'Brassica juncea', emoji: '🥬' },
-  { id: 'seledri', name: 'Seledri', scientific: 'Apium graveolens', emoji: '🥬' },
-];
+import { supabase } from '@/lib/supabase';
+import { SPECIES_EMOJI_MAP } from '@/lib/constants';
 
 const AddPlant = ({ onClose, onSelectSpecies }) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [speciesList, setSpeciesList] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [failedImages, setFailedImages] = useState(new Set());
+
+  // Fetch species from Supabase on mount
+  useEffect(() => {
+    const fetchSpecies = async () => {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('plant_species')
+          .select('id, common_name, latin_name, category, image_url')
+          .order('common_name', { ascending: true });
+
+        if (error) {
+          console.error('[AddPlant] Error fetching species:', error);
+          return;
+        }
+
+        // Transform to component format
+        const transformed = (data || []).map(s => ({
+          id: s.id, // Real UUID from Supabase
+          name: s.common_name,
+          scientific: s.latin_name,
+          category: s.category,
+          imageUrl: s.image_url,
+          emoji: SPECIES_EMOJI_MAP[s.common_name.toLowerCase()] || '🌱',
+        }));
+
+        console.log('[AddPlant] Fetched species:', transformed.length);
+        setSpeciesList(transformed);
+      } catch (err) {
+        console.error('[AddPlant] Error:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSpecies();
+  }, []);
   const [searchFocused, setSearchFocused] = useState(false);
 
-  const filteredPlants = PLANT_SPECIES.filter((plant) => {
+  const filteredPlants = speciesList.filter((plant) => {
     const query = searchQuery.toLowerCase();
     return (
       plant.name.toLowerCase().includes(query) ||
@@ -209,7 +226,11 @@ const AddPlant = ({ onClose, onSelectSpecies }) => {
             gap: '24px 16px',
           }}
         >
-        {filteredPlants.length > 0 ? (
+        {loading ? (
+          <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px' }}>
+            <p style={{ color: '#757575', fontFamily: "'Inter', sans-serif" }}>Memuat daftar tanaman...</p>
+          </div>
+        ) : filteredPlants.length > 0 ? (
           filteredPlants.map((plant) => (
             <motion.div
               key={plant.id}
@@ -235,9 +256,25 @@ const AddPlant = ({ onClose, onSelectSpecies }) => {
                   justifyContent: 'center',
                   fontSize: '3rem',
                   marginBottom: '8px',
+                  padding: plant.imageUrl && !failedImages.has(plant.id) ? '12px' : 0,
                 }}
               >
-                {plant.emoji}
+                {plant.imageUrl && !failedImages.has(plant.id) ? (
+                  <img
+                    src={plant.imageUrl}
+                    alt={plant.name}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'contain',
+                    }}
+                    onError={() => {
+                      setFailedImages(prev => new Set([...prev, plant.id]));
+                    }}
+                  />
+                ) : (
+                  plant.emoji
+                )}
               </div>
 
               {/* Plant Name */}

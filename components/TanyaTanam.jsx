@@ -240,8 +240,15 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
       species: {
         name: selectedPlant.species?.name || null,
         scientific: selectedPlant.species?.scientific || null,
+        category: selectedPlant.species?.category || null,
         wateringFrequencyDays: selectedPlant.species?.wateringFrequencyDays || 3,
         fertilizingFrequencyDays: selectedPlant.species?.fertilizingFrequencyDays || 14,
+        // New fields from updated schema
+        difficultyLevel: selectedPlant.species?.difficultyLevel || null,
+        sunRequirement: selectedPlant.species?.sunRequirement || null,
+        growingSeason: selectedPlant.species?.growingSeason || null,
+        harvestSigns: selectedPlant.species?.harvestSigns || null,
+        careSummary: selectedPlant.species?.careSummary || null,
       },
       speciesEmoji: selectedPlant.species?.emoji || '🌱',
       location: selectedPlant.location || null,

@@ -170,7 +170,6 @@ export function usePlants(): UsePlantsReturn {
       // Species defaults
       const speciesWateringDays = species?.watering_frequency_days || DEFAULT_CARE_FREQUENCY.WATERING;
       const speciesFertilizingDays = species?.fertilizing_frequency_days || DEFAULT_CARE_FREQUENCY.FERTILIZING;
-      const daysToHarvest = species?.days_to_harvest || null;
 
       // Use custom frequency if set, otherwise use species default
       const wateringFrequencyDays = plant.custom_watering_days ?? speciesWateringDays;
@@ -179,7 +178,8 @@ export function usePlants(): UsePlantsReturn {
       const wateringStatus = calculateCareStatus(actions[ACTION_TYPES.WATER], wateringFrequencyDays, ACTION_TYPES.WATER);
       const fertilizingStatus = calculateCareStatus(actions[ACTION_TYPES.FERTILIZE], fertilizingFrequencyDays, ACTION_TYPES.FERTILIZE);
       const startedDate = plant.started_date || plant.created_at;
-      const harvestStatus = calculateHarvestStatus(startedDate, daysToHarvest, species?.category);
+      // Harvest status - use harvest_signs for harvestable categories
+      const harvestStatus = calculateHarvestStatus(startedDate, null, species?.category);
       const overallStatus = calculateOverallStatus(wateringStatus, fertilizingStatus, harvestStatus);
 
       // Parse species info from notes if available
@@ -221,16 +221,20 @@ export function usePlants(): UsePlantsReturn {
           name: species.common_name,
           scientific: species.latin_name,
           category: species.category,
-          quickTips: species.quick_tips,
+          imageUrl: species.image_url || null,
           emoji: speciesEmoji,
           wateringFrequencyDays: speciesWateringDays,
           fertilizingFrequencyDays: speciesFertilizingDays,
-          daysToHarvest,
+          // New fields
+          difficultyLevel: species.difficulty_level,
+          sunRequirement: species.sun_requirement,
+          growingSeason: species.growing_season,
+          harvestSigns: species.harvest_signs,
+          careSummary: species.care_summary,
         } : {
           emoji: speciesEmoji,
           wateringFrequencyDays: DEFAULT_CARE_FREQUENCY.WATERING,
           fertilizingFrequencyDays: DEFAULT_CARE_FREQUENCY.FERTILIZING,
-          daysToHarvest: null,
         },
         // Custom frequencies (null = use species default)
         customWateringDays: plant.custom_watering_days ?? null,
@@ -295,9 +299,14 @@ export function usePlants(): UsePlantsReturn {
             common_name,
             latin_name,
             category,
-            quick_tips,
+            image_url,
             watering_frequency_days,
-            fertilizing_frequency_days
+            fertilizing_frequency_days,
+            sun_requirement,
+            difficulty_level,
+            growing_season,
+            harvest_signs,
+            care_summary
           ),
           locations (
             id,

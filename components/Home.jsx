@@ -156,6 +156,8 @@ const Home = ({ userName }) => {
 
   // Track failed plant images to show fallback
   const [failedImages, setFailedImages] = useState(new Set());
+  // Track failed species images to show fallback emoji
+  const [failedSpeciesImages, setFailedSpeciesImages] = useState(new Set());
 
   // Action toast state (for watering, fertilizing, plant actions, etc.)
   const [showActionToast, setShowActionToast] = useState(false);
@@ -674,12 +676,11 @@ const Home = ({ userName }) => {
     });
 
     // Prepare data for Supabase
-    // NOTE: species_id is set to null because we're using local species data (not Supabase UUIDs)
-    // We pass speciesName and speciesEmoji for display purposes
+    // species_id is now the real UUID from Supabase plant_species table
     const supabaseData = {
       customName: plantData.customName,
       name: plantData.customName || plantData.species?.name || 'Tanaman',
-      speciesId: null, // Set to null - local species IDs are not valid UUIDs
+      speciesId: plantData.species?.id || null, // Real UUID from Supabase
       speciesName: plantData.species?.name || null, // Store species name for emoji lookup
       speciesEmoji: plantData.species?.emoji || '🌱', // Store emoji directly
       locationId: locationId,
@@ -1628,17 +1629,65 @@ const Home = ({ userName }) => {
                   }}
                 >
                   {plant.image && !failedImages.has(plant.id) ? (
+                    <>
+                      <img
+                        src={plant.image}
+                        alt={plant.name}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          display: 'block',
+                        }}
+                        onError={() => {
+                          setFailedImages(prev => new Set(prev).add(plant.id));
+                        }}
+                      />
+                      {/* Species image badge - only show when plant has custom photo */}
+                      {plant.species?.imageUrl && !failedSpeciesImages.has(plant.species.id) && (
+                        <div
+                          style={{
+                            position: 'absolute',
+                            bottom: '6px',
+                            right: '6px',
+                            width: '36px',
+                            height: '36px',
+                            borderRadius: '10px',
+                            backgroundColor: '#FFFFFF',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            padding: '4px',
+                          }}
+                        >
+                          <img
+                            src={plant.species.imageUrl}
+                            alt={plant.species.name || ''}
+                            style={{
+                              width: '100%',
+                              height: '100%',
+                              objectFit: 'contain',
+                            }}
+                            onError={() => {
+                              setFailedSpeciesImages(prev => new Set(prev).add(plant.species.id));
+                            }}
+                          />
+                        </div>
+                      )}
+                    </>
+                  ) : plant.species?.imageUrl && !failedSpeciesImages.has(plant.species.id) ? (
+                    /* Show species image as main image when no plant photo */
                     <img
-                      src={plant.image}
-                      alt={plant.name}
+                      src={plant.species.imageUrl}
+                      alt={plant.species.name || plant.name}
                       style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                        display: 'block',
+                        width: '70%',
+                        height: '70%',
+                        objectFit: 'contain',
                       }}
                       onError={() => {
-                        setFailedImages(prev => new Set(prev).add(plant.id));
+                        setFailedSpeciesImages(prev => new Set(prev).add(plant.species.id));
                       }}
                     />
                   ) : (

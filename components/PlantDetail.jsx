@@ -50,6 +50,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
   const [currentPlantData, setCurrentPlantData] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [imageLoadError, setImageLoadError] = useState(false);
+  const [speciesImageError, setSpeciesImageError] = useState(false);
   const containerRef = useRef(null);
 
   // Toast state for actions
@@ -132,8 +133,11 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
     photoUrl: sourcePlant.photoUrl || sourcePlant.photoPreview || sourcePlant.image || null,
     lastWatered: lastActionOverrides.lastWatered || sourcePlant.lastWatered || null,
     lastFertilized: lastActionOverrides.lastFertilized || sourcePlant.lastFertilized || null,
-    quickTips: sourcePlant.quickTips || sourcePlant.species?.quickTips || null,
     notes: sourcePlant.notes || '',
+    // New species fields
+    difficultyLevel: sourcePlant.species?.difficultyLevel || null,
+    sunRequirement: sourcePlant.species?.sunRequirement || null,
+    harvestSigns: sourcePlant.species?.harvestSigns || null,
   } : null;
 
   // Calculate days since started caring (with validation)
@@ -904,19 +908,76 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
           {/* Center Plant Image */}
           <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
             {plantData.photoUrl && !imageLoadError ? (
-              <img
-                src={plantData.photoUrl}
-                alt={plantData.customName}
-                onClick={() => setShowImagePreview(true)}
-                onError={() => setImageLoadError(true)}
+              <div style={{ position: 'relative' }}>
+                <img
+                  src={plantData.photoUrl}
+                  alt={plantData.customName}
+                  onClick={() => setShowImagePreview(true)}
+                  onError={() => setImageLoadError(true)}
+                  style={{
+                    width: '120px',
+                    height: '120px',
+                    objectFit: 'cover',
+                    borderRadius: '16px',
+                    cursor: 'pointer',
+                  }}
+                />
+                {/* Species image badge */}
+                {sourcePlant?.species?.imageUrl && !speciesImageError && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      bottom: '-8px',
+                      right: '-8px',
+                      width: '48px',
+                      height: '48px',
+                      borderRadius: '12px',
+                      backgroundColor: '#FFFFFF',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '6px',
+                    }}
+                  >
+                    <img
+                      src={sourcePlant.species.imageUrl}
+                      alt={sourcePlant.species.name || ''}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'contain',
+                      }}
+                      onError={() => setSpeciesImageError(true)}
+                    />
+                  </div>
+                )}
+              </div>
+            ) : sourcePlant?.species?.imageUrl && !speciesImageError ? (
+              /* Show species image when no plant photo */
+              <div
                 style={{
                   width: '120px',
                   height: '120px',
-                  objectFit: 'cover',
                   borderRadius: '16px',
-                  cursor: 'pointer',
+                  backgroundColor: '#FAFAFA',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '16px',
                 }}
-              />
+              >
+                <img
+                  src={sourcePlant.species.imageUrl}
+                  alt={sourcePlant.species.name || plantData.customName}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'contain',
+                  }}
+                  onError={() => setSpeciesImageError(true)}
+                />
+              </div>
             ) : (
               <div
                 style={{

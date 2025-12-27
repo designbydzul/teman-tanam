@@ -23,16 +23,40 @@ export interface Location {
   created_at: string;
 }
 
+// Plant species category type
+export type PlantSpeciesCategory = 'Sayuran' | 'Rempah' | 'Bunga' | 'Tanaman Hias';
+
 // Plant species from Supabase
 export interface PlantSpecies {
   id: string;
   common_name: string;
-  latin_name: string | null;
-  category: string | null;
-  quick_tips: string | null;
-  watering_frequency_days: number | null;
-  fertilizing_frequency_days: number | null;
-  days_to_harvest: number | null;
+  latin_name: string;
+  category: PlantSpeciesCategory;
+  image_url: string | null;
+
+  // Care frequency
+  watering_frequency_days: number;
+  fertilizing_frequency_days: number;
+
+  // Basic care info
+  sun_requirement: string;
+  difficulty_level: string;
+  growing_season: string;
+
+  // Detailed care
+  water_needs: string;
+  common_problems: string;
+  harvest_signs: string | null;
+
+  // Growing context
+  container_friendly: boolean;
+  space_needed: string;
+  companion_plants: string;
+
+  // AI helper
+  care_summary: string;
+
+  created_at: string;
 }
 
 // Raw plant data from Supabase
@@ -88,12 +112,17 @@ export interface Plant {
     id?: string;
     name?: string;
     scientific?: string | null;
-    category?: string | null;
-    quickTips?: string | null;
+    category?: PlantSpeciesCategory | null;
+    imageUrl?: string | null;
     emoji: string;
     wateringFrequencyDays: number;
     fertilizingFrequencyDays: number;
-    daysToHarvest: number | null;
+    // New fields from updated schema
+    difficultyLevel?: string;
+    sunRequirement?: string;
+    growingSeason?: string;
+    harvestSigns?: string | null;
+    careSummary?: string;
   };
   // Custom care frequencies (overrides species defaults when set)
   customWateringDays: number | null;

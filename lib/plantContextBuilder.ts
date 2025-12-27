@@ -22,8 +22,15 @@ interface PlantData {
   species?: {
     name?: string;
     scientific?: string;
+    category?: string;
     wateringFrequencyDays?: number;
     fertilizingFrequencyDays?: number;
+    // New fields from updated schema
+    difficultyLevel?: string;
+    sunRequirement?: string;
+    growingSeason?: string;
+    harvestSigns?: string | null;
+    careSummary?: string;
   } | null;
   location?: string | null;
   startedDate?: Date | null;
@@ -54,9 +61,17 @@ export interface EnhancedPlantContext {
   name: string;
   species: string | null;
   speciesCommon: string | null;
+  category: string | null;
   careDuration: number | null;
   location: string | null;
   notes: string | null;
+
+  // Species knowledge (new fields for AI)
+  difficultyLevel: string | null;
+  sunRequirement: string | null;
+  growingSeason: string | null;
+  harvestSigns: string | null;
+  careSummary: string | null;
 
   // Care timing
   lastWatered: string | null;
@@ -229,8 +244,16 @@ export function buildEnhancedPlantContext(
   const name = plant.name;
   const species = plant.species?.scientific || null;
   const speciesCommon = plant.species?.name || null;
+  const category = plant.species?.category || null;
   const location = plant.location || null;
   const notes = plant.notes || null;
+
+  // Species knowledge (new fields)
+  const difficultyLevel = plant.species?.difficultyLevel || null;
+  const sunRequirement = plant.species?.sunRequirement || null;
+  const growingSeason = plant.species?.growingSeason || null;
+  const harvestSigns = plant.species?.harvestSigns || null;
+  const careSummary = plant.species?.careSummary || null;
 
   // Care duration calculation
   const careDuration = plant.startedDate
@@ -289,9 +312,17 @@ export function buildEnhancedPlantContext(
     name,
     species,
     speciesCommon,
+    category,
     careDuration,
     location,
     notes,
+    // Species knowledge
+    difficultyLevel,
+    sunRequirement,
+    growingSeason,
+    harvestSigns,
+    careSummary,
+    // Care timing
     lastWatered,
     lastFertilized,
     daysSinceWatered,
@@ -317,35 +348,76 @@ export function buildEnhancedPlantContext(
 export function formatContextForAI(context: EnhancedPlantContext): string {
   const parts: string[] = [];
 
-  // Header
-  parts.push(`Tanaman: ${context.name}`);
+  // Plant context section
+  parts.push('<plant_context>');
+  parts.push(`- Nama: ${context.name}`);
 
   // Species
   if (context.speciesCommon && context.species) {
-    parts.push(`Jenis: ${context.speciesCommon} (${context.species})`);
+    parts.push(`- Spesies: ${context.speciesCommon} (${context.species})`);
   } else if (context.speciesCommon) {
-    parts.push(`Jenis: ${context.speciesCommon}`);
+    parts.push(`- Spesies: ${context.speciesCommon}`);
   } else if (context.species) {
-    parts.push(`Jenis: ${context.species}`);
+    parts.push(`- Spesies: ${context.species}`);
+  }
+
+  if (context.category) {
+    parts.push(`- Kategori: ${context.category}`);
   }
 
   // Care duration and location
   if (context.careDuration !== null) {
-    parts.push(`Bersama user: ${context.careDuration} hari`);
+    parts.push(`- Umur: ${context.careDuration} hari`);
   }
   if (context.location) {
-    parts.push(`Lokasi: ${context.location}`);
+    parts.push(`- Lokasi: ${context.location}`);
+  }
+
+  // Last care actions
+  if (context.lastWatered) {
+    parts.push(`- Terakhir disiram: ${context.lastWatered}`);
+  }
+  if (context.lastFertilized) {
+    parts.push(`- Terakhir dipupuk: ${context.lastFertilized}`);
   }
 
   // User notes
   if (context.notes) {
-    parts.push(`Catatan user: ${context.notes}`);
+    parts.push(`- Catatan user: ${context.notes}`);
+  }
+  parts.push('</plant_context>');
+  parts.push('');
+
+  // Species knowledge section (new!)
+  if (context.careSummary || context.difficultyLevel || context.sunRequirement) {
+    parts.push('<species_knowledge>');
+
+    if (context.sunRequirement) {
+      parts.push(`- Kebutuhan cahaya: ${context.sunRequirement}`);
+    }
+    if (context.difficultyLevel) {
+      parts.push(`- Tingkat kesulitan: ${context.difficultyLevel}`);
+    }
+    if (context.growingSeason) {
+      parts.push(`- Musim tanam: ${context.growingSeason}`);
+    }
+    parts.push(`- Frekuensi siram: Setiap ${context.wateringFrequencyDays} hari`);
+    parts.push(`- Frekuensi pupuk: Setiap ${context.fertilizingFrequencyDays} hari`);
+    if (context.harvestSigns) {
+      parts.push(`- Tanda panen: ${context.harvestSigns}`);
+    } else if (context.category === 'Bunga' || context.category === 'Tanaman Hias') {
+      parts.push(`- Tanda panen: Tanaman hias, tidak dipanen`);
+    }
+    if (context.careSummary) {
+      parts.push(`- Ringkasan perawatan: ${context.careSummary}`);
+    }
+
+    parts.push('</species_knowledge>');
+    parts.push('');
   }
 
-  parts.push(''); // Empty line
-
   // Care status section
-  parts.push('Status Perawatan:');
+  parts.push('<care_status>');
 
   // Watering status
   if (context.daysSinceWatered !== null) {
@@ -368,6 +440,7 @@ export function formatContextForAI(context: EnhancedPlantContext): string {
   } else {
     parts.push('- Pemupukan: Belum pernah tercatat');
   }
+  parts.push('</care_status>');
 
   parts.push(''); // Empty line
 

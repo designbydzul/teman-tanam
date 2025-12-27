@@ -42,15 +42,21 @@ export const STATUS_COLORS = {
   [PLANT_STATUS.HEALTHY]: '#7CB342',
 } as const;
 
-// Harvestable plant categories
+// Harvestable plant categories (updated: removed Buah/Pohon)
 export const HARVESTABLE_CATEGORIES = [
   'sayuran',
-  'buah',
   'rempah',
-  'vegetable',
-  'fruit',
-  'herb',
 ] as const;
+
+// All valid plant species categories
+export const PLANT_CATEGORIES = [
+  'Sayuran',
+  'Rempah',
+  'Bunga',
+  'Tanaman Hias',
+] as const;
+
+export type PlantCategory = typeof PLANT_CATEGORIES[number];
 
 // Default care frequencies (in days)
 export const DEFAULT_CARE_FREQUENCY = {
