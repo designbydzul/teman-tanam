@@ -43,6 +43,47 @@ export const auth = {
     return data;
   },
 
+  // Sign in with email and password
+  async signInWithPassword(email: string, password: string) {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    return { data, error };
+  },
+
+  // Sign up with email and password
+  async signUp(email: string, password: string) {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+
+    return { data, error };
+  },
+
+  // Send password reset email
+  async resetPasswordForEmail(email: string) {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/reset-password`,
+    });
+
+    return { error };
+  },
+
+  // Update password
+  async updatePassword(newPassword: string) {
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
+
+    return { error };
+  },
+
   // Get current session
   async getSession() {
     const { data: { session }, error } = await supabase.auth.getSession();

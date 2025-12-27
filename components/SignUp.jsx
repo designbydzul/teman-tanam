@@ -1,31 +1,53 @@
 /**
- * Login Screen Component
+ * Sign Up Screen Component
  *
- * Email/password login with Google OAuth option
- * Design matches app specifications
+ * Email/password registration with Google OAuth option
  */
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { auth } from '@/lib/supabase';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
-import { WifiSlash, Eye, EyeSlash, CircleNotch } from '@phosphor-icons/react';
+import { WifiSlash, Eye, EyeSlash, CircleNotch, CheckCircle } from '@phosphor-icons/react';
 import { createDebugger } from '@/lib/debug';
 
-const debug = createDebugger('Login');
+const debug = createDebugger('SignUp');
 
-const Login = ({ onLogin, onNavigate }) => {
+const SignUp = ({ onNavigate }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
   const { isOnline } = useOnlineStatus();
 
-  const handleEmailLogin = async (e) => {
+  // Password validation
+  const isPasswordValid = password.length >= 8;
+  const doPasswordsMatch = password === confirmPassword && confirmPassword.length > 0;
+
+  const handleSignUp = async (e) => {
     e.preventDefault();
-    if (!email.trim() || !password.trim()) {
-      setError('Email dan password harus diisi.');
+
+    if (!email.trim()) {
+      setError('Email harus diisi.');
+      return;
+    }
+
+    if (!password.trim()) {
+      setError('Password harus diisi.');
+      return;
+    }
+
+    if (password.length < 8) {
+      setError('Password harus minimal 8 karakter.');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError('Password dan konfirmasi password tidak sama.');
       return;
     }
 
@@ -33,22 +55,31 @@ const Login = ({ onLogin, onNavigate }) => {
     setError('');
 
     try {
-      const { data, error: loginError } = await auth.signInWithPassword(email, password);
-      if (loginError) {
+      const { data, error: signUpError } = await auth.signUp(email, password);
+
+      if (signUpError) {
         // Map common errors to Indonesian
-        let errorMessage = loginError.message;
-        if (loginError.message.includes('Invalid login credentials')) {
-          errorMessage = 'Email atau password salah. Coba lagi.';
-        } else if (loginError.message.includes('Email not confirmed')) {
-          errorMessage = 'Email belum dikonfirmasi. Cek inbox kamu.';
+        let errorMessage = signUpError.message;
+        if (signUpError.message.includes('already registered')) {
+          errorMessage = 'Email ini sudah terdaftar. Coba login atau gunakan email lain.';
+        } else if (signUpError.message.includes('Password should be')) {
+          errorMessage = 'Password harus minimal 8 karakter.';
+        } else if (signUpError.message.includes('Invalid email')) {
+          errorMessage = 'Format email tidak valid.';
         }
         setError(errorMessage);
       } else {
-        onLogin?.();
+        // Check if email confirmation is required
+        if (!data.session) {
+          setShowSuccess(true);
+        } else {
+          // Auto-logged in (email confirmation disabled)
+          onNavigate?.('login');
+        }
       }
     } catch (err) {
-      debug.error('Email login error:', err);
-      setError('Gagal login. Coba lagi.');
+      debug.error('Sign up error:', err);
+      setError('Gagal mendaftar. Coba lagi.');
     } finally {
       setIsLoading(false);
     }
@@ -65,17 +96,108 @@ const Login = ({ onLogin, onNavigate }) => {
     }
   };
 
+  // Success state - show confirmation message
+  if (showSuccess) {
+    return (
+      <main
+        role="main"
+        aria-label="Pendaftaran Berhasil"
+        style={{
+          display: 'flex',
+          width: '100%',
+          minHeight: '100vh',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '24px',
+          background: '#FFFFFF',
+          padding: '40px 24px',
+        }}
+      >
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ type: 'spring', damping: 15 }}
+          style={{
+            width: '80px',
+            height: '80px',
+            borderRadius: '50%',
+            backgroundColor: '#F1F8E9',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <CheckCircle size={48} weight="fill" color="#7CB342" />
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          style={{ textAlign: 'center', maxWidth: '320px' }}
+        >
+          <h1
+            style={{
+              fontFamily: "'Caveat', cursive",
+              fontSize: '2rem',
+              fontWeight: 600,
+              color: '#2D5016',
+              margin: '0 0 12px 0',
+            }}
+          >
+            Cek Email Kamu!
+          </h1>
+          <p
+            style={{
+              fontFamily: "'Inter', sans-serif",
+              fontSize: '14px',
+              color: '#757575',
+              lineHeight: 1.6,
+              margin: 0,
+            }}
+          >
+            Kami sudah kirim link konfirmasi ke <strong style={{ color: '#2C2C2C' }}>{email}</strong>.
+            Klik link di email untuk mengaktifkan akun kamu.
+          </p>
+        </motion.div>
+
+        <motion.button
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={() => onNavigate?.('login')}
+          style={{
+            padding: '14px 32px',
+            fontSize: '1rem',
+            fontWeight: 600,
+            fontFamily: "'Inter', sans-serif",
+            color: '#FFFFFF',
+            backgroundColor: '#7CB342',
+            border: 'none',
+            borderRadius: '12px',
+            cursor: 'pointer',
+            marginTop: '8px',
+          }}
+        >
+          Kembali ke Login
+        </motion.button>
+      </main>
+    );
+  }
+
   return (
     <main
       role="main"
-      aria-label="Halaman Login"
+      aria-label="Halaman Daftar"
       style={{
         display: 'flex',
         width: '100%',
         minHeight: '100vh',
         flexDirection: 'column',
         alignItems: 'center',
-        gap: '32px',
+        gap: '24px',
         background: '#FFFFFF',
         padding: '60px 16px 40px',
       }}
@@ -92,11 +214,26 @@ const Login = ({ onLogin, onNavigate }) => {
           color: '#2D5016',
           textAlign: 'center',
           margin: 0,
-          marginTop: '40px',
+          marginTop: '20px',
         }}
       >
         Teman Tanam
       </motion.h1>
+
+      <motion.p
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.6, delay: 0.1 }}
+        style={{
+          fontFamily: "'Inter', sans-serif",
+          fontSize: '16px',
+          color: '#757575',
+          textAlign: 'center',
+          margin: 0,
+        }}
+      >
+        Buat akun baru
+      </motion.p>
 
       {/* Offline Banner */}
       <AnimatePresence>
@@ -125,18 +262,18 @@ const Login = ({ onLogin, onNavigate }) => {
                 lineHeight: 1.4,
               }}
             >
-              Kamu lagi offline. Login butuh koneksi internet ya!
+              Kamu lagi offline. Daftar butuh koneksi internet ya!
             </span>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Login Form */}
+      {/* Sign Up Form */}
       <motion.form
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.2 }}
-        onSubmit={handleEmailLogin}
+        onSubmit={handleSignUp}
         style={{
           width: '100%',
           maxWidth: '360px',
@@ -226,7 +363,7 @@ const Login = ({ onLogin, onNavigate }) => {
               type={showPassword ? 'text' : 'password'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Masukkan password"
+              placeholder="Minimal 8 karakter"
               disabled={!isOnline || isLoading}
               style={{
                 width: '100%',
@@ -235,13 +372,13 @@ const Login = ({ onLogin, onNavigate }) => {
                 fontFamily: "'Inter', sans-serif",
                 color: '#2C2C2C',
                 backgroundColor: '#FAFAFA',
-                border: '2px solid transparent',
+                border: `2px solid ${password && !isPasswordValid ? '#DC2626' : 'transparent'}`,
                 borderRadius: '12px',
                 outline: 'none',
                 transition: 'border-color 200ms',
               }}
               onFocus={(e) => (e.target.style.border = '2px solid #7CB342')}
-              onBlur={(e) => (e.target.style.border = '2px solid transparent')}
+              onBlur={(e) => (e.target.style.border = `2px solid ${password && !isPasswordValid ? '#DC2626' : 'transparent'}`)}
             />
             <button
               type="button"
@@ -268,29 +405,94 @@ const Login = ({ onLogin, onNavigate }) => {
               )}
             </button>
           </div>
+          {password && !isPasswordValid && (
+            <span
+              style={{
+                fontFamily: "'Inter', sans-serif",
+                fontSize: '12px',
+                color: '#DC2626',
+              }}
+            >
+              Password harus minimal 8 karakter
+            </span>
+          )}
         </div>
 
-        {/* Forgot Password Link */}
-        <button
-          type="button"
-          onClick={() => onNavigate?.('forgot-password')}
-          style={{
-            background: 'none',
-            border: 'none',
-            padding: 0,
-            fontFamily: "'Inter', sans-serif",
-            fontSize: '14px',
-            color: '#7CB342',
-            fontWeight: 500,
-            cursor: 'pointer',
-            textAlign: 'right',
-            marginTop: '-8px',
-          }}
-        >
-          Lupa password?
-        </button>
+        {/* Confirm Password Input */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <label
+            htmlFor="confirmPassword"
+            style={{
+              fontFamily: "'Inter', sans-serif",
+              fontSize: '14px',
+              fontWeight: 500,
+              color: '#2C2C2C',
+            }}
+          >
+            Konfirmasi Password
+          </label>
+          <div style={{ position: 'relative' }}>
+            <input
+              id="confirmPassword"
+              type={showConfirmPassword ? 'text' : 'password'}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="Ulangi password"
+              disabled={!isOnline || isLoading}
+              style={{
+                width: '100%',
+                padding: '14px 48px 14px 16px',
+                fontSize: '16px',
+                fontFamily: "'Inter', sans-serif",
+                color: '#2C2C2C',
+                backgroundColor: '#FAFAFA',
+                border: `2px solid ${confirmPassword && !doPasswordsMatch ? '#DC2626' : 'transparent'}`,
+                borderRadius: '12px',
+                outline: 'none',
+                transition: 'border-color 200ms',
+              }}
+              onFocus={(e) => (e.target.style.border = '2px solid #7CB342')}
+              onBlur={(e) => (e.target.style.border = `2px solid ${confirmPassword && !doPasswordsMatch ? '#DC2626' : 'transparent'}`)}
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              aria-label={showConfirmPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+              style={{
+                position: 'absolute',
+                right: '12px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                background: 'none',
+                border: 'none',
+                padding: '4px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              {showConfirmPassword ? (
+                <EyeSlash size={22} weight="regular" color="#757575" />
+              ) : (
+                <Eye size={22} weight="regular" color="#757575" />
+              )}
+            </button>
+          </div>
+          {confirmPassword && !doPasswordsMatch && (
+            <span
+              style={{
+                fontFamily: "'Inter', sans-serif",
+                fontSize: '12px',
+                color: '#DC2626',
+              }}
+            >
+              Password tidak sama
+            </span>
+          )}
+        </div>
 
-        {/* Login Button */}
+        {/* Sign Up Button */}
         <motion.button
           whileTap={{ scale: 0.98 }}
           type="submit"
@@ -317,10 +519,10 @@ const Login = ({ onLogin, onNavigate }) => {
           {isLoading ? (
             <>
               <CircleNotch size={20} weight="bold" className="animate-spin" />
-              Masuk...
+              Mendaftar...
             </>
           ) : (
-            'Masuk'
+            'Daftar'
           )}
         </motion.button>
 
@@ -352,7 +554,7 @@ const Login = ({ onLogin, onNavigate }) => {
           type="button"
           onClick={handleGoogleLogin}
           disabled={!isOnline}
-          aria-label="Masuk dengan akun Google"
+          aria-label="Daftar dengan akun Google"
           style={{
             width: '100%',
             padding: '16px',
@@ -395,7 +597,7 @@ const Login = ({ onLogin, onNavigate }) => {
         </motion.button>
       </motion.form>
 
-      {/* Sign Up Link */}
+      {/* Login Link */}
       <motion.p
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -407,10 +609,10 @@ const Login = ({ onLogin, onNavigate }) => {
           textAlign: 'center',
         }}
       >
-        Belum punya akun?{' '}
+        Sudah punya akun?{' '}
         <button
           type="button"
-          onClick={() => onNavigate?.('signup')}
+          onClick={() => onNavigate?.('login')}
           style={{
             background: 'none',
             border: 'none',
@@ -422,11 +624,11 @@ const Login = ({ onLogin, onNavigate }) => {
             cursor: 'pointer',
           }}
         >
-          Daftar
+          Login
         </button>
       </motion.p>
     </main>
   );
 };
 
-export default Login;
+export default SignUp;

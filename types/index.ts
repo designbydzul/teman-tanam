@@ -141,6 +141,10 @@ export interface UseAuthReturn {
   hasCompletedOnboarding: boolean;
   loginWithMagicLink: (email: string) => Promise<{ success: boolean; data?: unknown; error?: string }>;
   loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
+  loginWithEmail: (email: string, password: string) => Promise<{ success: boolean; data?: unknown; error?: string }>;
+  signUpWithEmail: (email: string, password: string) => Promise<{ success: boolean; data?: unknown; needsConfirmation?: boolean; error?: string }>;
+  resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
+  updatePassword: (newPassword: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<{ success: boolean; error?: string }>;
   completeOnboarding: (displayName: string, locationNames?: string[]) => Promise<{ success: boolean; profile?: Profile; error?: string }>;
   refreshOnboardingStatus: () => Promise<boolean>;

@@ -216,6 +216,135 @@ export function useAuth(): UseAuthReturn {
     }
   };
 
+  // Sign up with email and password
+  const signUpWithEmail = async (email: string, password: string) => {
+    debug.log('signUpWithEmail called with email:', email);
+
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+
+      if (error) {
+        debug.error('Sign up error:', error.message);
+        // Map common Supabase errors to Indonesian
+        let errorMessage = error.message;
+        if (error.message.includes('already registered')) {
+          errorMessage = 'Email ini sudah terdaftar. Coba login atau gunakan email lain.';
+        } else if (error.message.includes('Password should be')) {
+          errorMessage = 'Password harus minimal 8 karakter.';
+        } else if (error.message.includes('Invalid email')) {
+          errorMessage = 'Format email tidak valid.';
+        }
+        return { success: false, error: errorMessage };
+      }
+
+      debug.log('Sign up successful!');
+      return { success: true, data, needsConfirmation: !data.session };
+    } catch (err) {
+      const error = err as Error;
+      debug.error('Sign up error:', error);
+      return {
+        success: false,
+        error: error.message || 'Gagal mendaftar. Coba lagi.'
+      };
+    }
+  };
+
+  // Login with email and password
+  const loginWithEmail = async (email: string, password: string) => {
+    debug.log('loginWithEmail called with email:', email);
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        debug.error('Login error:', error.message);
+        // Map common Supabase errors to Indonesian
+        let errorMessage = error.message;
+        if (error.message.includes('Invalid login credentials')) {
+          errorMessage = 'Email atau password salah. Coba lagi.';
+        } else if (error.message.includes('Email not confirmed')) {
+          errorMessage = 'Email belum dikonfirmasi. Cek inbox kamu.';
+        }
+        return { success: false, error: errorMessage };
+      }
+
+      debug.log('Login successful!');
+      return { success: true, data };
+    } catch (err) {
+      const error = err as Error;
+      debug.error('Login error:', error);
+      return {
+        success: false,
+        error: error.message || 'Gagal login. Coba lagi.'
+      };
+    }
+  };
+
+  // Send password reset email
+  const resetPassword = async (email: string) => {
+    debug.log('resetPassword called with email:', email);
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/reset-password`,
+      });
+
+      if (error) {
+        debug.error('Reset password error:', error.message);
+        return { success: false, error: 'Gagal mengirim email reset. Coba lagi.' };
+      }
+
+      debug.log('Password reset email sent!');
+      return { success: true };
+    } catch (err) {
+      const error = err as Error;
+      debug.error('Reset password error:', error);
+      return {
+        success: false,
+        error: error.message || 'Gagal mengirim email reset. Coba lagi.'
+      };
+    }
+  };
+
+  // Update password (for reset password flow)
+  const updatePassword = async (newPassword: string) => {
+    debug.log('updatePassword called');
+
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (error) {
+        debug.error('Update password error:', error.message);
+        let errorMessage = error.message;
+        if (error.message.includes('Password should be')) {
+          errorMessage = 'Password harus minimal 8 karakter.';
+        }
+        return { success: false, error: errorMessage };
+      }
+
+      debug.log('Password updated successfully!');
+      return { success: true };
+    } catch (err) {
+      const error = err as Error;
+      debug.error('Update password error:', error);
+      return {
+        success: false,
+        error: error.message || 'Gagal mengubah password. Coba lagi.'
+      };
+    }
+  };
+
   // Login with Google
   const loginWithGoogle = async () => {
     try {
@@ -422,6 +551,10 @@ export function useAuth(): UseAuthReturn {
     hasCompletedOnboarding,
     loginWithMagicLink,
     loginWithGoogle,
+    loginWithEmail,
+    signUpWithEmail,
+    resetPassword,
+    updatePassword,
     logout,
     completeOnboarding,
     refreshOnboardingStatus,

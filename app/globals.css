@@ -102,3 +102,17 @@ body {
 .plant-grid {
   grid-template-columns: repeat(3, 1fr) !important;
 }
+
+/* Spinning animation for loading indicators */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
