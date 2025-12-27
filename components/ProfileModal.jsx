@@ -345,7 +345,7 @@ const ProfileModal = ({
                     flexShrink: 0,
                   }}
                 >
-                  <Info size={20} color="#757575" />
+                  <Info size={20} weight="regular" color="#757575" />
                 </div>
                 <span
                   style={{
