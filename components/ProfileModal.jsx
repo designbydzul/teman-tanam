@@ -99,7 +99,8 @@ const ProfileModal = ({
               }}
             >
             {/* Close Button */}
-            <button
+            <motion.button
+              whileTap={{ scale: 0.95 }}
               onClick={onClose}
               aria-label="Tutup"
               style={{
@@ -118,7 +119,7 @@ const ProfileModal = ({
               }}
             >
               <X size={20} weight="regular" color="#757575" />
-            </button>
+            </motion.button>
 
             {/* Profile Picture */}
             <div
@@ -177,22 +178,20 @@ const ProfileModal = ({
             {/* Menu Items */}
             <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {/* Edit Profile */}
-              <button
+              <motion.button
+                whileTap={{ scale: 0.98 }}
                 onClick={() => handleMenuAction('edit-profile')}
                 style={{
                   width: '100%',
                   padding: '12px 16px',
                   backgroundColor: '#FFFFFF',
-                  border: '1px solid #E0E0E0',
+                  border: '1px solid #E4E4E7',
                   borderRadius: '12px',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '12px',
                   cursor: 'pointer',
-                  transition: 'background-color 0.2s ease',
                 }}
-                onMouseEnter={(e) => (e.target.style.backgroundColor = '#F5F5F5')}
-                onMouseLeave={(e) => (e.target.style.backgroundColor = '#FFFFFF')}
               >
                 <div
                   style={{
@@ -218,25 +217,23 @@ const ProfileModal = ({
                 >
                   Edit Profil
                 </span>
-              </button>
+              </motion.button>
 
               {/* Pengaturan Lokasi Tanam */}
-              <button
+              <motion.button
+                whileTap={{ scale: 0.98 }}
                 onClick={() => handleMenuAction('location-settings')}
                 style={{
                   width: '100%',
                   padding: '12px 16px',
                   backgroundColor: '#FFFFFF',
-                  border: '1px solid #E0E0E0',
+                  border: '1px solid #E4E4E7',
                   borderRadius: '12px',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '12px',
                   cursor: 'pointer',
-                  transition: 'background-color 0.2s ease',
                 }}
-                onMouseEnter={(e) => (e.target.style.backgroundColor = '#F5F5F5')}
-                onMouseLeave={(e) => (e.target.style.backgroundColor = '#FFFFFF')}
               >
                 <div
                   style={{
@@ -262,25 +259,23 @@ const ProfileModal = ({
                 >
                   Pengaturan Lokasi Tanam
                 </span>
-              </button>
+              </motion.button>
 
               {/* Bantuan & Komunitas */}
-              <button
+              <motion.button
+                whileTap={{ scale: 0.98 }}
                 onClick={() => handleMenuAction('help-community')}
                 style={{
                   width: '100%',
                   padding: '12px 16px',
                   backgroundColor: '#FFFFFF',
-                  border: '1px solid #E0E0E0',
+                  border: '1px solid #E4E4E7',
                   borderRadius: '12px',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '12px',
                   cursor: 'pointer',
-                  transition: 'background-color 0.2s ease',
                 }}
-                onMouseEnter={(e) => (e.target.style.backgroundColor = '#F5F5F5')}
-                onMouseLeave={(e) => (e.target.style.backgroundColor = '#FFFFFF')}
               >
                 <div
                   style={{
@@ -306,25 +301,23 @@ const ProfileModal = ({
                 >
                   Bantuan & Komunitas
                 </span>
-              </button>
+              </motion.button>
 
               {/* Tutorial */}
-              <button
+              <motion.button
+                whileTap={{ scale: 0.98 }}
                 onClick={() => handleMenuAction('tutorial')}
                 style={{
                   width: '100%',
                   padding: '12px 16px',
                   backgroundColor: '#FFFFFF',
-                  border: '1px solid #E0E0E0',
+                  border: '1px solid #E4E4E7',
                   borderRadius: '12px',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '12px',
                   cursor: 'pointer',
-                  transition: 'background-color 0.2s ease',
                 }}
-                onMouseEnter={(e) => (e.target.style.backgroundColor = '#F5F5F5')}
-                onMouseLeave={(e) => (e.target.style.backgroundColor = '#FFFFFF')}
               >
                 <div
                   style={{
@@ -350,7 +343,7 @@ const ProfileModal = ({
                 >
                   Tutorial
                 </span>
-              </button>
+              </motion.button>
 
               {/* Tampilkan Statistik Toggle */}
               <div
@@ -358,7 +351,7 @@ const ProfileModal = ({
                   width: '100%',
                   padding: '12px 16px',
                   backgroundColor: '#FFFFFF',
-                  border: '1px solid #E0E0E0',
+                  border: '1px solid #E4E4E7',
                   borderRadius: '12px',
                   display: 'flex',
                   alignItems: 'center',
@@ -423,13 +416,14 @@ const ProfileModal = ({
               </div>
 
               {/* Keluar (Logout) */}
-              <button
+              <motion.button
+                whileTap={{ scale: 0.98 }}
                 onClick={() => handleMenuAction('logout')}
                 style={{
                   width: '100%',
                   padding: '12px 16px',
                   backgroundColor: '#FEF2F2',
-                  border: '1px solid #FEE2E2',
+                  border: 'none',
                   borderRadius: '12px',
                   display: 'flex',
                   alignItems: 'center',
@@ -462,7 +456,7 @@ const ProfileModal = ({
                 >
                   Keluar
                 </span>
-              </button>
+              </motion.button>
             </div>
           </motion.div>
           </div>

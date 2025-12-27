@@ -9,6 +9,7 @@ import {
   Trash,
   Plant,
   DotsThreeVertical,
+  DotsThree,
   X,
   ChatCircleDots,
   Plus,
@@ -16,6 +17,7 @@ import {
   GearSix,
   Check,
   Basket,
+  Scissors,
 } from '@phosphor-icons/react';
 import AddPlant from './AddPlant';
 import AddPlantForm from './AddPlantForm';
@@ -27,7 +29,10 @@ import EditProfile from './EditProfile';
 import EditPlant from './EditPlant';
 import TanyaTanam from './TanyaTanam';
 import OfflineIndicator from './OfflineIndicator';
+import BulkWateringModal from './BulkWateringModal';
 import BulkFertilizeModal from './BulkFertilizeModal';
+import BulkPruningModal from './BulkPruningModal';
+import BulkOtherActionModal from './BulkOtherActionModal';
 import { usePlants } from '@/hooks/usePlants';
 import { useLocations } from '@/hooks/useLocations';
 import { useAuth } from '@/hooks/useAuth';
@@ -125,10 +130,13 @@ const Home = ({ userName }) => {
   const [isBulkActioning, setIsBulkActioning] = useState(false);
   const [showBulkActionConfirm, setShowBulkActionConfirm] = useState(false);
   const [bulkActionType, setBulkActionType] = useState(null); // 'siram' | 'pupuk'
-  const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [alreadyWateredToday, setAlreadyWateredToday] = useState([]); // Plants already watered today
   const [alreadyFertilizedToday, setAlreadyFertilizedToday] = useState([]); // Plants already fertilized today
+  const [alreadyPrunedToday, setAlreadyPrunedToday] = useState([]); // Plants already pruned today
+  const [showBulkWateringModal, setShowBulkWateringModal] = useState(false); // Watering modal with photo/notes
   const [showBulkFertilizeModal, setShowBulkFertilizeModal] = useState(false); // Fertilize modal with photo/notes
+  const [showBulkPruningModal, setShowBulkPruningModal] = useState(false); // Pruning modal with photo/notes
+  const [showBulkOtherActionModal, setShowBulkOtherActionModal] = useState(false); // Other action modal
 
   // Edit plant from menu
   const [showEditPlantModal, setShowEditPlantModal] = useState(false);
@@ -409,8 +417,9 @@ const Home = ({ userName }) => {
       // Check for plants already watered today
       const wateredToday = selectedPlants.filter(p => isToday(p.lastWatered));
       setAlreadyWateredToday(wateredToday);
+      // Open watering modal instead of confirmation
       setBulkActionType(actionType);
-      setShowBulkActionConfirm(true);
+      setShowBulkWateringModal(true);
     } else if (actionType === 'pupuk') {
       // Check for plants already fertilized today
       const fertilizedToday = selectedPlants.filter(p => isToday(p.lastFertilized));
@@ -418,6 +427,17 @@ const Home = ({ userName }) => {
       // Open fertilize modal instead of confirmation
       setBulkActionType(actionType);
       setShowBulkFertilizeModal(true);
+    } else if (actionType === 'pangkas') {
+      // Check for plants already pruned today
+      const prunedToday = selectedPlants.filter(p => isToday(p.lastPruned));
+      setAlreadyPrunedToday(prunedToday);
+      // Open pruning modal instead of confirmation
+      setBulkActionType(actionType);
+      setShowBulkPruningModal(true);
+    } else if (actionType === 'lainnya') {
+      // Open other action modal
+      setBulkActionType(actionType);
+      setShowBulkOtherActionModal(true);
     }
   };
 
@@ -444,8 +464,24 @@ const Home = ({ userName }) => {
     setIsBulkActioning(false);
 
     // Show result toast
-    const actionLabel = bulkActionType === 'siram' ? 'disiram' : 'dipupuk';
-    const emoji = bulkActionType === 'siram' ? '💧' : '🌿';
+    const getActionLabel = () => {
+      switch (bulkActionType) {
+        case 'siram': return 'disiram';
+        case 'pupuk': return 'dipupuk';
+        case 'pangkas': return 'dipangkas';
+        default: return 'diproses';
+      }
+    };
+    const getEmoji = () => {
+      switch (bulkActionType) {
+        case 'siram': return '💧';
+        case 'pupuk': return '🌿';
+        case 'pangkas': return '✂️';
+        default: return '✅';
+      }
+    };
+    const actionLabel = getActionLabel();
+    const emoji = getEmoji();
     if (failCount === 0) {
       showActionToastWithMessage(`${successCount} tanaman sudah ${actionLabel}! ${emoji}`);
     } else {
@@ -454,15 +490,55 @@ const Home = ({ userName }) => {
 
     // Exit multi-select mode
     setBulkActionType(null);
+    setAlreadyPrunedToday([]);
     exitMultiSelectMode();
   };
 
   const cancelBulkAction = () => {
     setShowBulkActionConfirm(false);
+    setShowBulkWateringModal(false);
     setShowBulkFertilizeModal(false);
+    setShowBulkPruningModal(false);
+    setShowBulkOtherActionModal(false);
     setBulkActionType(null);
     setAlreadyWateredToday([]);
     setAlreadyFertilizedToday([]);
+    setAlreadyPrunedToday([]);
+  };
+
+  // Execute bulk watering with notes and photo
+  const executeBulkWatering = async ({ notes, photoFile }) => {
+    if (selectedPlantIds.size === 0) return;
+
+    setIsBulkActioning(true);
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const plantId of selectedPlantIds) {
+      // Only pass photo for first plant to avoid duplicate uploads
+      const result = await recordAction(plantId, 'siram', notes || null, successCount === 0 ? photoFile : null);
+      if (result.success) {
+        successCount++;
+      } else {
+        failCount++;
+      }
+    }
+
+    setIsBulkActioning(false);
+    setShowBulkWateringModal(false);
+
+    // Show result toast
+    if (failCount === 0) {
+      showActionToastWithMessage(`${successCount} tanaman sudah disiram!`);
+    } else {
+      showActionToastWithMessage(`${successCount} berhasil, ${failCount} gagal disiram`);
+    }
+
+    // Exit multi-select mode and cleanup
+    setBulkActionType(null);
+    setAlreadyWateredToday([]);
+    exitMultiSelectMode();
   };
 
   // Execute bulk fertilize with notes and photo
@@ -497,6 +573,77 @@ const Home = ({ userName }) => {
     // Exit multi-select mode and cleanup
     setBulkActionType(null);
     setAlreadyFertilizedToday([]);
+    exitMultiSelectMode();
+  };
+
+  // Execute bulk pruning with notes and photo
+  const executeBulkPruning = async ({ notes, photoFile }) => {
+    if (selectedPlantIds.size === 0) return;
+
+    setIsBulkActioning(true);
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const plantId of selectedPlantIds) {
+      // Only pass photo for first plant to avoid duplicate uploads
+      const result = await recordAction(plantId, 'pangkas', notes || null, successCount === 0 ? photoFile : null);
+      if (result.success) {
+        successCount++;
+      } else {
+        failCount++;
+      }
+    }
+
+    setIsBulkActioning(false);
+    setShowBulkPruningModal(false);
+
+    // Show result toast
+    if (failCount === 0) {
+      showActionToastWithMessage(`${successCount} tanaman sudah dipangkas!`);
+    } else {
+      showActionToastWithMessage(`${successCount} berhasil, ${failCount} gagal`);
+    }
+
+    // Exit multi-select mode and cleanup
+    setBulkActionType(null);
+    setAlreadyPrunedToday([]);
+    exitMultiSelectMode();
+  };
+
+  // Execute bulk other action with custom name, notes and photo
+  const executeBulkOtherAction = async ({ actionName, notes, photoFile }) => {
+    if (selectedPlantIds.size === 0 || !actionName.trim()) return;
+
+    setIsBulkActioning(true);
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const plantId of selectedPlantIds) {
+      // Use the custom action name in notes with [ActionName] format, followed by any additional notes
+      const fullNotes = notes ? `[${actionName.trim()}] ${notes}` : `[${actionName.trim()}]`;
+      // Only pass photo for first plant to avoid duplicate uploads
+      const result = await recordAction(plantId, 'lainnya', fullNotes, successCount === 0 ? photoFile : null);
+      if (result.success) {
+        successCount++;
+      } else {
+        failCount++;
+      }
+    }
+
+    setIsBulkActioning(false);
+    setShowBulkOtherActionModal(false);
+
+    // Show result toast
+    if (failCount === 0) {
+      showActionToastWithMessage(`${successCount} tanaman sudah dicatat ${actionName}!`);
+    } else {
+      showActionToastWithMessage(`${successCount} berhasil, ${failCount} gagal`);
+    }
+
+    // Exit multi-select mode and cleanup
+    setBulkActionType(null);
     exitMultiSelectMode();
   };
 
@@ -611,10 +758,16 @@ const Home = ({ userName }) => {
   // Long press handlers for plant cards
   const touchStartPos = useRef({ x: 0, y: 0 });
   const isLongPressValid = useRef(true);
+  const longPressTriggered = useRef(false);
 
   const handleLongPressStart = (plant, e) => {
     // Don't start long press timer if already in multi-select mode
     if (isMultiSelectMode) return;
+
+    // Prevent default to avoid text selection on long press
+    if (e.cancelable) {
+      e.preventDefault();
+    }
 
     // Store initial touch position
     if (e.touches) {
@@ -623,25 +776,38 @@ const Home = ({ userName }) => {
       touchStartPos.current = { x: e.clientX, y: e.clientY };
     }
     isLongPressValid.current = true;
+    longPressTriggered.current = false;
+
+    // Clear any existing timer
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+    }
 
     longPressTimer.current = setTimeout(() => {
       if (isLongPressValid.current) {
+        longPressTriggered.current = true;
+        // Haptic feedback if available
+        if (navigator.vibrate) {
+          navigator.vibrate(50);
+        }
         // Enter multi-select mode and select this plant
         setIsMultiSelectMode(true);
         setSelectedPlantIds(new Set([plant.id]));
       }
-    }, 500); // 500ms for long press
+    }, 400); // 400ms for long press - slightly longer for better reliability
   };
 
   const handleTouchMove = (e) => {
     if (!longPressTimer.current) return;
 
-    // Check if user moved more than 10px (scrolling)
-    const touch = e.touches[0];
+    // Check if user moved more than 8px (scrolling) - reduced threshold
+    const touch = e.touches?.[0];
+    if (!touch) return;
+
     const deltaX = Math.abs(touch.clientX - touchStartPos.current.x);
     const deltaY = Math.abs(touch.clientY - touchStartPos.current.y);
 
-    if (deltaX > 10 || deltaY > 10) {
+    if (deltaX > 8 || deltaY > 8) {
       // User is scrolling, cancel long press
       isLongPressValid.current = false;
       if (longPressTimer.current) {
@@ -657,6 +823,13 @@ const Home = ({ userName }) => {
       longPressTimer.current = null;
     }
     isLongPressValid.current = false;
+  };
+
+  // Check if long press was triggered (to prevent click after long press)
+  const wasLongPressTriggered = () => {
+    const triggered = longPressTriggered.current;
+    longPressTriggered.current = false;
+    return triggered;
   };
 
   // Handle confirmed delete from modal
@@ -707,6 +880,11 @@ const Home = ({ userName }) => {
     // In multi-select mode, toggle selection
     if (isMultiSelectMode) {
       togglePlantSelection(plant.id);
+      return;
+    }
+
+    // Don't navigate if long press was just triggered
+    if (wasLongPressTriggered()) {
       return;
     }
 
@@ -833,7 +1011,8 @@ const Home = ({ userName }) => {
 
           <div style={{ display: 'flex', gap: '12px', flexShrink: 0 }}>
             {/* WiFi Icon Button - Dynamic based on network status */}
-            <button
+            <motion.button
+              whileTap={{ scale: 0.95 }}
               onClick={() => {
                 const statusMessages = {
                   online: { title: 'Online', message: 'Koneksi internet kamu stabil' },
@@ -906,10 +1085,11 @@ const Home = ({ userName }) => {
                   />
                 </svg>
               )}
-            </button>
+            </motion.button>
 
-            {/* Grid Icon Button */}
-            <button
+            {/* Profile Menu Button (Grid Icon) - Opens Profile Modal */}
+            <motion.button
+              whileTap={{ scale: 0.95 }}
               onClick={() => setShowProfileModal(true)}
               style={{
                 width: '52px',
@@ -929,7 +1109,7 @@ const Home = ({ userName }) => {
                 <rect x="3" y="14" width="7" height="7" rx="1" stroke="#757575" strokeWidth="2" />
                 <rect x="14" y="14" width="7" height="7" rx="1" stroke="#757575" strokeWidth="2" />
               </svg>
-            </button>
+            </motion.button>
           </div>
         </div>
 
@@ -1011,7 +1191,8 @@ const Home = ({ userName }) => {
           }}
         >
           {/* Location Dropdown Button */}
-          <button
+          <motion.button
+            whileTap={{ scale: 0.95 }}
             onClick={() => setShowLocationDropdown(true)}
             style={{
               display: 'flex',
@@ -1033,10 +1214,11 @@ const Home = ({ userName }) => {
           >
             <span>{selectedLocation === 'Semua' ? 'Semua Lokasi' : selectedLocation}</span>
             <CaretDown size={14} weight="bold" />
-          </button>
+          </motion.button>
 
           {/* Status Dropdown Button */}
-          <button
+          <motion.button
+            whileTap={{ scale: 0.95 }}
             onClick={() => setShowStatusDropdown(true)}
             style={{
               display: 'flex',
@@ -1058,13 +1240,14 @@ const Home = ({ userName }) => {
           >
             <span>{selectedStatus === 'Semua' ? 'Semua Status' : selectedStatus}</span>
             <CaretDown size={14} weight="bold" />
-          </button>
+          </motion.button>
 
           {/* Spacer to push search to right */}
           <div style={{ flex: 1 }} />
 
           {/* Search Icon Button - Toggle search input */}
-          <button
+          <motion.button
+            whileTap={{ scale: 0.95 }}
             onClick={() => setShowSearchInput(!showSearchInput)}
             style={{
               width: '40px',
@@ -1084,7 +1267,7 @@ const Home = ({ userName }) => {
               <circle cx="11" cy="11" r="7" stroke={showSearchInput || isSearching ? colors.greenForest : colors.gray600} strokeWidth="2.5" />
               <path d="M20 20l-3.5-3.5" stroke={showSearchInput || isSearching ? colors.greenForest : colors.gray600} strokeWidth="2.5" strokeLinecap="round" />
             </svg>
-          </button>
+          </motion.button>
         </div>
 
         {/* Expandable Search Bar */}
@@ -1129,7 +1312,8 @@ const Home = ({ userName }) => {
                   }}
                 />
                 {/* Single X button - clears text if present, closes search if empty */}
-                <button
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
                   onClick={() => {
                     if (searchQuery) {
                       setSearchQuery('');
@@ -1156,7 +1340,7 @@ const Home = ({ userName }) => {
                   <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                     <path d="M11 3L3 11M3 3l8 8" stroke={colors.gray600} strokeWidth="2" strokeLinecap="round" />
                   </svg>
-                </button>
+                </motion.button>
               </div>
             </motion.div>
           )}
@@ -1183,24 +1367,6 @@ const Home = ({ userName }) => {
                   justifyContent: 'space-between',
                 }}
               >
-                {/* Cancel Button - Red style */}
-                <button
-                  onClick={exitMultiSelectMode}
-                  style={{
-                    padding: '8px 20px',
-                    backgroundColor: '#FEE2E2',
-                    border: 'none',
-                    borderRadius: radius.md,
-                    cursor: 'pointer',
-                    fontFamily: "'Inter', sans-serif",
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    color: '#DC2626',
-                  }}
-                >
-                  Batal
-                </button>
-
                 {/* Selection Count */}
                 <span
                   style={{
@@ -1214,7 +1380,8 @@ const Home = ({ userName }) => {
                 </span>
 
                 {/* Select All Button - Gray style */}
-                <button
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
                   onClick={selectedPlantIds.size === filteredPlants.length ? () => setSelectedPlantIds(new Set()) : selectAllPlants}
                   style={{
                     padding: '8px 20px',
@@ -1229,7 +1396,7 @@ const Home = ({ userName }) => {
                   }}
                 >
                   {selectedPlantIds.size === filteredPlants.length ? 'Batal pilih' : 'Semua'}
-                </button>
+                </motion.button>
               </div>
             </motion.div>
           )}
@@ -1399,7 +1566,8 @@ const Home = ({ userName }) => {
 
             {/* Reset Filter button - only show when filtering and plants exist */}
             {!hasNoPlants && (isFilteringLocation || isFilteringStatus || isSearching) && (
-              <button
+              <motion.button
+                whileTap={{ scale: 0.95 }}
                 onClick={() => {
                   setSelectedLocation('Semua');
                   setSelectedStatus('Semua');
@@ -1420,7 +1588,7 @@ const Home = ({ userName }) => {
                 }}
               >
                 Reset Filter
-              </button>
+              </motion.button>
             )}
           </motion.div>
         ) : (
@@ -1431,6 +1599,7 @@ const Home = ({ userName }) => {
                 key={plant.id}
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => handlePlantClick(plant)}
                 onTouchStart={(e) => handleLongPressStart(plant, e)}
                 onTouchMove={handleTouchMove}
@@ -1536,7 +1705,7 @@ const Home = ({ userName }) => {
         </div>
       </div>
 
-      {/* Multi-Select Action Bar - Bottom */}
+      {/* Multi-Select Action Bar - Bottom with Batal left, 4 actions center, Hapus right */}
       <AnimatePresence>
         {isMultiSelectMode && (
           <motion.div
@@ -1550,94 +1719,162 @@ const Home = ({ userName }) => {
               left: 0,
               right: 0,
               backgroundColor: '#FFFFFF',
-              borderTop: '1px solid #E5E5E5',
-              padding: '16px 24px',
-              paddingBottom: 'max(16px, env(safe-area-inset-bottom))',
+              borderTop: '1px solid #E4E4E7',
+              padding: '12px 16px',
+              paddingBottom: 'max(12px, env(safe-area-inset-bottom))',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              gap: '12px',
+              justifyContent: 'space-between',
               zIndex: 100,
             }}
           >
-            {/* Water Button - Outlined */}
-            <button
-              onClick={() => showBulkActionConfirmation('siram')}
-              disabled={selectedPlantIds.size === 0 || isBulkActioning}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '12px 24px',
-                backgroundColor: '#FFFFFF',
-                border: '1.5px solid #E5E5E5',
-                borderRadius: radius.md,
-                cursor: selectedPlantIds.size > 0 && !isBulkActioning ? 'pointer' : 'not-allowed',
-                fontFamily: "'Inter', sans-serif",
-                fontSize: '15px',
-                fontWeight: 500,
-                color: selectedPlantIds.size > 0 ? '#2C2C2C' : '#AAAAAA',
-                flex: 1,
-                justifyContent: 'center',
-                opacity: selectedPlantIds.size === 0 ? 0.6 : 1,
+            {/* LEFT - Batal (Cancel) Button */}
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={() => {
+                setIsMultiSelectMode(false);
+                setSelectedPlantIds(new Set());
               }}
-            >
-              <Drop
-                size={20}
-                weight="regular"
-                color={selectedPlantIds.size > 0 ? '#3B82F6' : '#AAAAAA'}
-              />
-              Siram
-            </button>
-
-            {/* Fertilize Button - Outlined */}
-            <button
-              onClick={() => showBulkActionConfirmation('pupuk')}
-              disabled={selectedPlantIds.size === 0 || isBulkActioning}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '12px 24px',
-                backgroundColor: '#FFFFFF',
-                border: '1.5px solid #E5E5E5',
-                borderRadius: radius.md,
-                cursor: selectedPlantIds.size > 0 && !isBulkActioning ? 'pointer' : 'not-allowed',
-                fontFamily: "'Inter', sans-serif",
-                fontSize: '15px',
-                fontWeight: 500,
-                color: selectedPlantIds.size > 0 ? '#2C2C2C' : '#AAAAAA',
-                flex: 1,
-                justifyContent: 'center',
-                opacity: selectedPlantIds.size === 0 ? 0.6 : 1,
-              }}
-            >
-              <Leaf
-                size={20}
-                weight="regular"
-                color={selectedPlantIds.size > 0 ? '#16A34A' : '#AAAAAA'}
-              />
-              Pupuk
-            </button>
-
-            {/* More Button */}
-            <button
-              onClick={() => setShowMoreMenu(true)}
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                width: '48px',
-                height: '48px',
-                backgroundColor: '#FFFFFF',
-                border: '1.5px solid #E5E5E5',
+                width: '52px',
+                height: '52px',
+                backgroundColor: '#F5F5F5',
+                border: 'none',
                 borderRadius: '50%',
                 cursor: 'pointer',
-                flexShrink: 0,
+                padding: 0,
               }}
             >
-              <DotsThreeVertical size={24} weight="regular" color="#757575" />
-            </button>
+              <X size={20} weight="regular" color="#757575" />
+            </motion.button>
+
+            {/* CENTER - 4 Action Buttons */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+              }}
+            >
+              {/* Siram (Water) Button */}
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={() => showBulkActionConfirmation('siram')}
+                disabled={selectedPlantIds.size === 0 || isBulkActioning}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '52px',
+                  height: '52px',
+                  backgroundColor: '#F5F5F5',
+                  border: 'none',
+                  borderRadius: '50%',
+                  cursor: selectedPlantIds.size > 0 && !isBulkActioning ? 'pointer' : 'not-allowed',
+                  opacity: selectedPlantIds.size === 0 ? 0.5 : 1,
+                  padding: 0,
+                }}
+              >
+                <Drop size={20} weight="regular" color="#757575" />
+              </motion.button>
+
+              {/* Pupuk (Fertilize) Button */}
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={() => showBulkActionConfirmation('pupuk')}
+                disabled={selectedPlantIds.size === 0 || isBulkActioning}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '52px',
+                  height: '52px',
+                  backgroundColor: '#F5F5F5',
+                  border: 'none',
+                  borderRadius: '50%',
+                  cursor: selectedPlantIds.size > 0 && !isBulkActioning ? 'pointer' : 'not-allowed',
+                  opacity: selectedPlantIds.size === 0 ? 0.5 : 1,
+                  padding: 0,
+                }}
+              >
+                <Leaf size={20} weight="regular" color="#757575" />
+              </motion.button>
+
+              {/* Pangkas (Prune) Button */}
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={() => showBulkActionConfirmation('pangkas')}
+                disabled={selectedPlantIds.size === 0 || isBulkActioning}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '52px',
+                  height: '52px',
+                  backgroundColor: '#F5F5F5',
+                  border: 'none',
+                  borderRadius: '50%',
+                  cursor: selectedPlantIds.size > 0 && !isBulkActioning ? 'pointer' : 'not-allowed',
+                  opacity: selectedPlantIds.size === 0 ? 0.5 : 1,
+                  padding: 0,
+                }}
+              >
+                <Scissors size={20} weight="regular" color="#757575" />
+              </motion.button>
+
+              {/* Lainnya (Other) Button */}
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={() => showBulkActionConfirmation('lainnya')}
+                disabled={selectedPlantIds.size === 0 || isBulkActioning}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '52px',
+                  height: '52px',
+                  backgroundColor: '#F5F5F5',
+                  border: 'none',
+                  borderRadius: '50%',
+                  cursor: selectedPlantIds.size > 0 && !isBulkActioning ? 'pointer' : 'not-allowed',
+                  opacity: selectedPlantIds.size === 0 ? 0.5 : 1,
+                  padding: 0,
+                }}
+              >
+                <DotsThree size={20} weight="bold" color="#757575" />
+              </motion.button>
+            </div>
+
+            {/* RIGHT - Hapus (Delete) Button */}
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={() => {
+                if (selectedPlantIds.size === 0) return;
+                // Get selected plants for deletion
+                const selectedPlantsList = plants.filter(p => selectedPlantIds.has(p.id));
+                setPlantsToDelete(selectedPlantsList);
+                setShowDeleteConfirmModal(true);
+              }}
+              disabled={selectedPlantIds.size === 0 || isBulkActioning}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '52px',
+                height: '52px',
+                backgroundColor: '#FEE2E2',
+                border: 'none',
+                borderRadius: '50%',
+                cursor: selectedPlantIds.size > 0 && !isBulkActioning ? 'pointer' : 'not-allowed',
+                opacity: selectedPlantIds.size === 0 ? 0.5 : 1,
+                padding: 0,
+              }}
+            >
+              <Trash size={20} weight="regular" color="#DC2626" />
+            </motion.button>
           </motion.div>
         )}
       </AnimatePresence>
@@ -1657,7 +1894,8 @@ const Home = ({ userName }) => {
               zIndex: 100,
             }}
           >
-            <button
+            <motion.button
+              whileTap={{ scale: 0.95 }}
               onClick={handleAddPlantClick}
               style={{
                 width: '64px',
@@ -1676,7 +1914,7 @@ const Home = ({ userName }) => {
                 <line x1="16" y1="8" x2="16" y2="24" stroke="#FFFFFF" strokeWidth="3" strokeLinecap="round" />
                 <line x1="8" y1="16" x2="24" y2="16" stroke="#FFFFFF" strokeWidth="3" strokeLinecap="round" />
               </svg>
-            </button>
+            </motion.button>
           </motion.div>
         )}
       </AnimatePresence>
@@ -1840,227 +2078,48 @@ const Home = ({ userName }) => {
         document.body
       )}
 
-      {/* Bulk Action Confirmation Modal */}
-      <AnimatePresence>
-        {showBulkActionConfirm && bulkActionType && (
-          <>
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={cancelBulkAction}
-              style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                zIndex: 4000,
-              }}
-            />
-
-            {/* Modal Container - for centering */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                zIndex: 4001,
-                padding: '24px',
-              }}
-            >
-              <motion.div
-                initial={{ scale: 0.9 }}
-                animate={{ scale: 1 }}
-                exit={{ scale: 0.9 }}
-                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                style={{
-                  backgroundColor: '#FFFFFF',
-                  borderRadius: '24px',
-                  padding: '32px',
-                  width: '100%',
-                  maxWidth: '360px',
-                  textAlign: 'center',
-                }}
-              >
-              {/* Icon */}
-              <div
-                style={{
-                  width: '72px',
-                  height: '72px',
-                  borderRadius: '50%',
-                  backgroundColor: bulkActionType === 'siram' ? '#EFF6FF' : '#F0FDF4',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  margin: '0 auto 20px',
-                }}
-              >
-                {bulkActionType === 'siram' ? (
-                  <svg width="36" height="36" viewBox="0 0 20 20" fill="none">
-                    <path
-                      d="M10 17.5c-2.761 0-5-1.959-5-4.375 0-2.5 5-8.125 5-8.125s5 5.625 5 8.125c0 2.416-2.239 4.375-5 4.375z"
-                      fill="#3B82F6"
-                    />
-                  </svg>
-                ) : (
-                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
-                    <path
-                      d="M17 8C15.5 9.5 14 12 14 14c0 2.5 2 4 4 4s4-1.5 4-4c0-2-1.5-4.5-3-6l-1-1.5L17 8z"
-                      fill="#16A34A"
-                    />
-                    <path
-                      d="M5 14c-1.5 1.5-3 3.5-3 5.5C2 21.5 3.5 23 5 23s3-1.5 3-3.5c0-2-1.5-4-3-5.5z"
-                      fill="#16A34A"
-                      opacity="0.6"
-                    />
-                  </svg>
-                )}
-              </div>
-
-              {/* Title */}
-              <h3
-                style={{
-                  fontFamily: "'Inter', sans-serif",
-                  fontSize: '20px',
-                  fontWeight: 600,
-                  color: '#2C2C2C',
-                  margin: '0 0 12px 0',
-                }}
-              >
-                {bulkActionType === 'siram' ? 'Siram Tanaman?' : 'Beri Pupuk?'}
-              </h3>
-
-              {/* Description */}
-              <p
-                style={{
-                  fontFamily: "'Inter', sans-serif",
-                  fontSize: '14px',
-                  color: '#757575',
-                  margin: '0 0 12px 0',
-                  lineHeight: '1.5',
-                }}
-              >
-                {bulkActionType === 'siram'
-                  ? `${selectedPlantIds.size} tanaman akan dicatat sudah disiram hari ini.`
-                  : `${selectedPlantIds.size} tanaman akan dicatat sudah diberi pupuk hari ini.`}
-              </p>
-
-              {/* Warning for plants already watered today */}
-              {bulkActionType === 'siram' && alreadyWateredToday.length > 0 && (
-                <div
-                  style={{
-                    backgroundColor: '#FEF3C7',
-                    border: '1px solid #FF9800',
-                    borderRadius: '12px',
-                    padding: '12px 16px',
-                    margin: '0 0 20px 0',
-                    textAlign: 'left',
-                  }}
-                >
-                  <p
-                    style={{
-                      fontFamily: "'Inter', sans-serif",
-                      fontSize: '13px',
-                      fontWeight: 600,
-                      color: '#B45309',
-                      margin: '0 0 4px 0',
-                    }}
-                  >
-                    ⚠️ {alreadyWateredToday.length} tanaman sudah disiram hari ini:
-                  </p>
-                  <p
-                    style={{
-                      fontFamily: "'Inter', sans-serif",
-                      fontSize: '12px',
-                      color: '#92400E',
-                      margin: 0,
-                      lineHeight: '1.4',
-                    }}
-                  >
-                    {alreadyWateredToday.map(p => p.name).join(', ')}
-                  </p>
-                </div>
-              )}
-
-              {/* Spacer when no warning */}
-              {!(bulkActionType === 'siram' && alreadyWateredToday.length > 0) && (
-                <div style={{ marginBottom: '16px' }} />
-              )}
-
-              {/* Buttons */}
-              <div
-                style={{
-                  display: 'flex',
-                  gap: '12px',
-                }}
-              >
-                <button
-                  onClick={cancelBulkAction}
-                  style={{
-                    flex: 1,
-                    padding: '14px 24px',
-                    backgroundColor: '#F5F5F5',
-                    border: 'none',
-                    borderRadius: '12px',
-                    cursor: 'pointer',
-                    fontFamily: "'Inter', sans-serif",
-                    fontSize: '16px',
-                    fontWeight: 600,
-                    color: '#757575',
-                  }}
-                >
-                  Batal
-                </button>
-                <button
-                  onClick={executeBulkAction}
-                  disabled={isBulkActioning}
-                  style={{
-                    flex: 1,
-                    padding: '14px 24px',
-                    backgroundColor: bulkActionType === 'siram' ? '#3B82F6' : '#16A34A',
-                    border: 'none',
-                    borderRadius: '12px',
-                    cursor: isBulkActioning ? 'not-allowed' : 'pointer',
-                    fontFamily: "'Inter', sans-serif",
-                    fontSize: '16px',
-                    fontWeight: 600,
-                    color: '#FFFFFF',
-                    opacity: isBulkActioning ? 0.7 : 1,
-                  }}
-                >
-                  {isBulkActioning ? 'Memproses...' : bulkActionType === 'siram' ? 'Siram' : 'Pupuk'}
-                </button>
-              </div>
-              </motion.div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+      {/* Bulk Watering Modal with photo/notes */}
+      <BulkWateringModal
+        isOpen={showBulkWateringModal}
+        onClose={cancelBulkAction}
+        onSubmit={executeBulkWatering}
+        selectedPlants={plants.filter(p => selectedPlantIds.has(p.id))}
+        alreadyWateredToday={alreadyWateredToday}
+        isProcessing={isBulkActioning}
+      />
 
       {/* Bulk Fertilize Modal with photo/notes */}
       <BulkFertilizeModal
         isOpen={showBulkFertilizeModal}
         onClose={cancelBulkAction}
         onSubmit={executeBulkFertilize}
-        selectedCount={selectedPlantIds.size}
+        selectedPlants={plants.filter(p => selectedPlantIds.has(p.id))}
         alreadyFertilizedToday={alreadyFertilizedToday}
         isProcessing={isBulkActioning}
       />
 
-      {/* More Menu Drawer */}
+      {/* Bulk Pruning Modal with photo/notes */}
+      <BulkPruningModal
+        isOpen={showBulkPruningModal}
+        onClose={cancelBulkAction}
+        onSubmit={executeBulkPruning}
+        selectedPlants={plants.filter(p => selectedPlantIds.has(p.id))}
+        alreadyPrunedToday={alreadyPrunedToday}
+        isProcessing={isBulkActioning}
+      />
+
+      {/* Bulk Other Action Modal with photo/notes */}
+      <BulkOtherActionModal
+        isOpen={showBulkOtherActionModal}
+        onClose={cancelBulkAction}
+        onSubmit={executeBulkOtherAction}
+        selectedPlants={plants.filter(p => selectedPlantIds.has(p.id))}
+        isProcessing={isBulkActioning}
+      />
+
+      {/* Delete Confirmation Modal - Bottom Drawer Style */}
       <AnimatePresence>
-        {showMoreMenu && (
+        {showDeleteConfirmModal && (plantToDelete || plantsToDelete.length > 0) && (
           <>
             {/* Backdrop */}
             <motion.div
@@ -2068,14 +2127,18 @@ const Home = ({ userName }) => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setShowMoreMenu(false)}
+              onClick={() => {
+                setShowDeleteConfirmModal(false);
+                setPlantToDelete(null);
+                setPlantsToDelete([]);
+              }}
               style={{
                 backgroundColor: 'rgba(0, 0, 0, 0.5)',
                 zIndex: 5000,
               }}
             />
 
-            {/* Drawer Container - for centering */}
+            {/* Modal Container - Bottom drawer */}
             <div
               style={{
                 position: 'fixed',
@@ -2087,483 +2150,177 @@ const Home = ({ userName }) => {
                 zIndex: 5001,
               }}
             >
-            <motion.div
-              initial={{ y: '100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '100%' }}
-              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-              style={{
-                backgroundColor: '#FFFFFF',
-                borderTopLeftRadius: '24px',
-                borderTopRightRadius: '24px',
-                padding: '24px',
-                paddingBottom: 'max(24px, env(safe-area-inset-bottom))',
-              }}
-            >
-              {/* Header */}
-              <div
+              <motion.div
+                initial={{ y: '100%' }}
+                animate={{ y: 0 }}
+                exit={{ y: '100%' }}
+                transition={{ type: 'spring', damping: 30, stiffness: 300 }}
                 style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: '24px',
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '12px 12px 0 0',
+                  padding: '24px',
+                  paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 0px))',
+                  maxHeight: '80vh',
+                  overflowY: 'auto',
                 }}
               >
-                <h2
-                  style={{
-                    fontFamily: "'Caveat', cursive",
-                    fontSize: '28px',
-                    color: '#2D5016',
-                    margin: 0,
-                  }}
-                >
-                  Pilihan
-                </h2>
-                <button
-                  onClick={() => setShowMoreMenu(false)}
-                  style={{
-                    width: '32px',
-                    height: '32px',
-                    borderRadius: '50%',
-                    backgroundColor: '#F5F5F5',
-                    border: 'none',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                    <path
-                      d="M15 5L5 15M5 5l10 10"
-                      stroke="#757575"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                </button>
-              </div>
-
-              {/* AKSI Section */}
-              <div style={{ marginBottom: '24px' }}>
-                <p
-                  style={{
-                    fontFamily: "'Inter', sans-serif",
-                    fontSize: '12px',
-                    fontWeight: 600,
-                    color: '#999999',
-                    margin: '0 0 12px 0',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
-                  }}
-                >
-                  Aksi
-                </p>
-
-                {/* Siram Tanaman */}
-                <button
-                  onClick={() => {
-                    setShowMoreMenu(false);
-                    showBulkActionConfirmation('siram');
-                  }}
-                  disabled={selectedPlantIds.size === 0}
+                {/* Header */}
+                <div
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '12px',
-                    width: '100%',
-                    padding: '12px 0',
-                    backgroundColor: 'transparent',
-                    border: 'none',
-                    cursor: selectedPlantIds.size > 0 ? 'pointer' : 'not-allowed',
-                    opacity: selectedPlantIds.size === 0 ? 0.5 : 1,
+                    justifyContent: 'space-between',
+                    marginBottom: '20px',
                   }}
                 >
-                  <div
+                  <h2
                     style={{
-                      width: '40px',
-                      height: '40px',
-                      borderRadius: '10px',
-                      backgroundColor: '#F0F0F0',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                    }}
-                  >
-                    <Drop size={20} weight="regular" color="#757575" />
-                  </div>
-                  <span
-                    style={{
-                      fontFamily: "'Inter', sans-serif",
-                      fontSize: '16px',
-                      fontWeight: 500,
-                      color: '#2C2C2C',
-                    }}
-                  >
-                    Siram Tanaman
-                  </span>
-                </button>
-
-                {/* Beri Pupuk */}
-                <button
-                  onClick={() => {
-                    setShowMoreMenu(false);
-                    showBulkActionConfirmation('pupuk');
-                  }}
-                  disabled={selectedPlantIds.size === 0}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    width: '100%',
-                    padding: '12px 0',
-                    backgroundColor: 'transparent',
-                    border: 'none',
-                    cursor: selectedPlantIds.size > 0 ? 'pointer' : 'not-allowed',
-                    opacity: selectedPlantIds.size === 0 ? 0.5 : 1,
-                  }}
-                >
-                  <div
-                    style={{
-                      width: '40px',
-                      height: '40px',
-                      borderRadius: '10px',
-                      backgroundColor: '#F0F0F0',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                    }}
-                  >
-                    <Leaf size={20} weight="regular" color="#757575" />
-                  </div>
-                  <span
-                    style={{
-                      fontFamily: "'Inter', sans-serif",
-                      fontSize: '16px',
-                      fontWeight: 500,
-                      color: '#2C2C2C',
-                    }}
-                  >
-                    Beri Pupuk
-                  </span>
-                </button>
-
-                {/* Pangkas Tanaman */}
-                <button
-                  onClick={() => {
-                    setShowMoreMenu(false);
-                    showBulkActionConfirmation('pangkas');
-                  }}
-                  disabled={selectedPlantIds.size === 0}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    width: '100%',
-                    padding: '12px 0',
-                    backgroundColor: 'transparent',
-                    border: 'none',
-                    cursor: selectedPlantIds.size > 0 ? 'pointer' : 'not-allowed',
-                    opacity: selectedPlantIds.size === 0 ? 0.5 : 1,
-                  }}
-                >
-                  <div
-                    style={{
-                      width: '40px',
-                      height: '40px',
-                      borderRadius: '10px',
-                      backgroundColor: '#F0F0F0',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                    }}
-                  >
-                    <Scissors size={20} weight="regular" color="#757575" />
-                  </div>
-                  <span
-                    style={{
-                      fontFamily: "'Inter', sans-serif",
-                      fontSize: '16px',
-                      fontWeight: 500,
-                      color: '#2C2C2C',
-                    }}
-                  >
-                    Pangkas Tanaman
-                  </span>
-                </button>
-
-                {/* Aksi Lainnya */}
-                <button
-                  onClick={() => {
-                    setShowMoreMenu(false);
-                    showBulkActionConfirmation('lainnya');
-                  }}
-                  disabled={selectedPlantIds.size === 0}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    width: '100%',
-                    padding: '12px 0',
-                    backgroundColor: 'transparent',
-                    border: 'none',
-                    cursor: selectedPlantIds.size > 0 ? 'pointer' : 'not-allowed',
-                    opacity: selectedPlantIds.size === 0 ? 0.5 : 1,
-                  }}
-                >
-                  <div
-                    style={{
-                      width: '40px',
-                      height: '40px',
-                      borderRadius: '10px',
-                      backgroundColor: '#F0F0F0',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                    }}
-                  >
-                    <DotsThree size={20} weight="regular" color="#757575" />
-                  </div>
-                  <span
-                    style={{
-                      fontFamily: "'Inter', sans-serif",
-                      fontSize: '16px',
-                      fontWeight: 500,
-                      color: '#2C2C2C',
-                    }}
-                  >
-                    Aksi Lainnya
-                  </span>
-                </button>
-
-              </div>
-
-              {/* ZONA BERBAHAYA Section */}
-              <div>
-                <p
-                  style={{
-                    fontFamily: "'Inter', sans-serif",
-                    fontSize: '12px',
-                    fontWeight: 600,
-                    color: '#999999',
-                    margin: '0 0 12px 0',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
-                  }}
-                >
-                  Zona Berbahaya
-                </p>
-
-                {/* Hapus Tanaman */}
-                <button
-                  onClick={() => {
-                    setShowMoreMenu(false);
-                    if (selectedPlantIds.size === 1) {
-                      // Single delete
-                      const plantId = Array.from(selectedPlantIds)[0];
-                      const plant = plants.find(p => p.id === plantId);
-                      if (plant) {
-                        setPlantToDelete(plant);
-                        setShowDeleteConfirmModal(true);
-                      }
-                    } else if (selectedPlantIds.size > 1) {
-                      // Bulk delete
-                      const plantsForDelete = plants.filter(p => selectedPlantIds.has(p.id));
-                      setPlantsToDelete(plantsForDelete);
-                      setShowDeleteConfirmModal(true);
-                    }
-                  }}
-                  disabled={selectedPlantIds.size === 0}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    width: '100%',
-                    padding: '12px 16px',
-                    backgroundColor: '#FEF2F2',
-                    border: 'none',
-                    borderRadius: '12px',
-                    cursor: 'pointer',
-                  }}
-                >
-                  <div
-                    style={{
-                      width: '40px',
-                      height: '40px',
-                      borderRadius: '10px',
-                      backgroundColor: '#FEE2E2',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                    }}
-                  >
-                    <Trash size={20} weight="regular" color="#DC2626" />
-                  </div>
-                  <span
-                    style={{
-                      fontFamily: "'Inter', sans-serif",
-                      fontSize: '16px',
-                      fontWeight: 500,
+                      fontFamily: "'Caveat', cursive",
+                      fontSize: '1.75rem',
+                      fontWeight: 600,
                       color: '#DC2626',
+                      margin: 0,
                     }}
                   >
                     Hapus Tanaman
-                  </span>
-                </button>
-              </div>
-            </motion.div>
+                  </h2>
+                  <button
+                    onClick={() => {
+                      setShowDeleteConfirmModal(false);
+                      setPlantToDelete(null);
+                      setPlantsToDelete([]);
+                    }}
+                    style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '50%',
+                      backgroundColor: '#F5F5F5',
+                      border: 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                      <path
+                        d="M15 5L5 15M5 5l10 10"
+                        stroke="#757575"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Selected plants info */}
+                <div
+                  style={{
+                    padding: '12px 16px',
+                    backgroundColor: '#FEF2F2',
+                    borderRadius: '12px',
+                    marginBottom: '20px',
+                  }}
+                >
+                  <p
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: '14px',
+                      fontWeight: 600,
+                      color: '#DC2626',
+                      margin: '0 0 4px 0',
+                    }}
+                  >
+                    {plantsToDelete.length > 0
+                      ? `${plantsToDelete.length} tanaman akan dihapus:`
+                      : '1 tanaman akan dihapus:'
+                    }
+                  </p>
+                  <p
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: '14px',
+                      fontWeight: 400,
+                      color: '#DC2626',
+                      margin: 0,
+                      lineHeight: '1.4',
+                    }}
+                  >
+                    {plantsToDelete.length > 0
+                      ? plantsToDelete.length <= 5
+                        ? plantsToDelete.map(p => p.name).join(', ')
+                        : `${plantsToDelete.slice(0, 5).map(p => p.name).join(', ')}, dan ${plantsToDelete.length - 5} lainnya`
+                      : plantToDelete?.name
+                    }
+                  </p>
+                </div>
+
+                {/* Warning message */}
+                <div
+                  style={{
+                    padding: '12px 16px',
+                    backgroundColor: '#FEF3C7',
+                    border: '1px solid #F59E0B',
+                    borderRadius: '12px',
+                    marginBottom: '20px',
+                  }}
+                >
+                  <p
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: '13px',
+                      color: '#92400E',
+                      margin: 0,
+                      lineHeight: '1.4',
+                    }}
+                  >
+                    Aksi ini tidak bisa dibatalkan. Semua data dan riwayat perawatan tanaman akan dihapus permanen.
+                  </p>
+                </div>
+
+                {/* Action buttons */}
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <button
+                    onClick={() => {
+                      setShowDeleteConfirmModal(false);
+                      setPlantToDelete(null);
+                      setPlantsToDelete([]);
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: '16px',
+                      fontSize: '1rem',
+                      fontFamily: "'Inter', sans-serif",
+                      fontWeight: 600,
+                      color: '#757575',
+                      backgroundColor: '#F5F5F5',
+                      border: 'none',
+                      borderRadius: '12px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Batal
+                  </button>
+                  <button
+                    onClick={handleConfirmDelete}
+                    style={{
+                      flex: 1,
+                      padding: '16px',
+                      fontSize: '1rem',
+                      fontFamily: "'Inter', sans-serif",
+                      fontWeight: 600,
+                      color: '#FFFFFF',
+                      backgroundColor: '#DC2626',
+                      border: 'none',
+                      borderRadius: '12px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Hapus
+                  </button>
+                </div>
+              </motion.div>
             </div>
-          </>
-        )}
-      </AnimatePresence>
-
-      {/* Delete Confirmation Modal */}
-      <AnimatePresence>
-        {showDeleteConfirmModal && (plantToDelete || plantsToDelete.length > 0) && (
-          <>
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => {
-                setShowDeleteConfirmModal(false);
-                setPlantToDelete(null);
-                setPlantsToDelete([]);
-              }}
-              style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                zIndex: 4000,
-              }}
-            />
-
-            {/* Modal Container - for centering */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                zIndex: 4001,
-                padding: '24px',
-              }}
-            >
-            <motion.div
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.9 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              style={{
-                backgroundColor: '#FFFFFF',
-                borderRadius: '24px',
-                padding: '24px',
-                width: '100%',
-                maxWidth: '320px',
-                textAlign: 'center',
-              }}
-            >
-              {/* Icon */}
-              <div
-                style={{
-                  width: '64px',
-                  height: '64px',
-                  borderRadius: '50%',
-                  backgroundColor: '#FEE2E2',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  margin: '0 auto 16px',
-                }}
-              >
-                <Trash size={32} weight="bold" color="#DC2626" />
-              </div>
-
-              <h3
-                style={{
-                  fontFamily: "'Caveat', cursive",
-                  fontSize: '1.5rem',
-                  fontWeight: 600,
-                  color: '#2D5016',
-                  margin: '0 0 8px 0',
-                }}
-              >
-                Hapus Tanaman?
-              </h3>
-
-              <p
-                style={{
-                  fontFamily: "'Inter', sans-serif",
-                  fontSize: '14px',
-                  color: '#757575',
-                  margin: '0 0 24px 0',
-                  lineHeight: 1.5,
-                }}
-              >
-                {plantsToDelete.length > 0
-                  ? `Kamu yakin mau hapus ${plantsToDelete.length} tanaman? Aksi ini tidak bisa dibatalkan.`
-                  : <>Kamu yakin mau hapus <strong>{plantToDelete?.name}</strong>? Aksi ini tidak bisa dibatalkan.</>
-                }
-              </p>
-
-              <div style={{ display: 'flex', gap: '12px' }}>
-                <button
-                  onClick={() => {
-                    setShowDeleteConfirmModal(false);
-                    setPlantToDelete(null);
-                    setPlantsToDelete([]);
-                  }}
-                  style={{
-                    flex: 1,
-                    padding: '14px',
-                    fontSize: '1rem',
-                    fontFamily: "'Inter', sans-serif",
-                    fontWeight: 600,
-                    color: '#757575',
-                    backgroundColor: '#F5F5F5',
-                    border: 'none',
-                    borderRadius: '12px',
-                    cursor: 'pointer',
-                  }}
-                >
-                  Batal
-                </button>
-                <button
-                  onClick={handleConfirmDelete}
-                  style={{
-                    flex: 1,
-                    padding: '14px',
-                    fontSize: '1rem',
-                    fontFamily: "'Inter', sans-serif",
-                    fontWeight: 600,
-                    color: '#FFFFFF',
-                    backgroundColor: '#DC2626',
-                    border: 'none',
-                    borderRadius: '12px',
-                    cursor: 'pointer',
-                  }}
-                >
-                  Hapus
-                </button>
-              </div>
-            </motion.div>
-            </motion.div>
           </>
         )}
       </AnimatePresence>

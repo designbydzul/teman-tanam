@@ -67,7 +67,8 @@ const AddPlant = ({ onClose, onSelectSpecies }) => {
         }}
       >
         {/* Back Button */}
-        <button
+        <motion.button
+          whileTap={{ scale: 0.95 }}
           onClick={onClose}
           style={{
             width: '40px',
@@ -90,7 +91,7 @@ const AddPlant = ({ onClose, onSelectSpecies }) => {
               strokeLinejoin="round"
             />
           </svg>
-        </button>
+        </motion.button>
 
         {/* Title */}
         <h1
@@ -151,7 +152,8 @@ const AddPlant = ({ onClose, onSelectSpecies }) => {
             }}
           >
             {searchQuery ? (
-              <button
+              <motion.button
+                whileTap={{ scale: 0.95 }}
                 onClick={() => setSearchQuery('')}
                 style={{
                   width: '32px',
@@ -168,7 +170,7 @@ const AddPlant = ({ onClose, onSelectSpecies }) => {
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                   <path d="M12 4L4 12M4 4l8 8" stroke="#757575" strokeWidth="2" strokeLinecap="round" />
                 </svg>
-              </button>
+              </motion.button>
             ) : (
               <svg
                 width="24"

@@ -10,12 +10,12 @@ const spinStyle = `
   }
 `;
 
-const BulkFertilizeModal = ({
+const BulkPruningModal = ({
   isOpen,
   onClose,
   onSubmit,
   selectedPlants = [],
-  alreadyFertilizedToday = [],
+  alreadyPrunedToday = [],
   isProcessing = false,
 }) => {
   // Format plant names for display
@@ -147,7 +147,7 @@ const BulkFertilizeModal = ({
                     margin: 0,
                   }}
                 >
-                  Catat Pemupukan
+                  Catat Pemangkasan
                 </h2>
                 <motion.button
                   whileTap={{ scale: 0.95 }}
@@ -209,8 +209,8 @@ const BulkFertilizeModal = ({
                 </p>
               </div>
 
-              {/* Warning for plants already fertilized today */}
-              {alreadyFertilizedToday.length > 0 && (
+              {/* Warning for plants already pruned today */}
+              {alreadyPrunedToday.length > 0 && (
                 <div
                   style={{
                     backgroundColor: '#FEF3C7',
@@ -229,7 +229,7 @@ const BulkFertilizeModal = ({
                       margin: '0 0 4px 0',
                     }}
                   >
-                    {alreadyFertilizedToday.length} tanaman sudah dipupuk hari ini:
+                    {alreadyPrunedToday.length} tanaman sudah dipangkas hari ini:
                   </p>
                   <p
                     style={{
@@ -240,7 +240,7 @@ const BulkFertilizeModal = ({
                       lineHeight: '1.4',
                     }}
                   >
-                    {alreadyFertilizedToday.map(p => p.name).join(', ')}
+                    {alreadyPrunedToday.map(p => p.name).join(', ')}
                   </p>
                 </div>
               )}
@@ -342,7 +342,7 @@ const BulkFertilizeModal = ({
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Jenis pupuk, dosis, catatan lainnya..."
+                placeholder="Bagian yang dipangkas, alasan, catatan lainnya..."
                 style={{
                   width: '100%',
                   minHeight: '100px',
@@ -407,4 +407,4 @@ const BulkFertilizeModal = ({
   );
 };
 
-export default BulkFertilizeModal;
+export default BulkPruningModal;

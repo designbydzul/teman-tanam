@@ -878,7 +878,8 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
           }}
         >
           {/* Back Button */}
-          <button
+          <motion.button
+            whileTap={{ scale: 0.95 }}
             onClick={onBack}
             style={{
               width: '40px',
@@ -894,7 +895,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
             }}
           >
             <ArrowLeft size={20} weight="regular" color="#2C2C2C" />
-          </button>
+          </motion.button>
 
           {/* Center Plant Image */}
           <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
@@ -931,7 +932,8 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
           </div>
 
           {/* Settings Button - Opens Edit Plant */}
-          <button
+          <motion.button
+            whileTap={{ scale: 0.95 }}
             onClick={() => setShowEditPlant(true)}
             style={{
               width: '40px',
@@ -947,7 +949,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
             }}
           >
             <Gear size={20} weight="regular" color="#2C2C2C" />
-          </button>
+          </motion.button>
         </div>
 
         {/* Plant Info - Centered */}
@@ -993,7 +995,8 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
             padding: '4px',
           }}
         >
-          <button
+          <motion.button
+            whileTap={{ scale: 0.98 }}
             onClick={() => setActiveTab('perawatan')}
             style={{
               flex: 1,
@@ -1011,8 +1014,9 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
             }}
           >
             Perawatan
-          </button>
-          <button
+          </motion.button>
+          <motion.button
+            whileTap={{ scale: 0.98 }}
             onClick={() => setActiveTab('riwayat')}
             style={{
               flex: 1,
@@ -1030,7 +1034,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
             }}
           >
             Riwayat
-          </button>
+          </motion.button>
         </div>
       </div>
 
@@ -1066,7 +1070,8 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                 {(() => {
                   const wateringStatus = getActionSubtitle(daysSinceWatered, wateringFrequencyDays, 'water');
                   return (
-                    <div
+                    <motion.div
+                      whileTap={{ scale: 0.95 }}
                       onClick={handleWateringCardTap}
                       style={{
                         backgroundColor: '#FFFFFF',
@@ -1115,7 +1120,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                           {wateringStatus.text}
                         </p>
                       </div>
-                    </div>
+                    </motion.div>
                   );
                 })()}
 
@@ -1123,7 +1128,8 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                 {(() => {
                   const fertilizingStatus = getActionSubtitle(daysSinceFertilized, fertilizingFrequencyDays, 'fertilize');
                   return (
-                    <div
+                    <motion.div
+                      whileTap={{ scale: 0.95 }}
                       onClick={handleFertilizingCardTap}
                       style={{
                         backgroundColor: '#FFFFFF',
@@ -1172,12 +1178,13 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                           {fertilizingStatus.text}
                         </p>
                       </div>
-                    </div>
+                    </motion.div>
                   );
                 })()}
 
                 {/* Pemangkasan Card */}
-                <div
+                <motion.div
+                  whileTap={{ scale: 0.95 }}
                   onClick={handlePruningCardTap}
                   style={{
                     backgroundColor: '#FFFFFF',
@@ -1226,10 +1233,11 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                       Pangkas daun
                     </p>
                   </div>
-                </div>
+                </motion.div>
 
                 {/* Aksi Lainya Card */}
-                <div
+                <motion.div
+                  whileTap={{ scale: 0.95 }}
                   onClick={handleOtherActionCardTap}
                   style={{
                     backgroundColor: '#FFFFFF',
@@ -1278,7 +1286,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                       Catat aksi
                     </p>
                   </div>
-                </div>
+                </motion.div>
               </div>
 
           </div>
@@ -1361,7 +1369,8 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
 
                     {/* Timeline Entries for this date */}
                     {group.entries.map((entry, entryIndex) => (
-                      <div
+                      <motion.div
+                        whileTap={{ scale: 0.98 }}
                         key={entry.id || entryIndex}
                         onClick={() => {
                           setSelectedHistoryEntry({ ...entry, dateFormatted: group.date });
@@ -1448,7 +1457,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                         >
                           {entry.time}
                         </p>
-                      </div>
+                      </motion.div>
                     ))}
                   </div>
                 ))
@@ -1474,8 +1483,14 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
             justifyContent: 'space-between',
             cursor: 'pointer',
             zIndex: 100,
+            transition: 'transform 0.1s ease',
           }}
           onClick={() => handleMenuAction('diagnose')}
+          onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.98)'}
+          onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
+          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+          onTouchStart={(e) => e.currentTarget.style.transform = 'scale(0.98)'}
+          onTouchEnd={(e) => e.currentTarget.style.transform = 'scale(1)'}
         >
           <div>
             <h3
@@ -1580,7 +1595,8 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                 >
                   Pilihan
                 </h2>
-                <button
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
                   onClick={() => setShowMenu(false)}
                   style={{
                     width: '40px',
@@ -1602,7 +1618,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                       strokeLinecap="round"
                     />
                   </svg>
-                </button>
+                </motion.button>
               </div>
 
               {/* Aksi Section */}
@@ -1621,7 +1637,8 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
               </p>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
-                <button
+                <motion.button
+                  whileTap={{ scale: 0.98 }}
                   onClick={() => !wateringStatus.doneToday && handleMenuAction('water')}
                   disabled={wateringStatus.doneToday}
                   style={{
@@ -1654,9 +1671,10 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                   >
                     {wateringStatus.doneToday ? 'Sudah disiram hari ini' : 'Siram Tanaman'}
                   </span>
-                </button>
+                </motion.button>
 
-                <button
+                <motion.button
+                  whileTap={{ scale: 0.98 }}
                   onClick={() => !fertilizingStatus.doneToday && handleMenuAction('fertilize')}
                   disabled={fertilizingStatus.doneToday}
                   style={{
@@ -1689,9 +1707,10 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                   >
                     {fertilizingStatus.doneToday ? 'Sudah dipupuk hari ini' : 'Beri Pupuk'}
                   </span>
-                </button>
+                </motion.button>
 
-                <button
+                <motion.button
+                  whileTap={{ scale: 0.98 }}
                   onClick={() => handleMenuAction('diagnose')}
                   style={{
                     backgroundColor: '#FFFFFF',
@@ -1718,7 +1737,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                   >
                     Tanya Tanam
                   </span>
-                </button>
+                </motion.button>
               </div>
 
               {/* Konfigurasi Section */}
@@ -1737,7 +1756,8 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
               </p>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
-                <button
+                <motion.button
+                  whileTap={{ scale: 0.98 }}
                   onClick={() => handleMenuAction('edit')}
                   style={{
                     backgroundColor: '#FFFFFF',
@@ -1764,7 +1784,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                   >
                     Edit Tanaman
                   </span>
-                </button>
+                </motion.button>
               </div>
 
               {/* Zona Berbahaya Section */}
@@ -1782,7 +1802,8 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                 Zona Berbahaya
               </p>
 
-              <button
+              <motion.button
+                whileTap={{ scale: 0.98 }}
                 onClick={() => handleMenuAction('delete')}
                 style={{
                   backgroundColor: '#FEF2F2',
@@ -1807,7 +1828,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                 >
                   Hapus Tanaman
                 </span>
-              </button>
+              </motion.button>
             </motion.div>
             </div>
           </>
@@ -1836,7 +1857,8 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
             onClick={() => setShowImagePreview(false)}
           >
             {/* Close Button */}
-            <button
+            <motion.button
+              whileTap={{ scale: 0.95 }}
               onClick={() => setShowImagePreview(false)}
               aria-label="Tutup"
               style={{
@@ -1855,7 +1877,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
               }}
             >
               <X size={28} weight="bold" color="#FFFFFF" />
-            </button>
+            </motion.button>
 
             {/* Full Image */}
             <motion.img
@@ -1898,7 +1920,8 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
             onClick={() => setTimelinePhotoPreview(null)}
           >
             {/* Close Button */}
-            <button
+            <motion.button
+              whileTap={{ scale: 0.95 }}
               onClick={() => setTimelinePhotoPreview(null)}
               aria-label="Tutup"
               style={{
@@ -1917,7 +1940,7 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
               }}
             >
               <X size={28} weight="bold" color="#FFFFFF" />
-            </button>
+            </motion.button>
 
             {/* Full Image */}
             <motion.img
@@ -2584,7 +2607,6 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                   marginBottom: fertilizingStatus.doneToday ? '12px' : '0',
                 }}
               >
-                <Leaf size={20} weight="bold" color="#FFFFFF" />
                 <span
                   style={{
                     fontFamily: "'Inter', sans-serif",
@@ -2831,7 +2853,6 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                   cursor: isSubmittingAction ? 'default' : 'pointer',
                 }}
               >
-                <Scissors size={20} weight="bold" color="#FFFFFF" />
                 <span
                   style={{
                     fontFamily: "'Inter', sans-serif",
@@ -3088,7 +3109,6 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                   cursor: isSubmittingAction || !otherActionName.trim() ? 'default' : 'pointer',
                 }}
               >
-                <Plus size={20} weight="bold" color="#FFFFFF" />
                 <span
                   style={{
                     fontFamily: "'Inter', sans-serif",

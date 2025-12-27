@@ -10,12 +10,11 @@ const spinStyle = `
   }
 `;
 
-const BulkFertilizeModal = ({
+const BulkOtherActionModal = ({
   isOpen,
   onClose,
   onSubmit,
   selectedPlants = [],
-  alreadyFertilizedToday = [],
   isProcessing = false,
 }) => {
   // Format plant names for display
@@ -28,6 +27,7 @@ const BulkFertilizeModal = ({
     return `${firstFive}, dan ${remaining} lainnya`;
   };
 
+  const [actionName, setActionName] = useState('');
   const [notes, setNotes] = useState('');
   const [photoPreview, setPhotoPreview] = useState(null);
   const [photoFile, setPhotoFile] = useState(null);
@@ -72,6 +72,7 @@ const BulkFertilizeModal = ({
 
   const handleSubmit = () => {
     onSubmit({
+      actionName: actionName.trim(),
       notes: notes.trim(),
       photoFile,
     });
@@ -80,6 +81,7 @@ const BulkFertilizeModal = ({
   const handleClose = () => {
     // Cleanup
     handleRemovePhoto();
+    setActionName('');
     setNotes('');
     onClose();
   };
@@ -147,7 +149,7 @@ const BulkFertilizeModal = ({
                     margin: 0,
                   }}
                 >
-                  Catat Pemupukan
+                  Aksi Lainya
                 </h2>
                 <motion.button
                   whileTap={{ scale: 0.95 }}
@@ -209,41 +211,28 @@ const BulkFertilizeModal = ({
                 </p>
               </div>
 
-              {/* Warning for plants already fertilized today */}
-              {alreadyFertilizedToday.length > 0 && (
-                <div
-                  style={{
-                    backgroundColor: '#FEF3C7',
-                    border: '1px solid #FF9800',
-                    borderRadius: '12px',
-                    padding: '12px 16px',
-                    marginBottom: '20px',
-                  }}
-                >
-                  <p
-                    style={{
-                      fontFamily: "'Inter', sans-serif",
-                      fontSize: '13px',
-                      fontWeight: 600,
-                      color: '#B45309',
-                      margin: '0 0 4px 0',
-                    }}
-                  >
-                    {alreadyFertilizedToday.length} tanaman sudah dipupuk hari ini:
-                  </p>
-                  <p
-                    style={{
-                      fontFamily: "'Inter', sans-serif",
-                      fontSize: '12px',
-                      color: '#92400E',
-                      margin: 0,
-                      lineHeight: '1.4',
-                    }}
-                  >
-                    {alreadyFertilizedToday.map(p => p.name).join(', ')}
-                  </p>
-                </div>
-              )}
+              {/* Action Name Input */}
+              <input
+                type="text"
+                value={actionName}
+                onChange={(e) => setActionName(e.target.value)}
+                placeholder="Nama aksi (wajib)"
+                style={{
+                  width: '100%',
+                  padding: '16px',
+                  fontSize: '1rem',
+                  fontFamily: "'Inter', sans-serif",
+                  color: '#2C2C2C',
+                  backgroundColor: '#FAFAFA',
+                  border: '2px solid transparent',
+                  borderRadius: '12px',
+                  marginBottom: '16px',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+                onFocus={(e) => e.target.style.border = '2px solid #7CB342'}
+                onBlur={(e) => e.target.style.border = '2px solid transparent'}
+              />
 
               {/* Photo Upload */}
               <input
@@ -342,7 +331,7 @@ const BulkFertilizeModal = ({
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Jenis pupuk, dosis, catatan lainnya..."
+                placeholder="Deskripsi atau catatan (opsional)"
                 style={{
                   width: '100%',
                   minHeight: '100px',
@@ -366,18 +355,18 @@ const BulkFertilizeModal = ({
               <motion.button
                 whileTap={{ scale: 0.98 }}
                 onClick={handleSubmit}
-                disabled={isProcessing}
+                disabled={isProcessing || !actionName.trim()}
                 style={{
                   width: '100%',
                   padding: '16px',
-                  backgroundColor: isProcessing ? '#A5D6A7' : '#7CB342',
+                  backgroundColor: isProcessing || !actionName.trim() ? '#A5D6A7' : '#7CB342',
                   border: 'none',
                   borderRadius: '12px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '8px',
-                  cursor: isProcessing ? 'default' : 'pointer',
+                  cursor: isProcessing || !actionName.trim() ? 'default' : 'pointer',
                 }}
               >
                 {isProcessing ? (
@@ -407,4 +396,4 @@ const BulkFertilizeModal = ({
   );
 };
 
-export default BulkFertilizeModal;
+export default BulkOtherActionModal;
