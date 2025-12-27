@@ -522,6 +522,7 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
         WebkitTransform: 'translateX(-50%) translateZ(0)',
         willChange: 'transform',
         backfaceVisibility: 'hidden',
+        paddingTop: 'env(safe-area-inset-top, 0px)',
       }}>
         {/* Navigation Row - Same as PlantDetail */}
         <div
@@ -603,7 +604,7 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
           zIndex: 9999,
           display: 'flex',
           flexDirection: 'column',
-          paddingTop: '88px', // Space for fixed header (24px padding top + 40px button + 24px padding bottom)
+          paddingTop: 'calc(88px + env(safe-area-inset-top, 0px))', // Space for fixed header + safe area
           overflow: 'hidden', // Prevent any scroll on container itself
         }}
       >

@@ -906,8 +906,8 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
                 onClick={() => setShowImagePreview(true)}
                 onError={() => setImageLoadError(true)}
                 style={{
-                  width: '150px',
-                  height: '150px',
+                  width: '120px',
+                  height: '120px',
                   objectFit: 'cover',
                   borderRadius: '16px',
                   cursor: 'pointer',
@@ -916,8 +916,8 @@ const PlantDetail = ({ plant, onBack, onEdit, onDelete, onRecordAction, onSavePl
             ) : (
               <div
                 style={{
-                  width: '150px',
-                  height: '150px',
+                  width: '120px',
+                  height: '120px',
                   borderRadius: '16px',
                   backgroundColor: '#FAFAFA',
                   display: 'flex',
