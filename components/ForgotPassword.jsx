@@ -10,6 +10,7 @@ import { auth } from '@/lib/supabase';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { WifiSlash, CircleNotch, CheckCircle, ArrowLeft } from '@phosphor-icons/react';
 import { createDebugger } from '@/lib/debug';
+import Input from './Input';
 
 const debug = createDebugger('ForgotPassword');
 
@@ -303,27 +304,13 @@ const ForgotPassword = ({ onNavigate }) => {
           >
             Email
           </label>
-          <input
+          <Input
             id="email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="nama@email.com"
             disabled={!isOnline || isLoading}
-            style={{
-              width: '100%',
-              padding: '14px 16px',
-              fontSize: '16px',
-              fontFamily: "'Inter', sans-serif",
-              color: '#2C2C2C',
-              backgroundColor: '#FAFAFA',
-              border: '2px solid transparent',
-              borderRadius: '12px',
-              outline: 'none',
-              transition: 'border-color 200ms',
-            }}
-            onFocus={(e) => (e.target.style.border = '2px solid #7CB342')}
-            onBlur={(e) => (e.target.style.border = '2px solid transparent')}
           />
         </div>
 

@@ -2,9 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Splash from '../components/Splash';
-import Login from '../components/Login';
-import SignUp from '../components/SignUp';
-import ForgotPassword from '../components/ForgotPassword';
+import AuthScreen from '../components/AuthScreen';
 import Onboarding from '../components/Onboarding';
 import Home from '../components/Home';
 import ErrorBoundary from '../components/ErrorBoundary';
@@ -13,11 +11,8 @@ import { createDebugger } from '@/lib/debug';
 
 const debug = createDebugger('Page');
 
-type AuthView = 'login' | 'signup' | 'forgot-password';
-
 export default function Page() {
   const [showSplash, setShowSplash] = useState(true);
-  const [authView, setAuthView] = useState<AuthView>('login');
   const {
     isAuthenticated,
     hasCompletedOnboarding,
@@ -79,12 +74,6 @@ export default function Page() {
     // Auth state will be updated automatically by useAuth hook
   };
 
-  // Handle navigation between auth views
-  const handleAuthNavigate = (view: string) => {
-    debug.log('Auth navigate to:', view);
-    setAuthView(view as AuthView);
-  };
-
   // Handle onboarding completion
   const handleOnboardingComplete = async ({ name, locations }: { name: string; locations: string[] }) => {
     debug.log('Onboarding complete:', { name, locations });
@@ -112,19 +101,11 @@ export default function Page() {
     return <Splash onComplete={() => {}} />;
   }
 
-  // Show auth screens if not logged in
+  // Show auth screen if not logged in
   if (!isAuthenticated) {
     return (
       <ErrorBoundary>
-        {authView === 'login' && (
-          <Login onLogin={handleLogin} onNavigate={handleAuthNavigate} />
-        )}
-        {authView === 'signup' && (
-          <SignUp onNavigate={handleAuthNavigate} />
-        )}
-        {authView === 'forgot-password' && (
-          <ForgotPassword onNavigate={handleAuthNavigate} />
-        )}
+        <AuthScreen onLogin={handleLogin} />
       </ErrorBoundary>
     );
   }

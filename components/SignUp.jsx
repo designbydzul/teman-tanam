@@ -10,6 +10,7 @@ import { auth } from '@/lib/supabase';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { WifiSlash, Eye, EyeSlash, CircleNotch, CheckCircle } from '@phosphor-icons/react';
 import { createDebugger } from '@/lib/debug';
+import Input from './Input';
 
 const debug = createDebugger('SignUp');
 
@@ -320,27 +321,13 @@ const SignUp = ({ onNavigate }) => {
           >
             Email
           </label>
-          <input
+          <Input
             id="email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="nama@email.com"
             disabled={!isOnline || isLoading}
-            style={{
-              width: '100%',
-              padding: '14px 16px',
-              fontSize: '16px',
-              fontFamily: "'Inter', sans-serif",
-              color: '#2C2C2C',
-              backgroundColor: '#FAFAFA',
-              border: '2px solid transparent',
-              borderRadius: '12px',
-              outline: 'none',
-              transition: 'border-color 200ms',
-            }}
-            onFocus={(e) => (e.target.style.border = '2px solid #7CB342')}
-            onBlur={(e) => (e.target.style.border = '2px solid transparent')}
           />
         </div>
 
@@ -357,54 +344,36 @@ const SignUp = ({ onNavigate }) => {
           >
             Password
           </label>
-          <div style={{ position: 'relative' }}>
-            <input
-              id="password"
-              type={showPassword ? 'text' : 'password'}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Minimal 8 karakter"
-              disabled={!isOnline || isLoading}
-              style={{
-                width: '100%',
-                padding: '14px 48px 14px 16px',
-                fontSize: '16px',
-                fontFamily: "'Inter', sans-serif",
-                color: '#2C2C2C',
-                backgroundColor: '#FAFAFA',
-                border: `2px solid ${password && !isPasswordValid ? '#DC2626' : 'transparent'}`,
-                borderRadius: '12px',
-                outline: 'none',
-                transition: 'border-color 200ms',
-              }}
-              onFocus={(e) => (e.target.style.border = '2px solid #7CB342')}
-              onBlur={(e) => (e.target.style.border = `2px solid ${password && !isPasswordValid ? '#DC2626' : 'transparent'}`)}
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
-              style={{
-                position: 'absolute',
-                right: '12px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                background: 'none',
-                border: 'none',
-                padding: '4px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              {showPassword ? (
-                <EyeSlash size={22} weight="regular" color="#757575" />
-              ) : (
-                <Eye size={22} weight="regular" color="#757575" />
-              )}
-            </button>
-          </div>
+          <Input
+            id="password"
+            type={showPassword ? 'text' : 'password'}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Minimal 8 karakter"
+            disabled={!isOnline || isLoading}
+            rightIcon={
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  padding: '4px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {showPassword ? (
+                  <EyeSlash size={22} weight="regular" color="#757575" />
+                ) : (
+                  <Eye size={22} weight="regular" color="#757575" />
+                )}
+              </button>
+            }
+          />
           {password && !isPasswordValid && (
             <span
               style={{
@@ -431,54 +400,36 @@ const SignUp = ({ onNavigate }) => {
           >
             Konfirmasi Password
           </label>
-          <div style={{ position: 'relative' }}>
-            <input
-              id="confirmPassword"
-              type={showConfirmPassword ? 'text' : 'password'}
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Ulangi password"
-              disabled={!isOnline || isLoading}
-              style={{
-                width: '100%',
-                padding: '14px 48px 14px 16px',
-                fontSize: '16px',
-                fontFamily: "'Inter', sans-serif",
-                color: '#2C2C2C',
-                backgroundColor: '#FAFAFA',
-                border: `2px solid ${confirmPassword && !doPasswordsMatch ? '#DC2626' : 'transparent'}`,
-                borderRadius: '12px',
-                outline: 'none',
-                transition: 'border-color 200ms',
-              }}
-              onFocus={(e) => (e.target.style.border = '2px solid #7CB342')}
-              onBlur={(e) => (e.target.style.border = `2px solid ${confirmPassword && !doPasswordsMatch ? '#DC2626' : 'transparent'}`)}
-            />
-            <button
-              type="button"
-              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              aria-label={showConfirmPassword ? 'Sembunyikan password' : 'Tampilkan password'}
-              style={{
-                position: 'absolute',
-                right: '12px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                background: 'none',
-                border: 'none',
-                padding: '4px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              {showConfirmPassword ? (
-                <EyeSlash size={22} weight="regular" color="#757575" />
-              ) : (
-                <Eye size={22} weight="regular" color="#757575" />
-              )}
-            </button>
-          </div>
+          <Input
+            id="confirmPassword"
+            type={showConfirmPassword ? 'text' : 'password'}
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            placeholder="Ulangi password"
+            disabled={!isOnline || isLoading}
+            rightIcon={
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                aria-label={showConfirmPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  padding: '4px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {showConfirmPassword ? (
+                  <EyeSlash size={22} weight="regular" color="#757575" />
+                ) : (
+                  <Eye size={22} weight="regular" color="#757575" />
+                )}
+              </button>
+            }
+          />
           {confirmPassword && !doPasswordsMatch && (
             <span
               style={{
