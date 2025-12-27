@@ -507,88 +507,6 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
 
   return (
     <>
-      {/* Header - Fixed at top, never moves */}
-      <div style={{
-        position: 'fixed',
-        top: 0,
-        left: '50%',
-        transform: 'translateX(-50%)',
-        width: '100%',
-        maxWidth: 'var(--app-max-width)',
-        zIndex: 10000,
-        backgroundColor: '#FFFFFF',
-        borderBottom: '1px solid #E0E0E0',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-        WebkitTransform: 'translateX(-50%) translateZ(0)',
-        willChange: 'transform',
-        backfaceVisibility: 'hidden',
-        paddingTop: 'env(safe-area-inset-top, 0px)',
-      }}>
-        {/* Navigation Row - Same as PlantDetail */}
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '24px',
-          }}
-        >
-          {/* Back Button */}
-          <button
-            onClick={onBack}
-            aria-label="Kembali"
-            style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '50%',
-              backgroundColor: '#FFFFFF',
-              border: '1px solid #E0E0E0',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-            }}
-          >
-            <ArrowLeft size={20} weight="regular" color="#2C2C2C" />
-          </button>
-
-          {/* Title - Centered */}
-          <h1
-            style={{
-              fontFamily: "'Caveat', cursive",
-              fontSize: '1.75rem',
-              fontWeight: 600,
-              color: '#2D5016',
-              margin: 0,
-              position: 'absolute',
-              left: '50%',
-              transform: 'translateX(-50%)',
-            }}
-          >
-            Tanya Tanam
-          </h1>
-
-          {/* History Button */}
-          <button
-            onClick={() => setShowHistoryModal(true)}
-            aria-label="Riwayat chat"
-            style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '50%',
-              backgroundColor: '#FFFFFF',
-              border: '1px solid #E0E0E0',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-            }}
-          >
-            <ClockCounterClockwise size={20} weight="regular" color="#2C2C2C" />
-          </button>
-        </div>
-      </div>
-
       {/* Main Container */}
       <div
         style={{
@@ -1078,6 +996,91 @@ const TanyaTanam = ({ plant, plants = [], onBack }) => {
               weight="fill"
               color={hasInput ? '#FFFFFF' : '#CCCCCC'}
             />
+          </motion.button>
+        </div>
+      </div>
+
+      {/* Header - Fixed at top, rendered after main container for Safari iOS z-index fix */}
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: '100%',
+        maxWidth: 'var(--app-max-width)',
+        zIndex: 10000,
+        backgroundColor: '#FFFFFF',
+        borderBottom: '1px solid #E0E0E0',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+        WebkitTransform: 'translateX(-50%) translateZ(0)',
+        willChange: 'transform',
+        backfaceVisibility: 'hidden',
+        paddingTop: 'env(safe-area-inset-top, 0px)',
+      }}>
+        {/* Navigation Row */}
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '24px',
+            position: 'relative',
+          }}
+        >
+          {/* Back Button */}
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={onBack}
+            aria-label="Kembali"
+            style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '50%',
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #E0E0E0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+            }}
+          >
+            <ArrowLeft size={20} weight="regular" color="#2C2C2C" />
+          </motion.button>
+
+          {/* Title - Centered */}
+          <h1
+            style={{
+              fontFamily: "'Caveat', cursive",
+              fontSize: '1.75rem',
+              fontWeight: 600,
+              color: '#2D5016',
+              margin: 0,
+              position: 'absolute',
+              left: '50%',
+              transform: 'translateX(-50%)',
+            }}
+          >
+            Tanya Tanam
+          </h1>
+
+          {/* History Button */}
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowHistoryModal(true)}
+            aria-label="Riwayat chat"
+            style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '50%',
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #E0E0E0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+            }}
+          >
+            <ClockCounterClockwise size={20} weight="regular" color="#2C2C2C" />
           </motion.button>
         </div>
       </div>
