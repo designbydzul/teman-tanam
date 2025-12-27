@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, ChartBar, X, PencilSimple, MapPin, Question, Play, SignOut } from '@phosphor-icons/react';
+import { User, ChartBar, X, PencilSimple, MapPin, Question, Info, SignOut } from '@phosphor-icons/react';
 import { auth } from '@/lib/supabase';
 
 const ProfileModal = ({
@@ -50,6 +50,13 @@ const ProfileModal = ({
     // Open Telegram group for help & community
     if (action === 'help-community') {
       window.open('https://t.me/+aRqNdBkX9Gs4NmU9', '_blank');
+      onClose();
+      return;
+    }
+
+    // Open Tentang Tanam page
+    if (action === 'about') {
+      window.open('https://tentang.temantanam.app', '_blank');
       onClose();
       return;
     }
@@ -310,10 +317,10 @@ const ProfileModal = ({
                 </span>
               </motion.button>
 
-              {/* Tutorial */}
+              {/* Tentang Tanam */}
               <motion.button
                 whileTap={{ scale: 0.98 }}
-                onClick={() => handleMenuAction('tutorial')}
+                onClick={() => handleMenuAction('about')}
                 style={{
                   width: '100%',
                   padding: '12px 16px',
@@ -338,7 +345,7 @@ const ProfileModal = ({
                     flexShrink: 0,
                   }}
                 >
-                  <Play size={20} weight="fill" color="#757575" />
+                  <Info size={20} weight="fill" color="#757575" />
                 </div>
                 <span
                   style={{
@@ -348,7 +355,7 @@ const ProfileModal = ({
                     color: '#2C2C2C',
                   }}
                 >
-                  Tutorial
+                  Tentang Tanam
                 </span>
               </motion.button>
 
