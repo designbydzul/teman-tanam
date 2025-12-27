@@ -47,6 +47,13 @@ const ProfileModal = ({
       return;
     }
 
+    // Open Telegram group for help & community
+    if (action === 'help-community') {
+      window.open('https://t.me/+aRqNdBkX9Gs4NmU9', '_blank');
+      onClose();
+      return;
+    }
+
     onClose();
     if (onNavigate) {
       onNavigate(action);
