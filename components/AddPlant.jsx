@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { ArrowLeft } from '@phosphor-icons/react';
 import { supabase } from '@/lib/supabase';
 import { SPECIES_EMOJI_MAP } from '@/lib/constants';
 
@@ -99,15 +100,7 @@ const AddPlant = ({ onClose, onSelectSpecies }) => {
             cursor: 'pointer',
           }}
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M15 18l-6-6 6-6"
-              stroke="#2D5016"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+          <ArrowLeft size={20} weight="regular" color="#2D5016" />
         </motion.button>
 
         {/* Title */}

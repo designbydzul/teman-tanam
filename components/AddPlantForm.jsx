@@ -1,9 +1,10 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Camera } from '@phosphor-icons/react';
+import { X, Camera, DiceFive } from '@phosphor-icons/react';
 import LocationSettings from './LocationSettings';
 import { compressImage } from '@/lib/imageUtils';
 import { useLocations } from '@/hooks/useLocations';
+import { generatePlantName } from '@/lib/plantNameGenerator';
 
 const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) => {
   const [formData, setFormData] = useState({
@@ -273,27 +274,59 @@ const AddPlantForm = ({ species, onClose, onSubmit, existingPlantCount = 0 }) =>
                 >
                   Siapa namanya?
                 </label>
-                <input
-                  type="text"
-                  placeholder="Beri nama biar kece"
-                  value={formData.customName}
-                  onChange={(e) => setFormData({ ...formData, customName: e.target.value })}
-                  onFocus={() => setFocusedInput('name')}
-                  onBlur={() => setFocusedInput(null)}
-                  style={{
-                    width: '100%',
-                    boxSizing: 'border-box',
-                    padding: '16px',
-                    fontSize: '1rem',
-                    fontFamily: "'Inter', sans-serif",
-                    color: '#2C2C2C',
-                    backgroundColor: '#FAFAFA',
-                    border: focusedInput === 'name' ? '2px solid #7CB342' : '2px solid transparent',
-                    borderRadius: '12px',
-                    outline: 'none',
-                    transition: 'border-color 200ms',
-                  }}
-                />
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type="text"
+                    placeholder="Beri nama biar kece"
+                    value={formData.customName}
+                    onChange={(e) => setFormData({ ...formData, customName: e.target.value })}
+                    onFocus={() => setFocusedInput('name')}
+                    onBlur={() => setFocusedInput(null)}
+                    style={{
+                      width: '100%',
+                      boxSizing: 'border-box',
+                      padding: '16px',
+                      paddingRight: '56px',
+                      fontSize: '1rem',
+                      fontFamily: "'Inter', sans-serif",
+                      color: '#2C2C2C',
+                      backgroundColor: '#FAFAFA',
+                      border: focusedInput === 'name' ? '2px solid #7CB342' : '2px solid transparent',
+                      borderRadius: '12px',
+                      outline: 'none',
+                      transition: 'border-color 200ms',
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (species?.name) {
+                        const newName = generatePlantName(species.name, existingPlantCount);
+                        setFormData({ ...formData, customName: newName });
+                      }
+                    }}
+                    title="Generate random nickname"
+                    style={{
+                      position: 'absolute',
+                      right: '8px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      padding: '8px',
+                      backgroundColor: '#F1F8E9',
+                      border: 'none',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'background-color 200ms',
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#DCEDC8'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F1F8E9'}
+                  >
+                    <DiceFive size={20} weight="regular" color="#7CB342" />
+                  </button>
+                </div>
               </div>
 
               {/* Location Pills */}
