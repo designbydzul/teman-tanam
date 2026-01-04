@@ -6,10 +6,10 @@ const debug = createDebugger('supabase');
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-// Debug: Log env vars on client
+// Debug: Log env vars on client (only in development)
 if (typeof window !== 'undefined') {
-  console.log('[Supabase Client] URL:', supabaseUrl);
-  console.log('[Supabase Client] Key exists:', !!supabaseAnonKey, 'Length:', supabaseAnonKey?.length);
+  debug.log('URL:', supabaseUrl);
+  debug.log('Key exists:', !!supabaseAnonKey);
 }
 
 if (!supabaseUrl || !supabaseAnonKey) {

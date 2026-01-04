@@ -269,11 +269,11 @@ export function usePlants(): UsePlantsReturn {
       // OFFLINE MODE: Load from cache
       if (!isOnline) {
         debug.log('OFFLINE: Loading from cache');
-        const cached = getFromCache(CACHE_KEYS.PLANTS);
+        const cached = getFromCache<Plant[]>(CACHE_KEYS.PLANTS);
 
         if (cached?.data) {
           debug.log('OFFLINE: Found cached plants:', cached.data.length);
-          setPlants(cached.data as Plant[]);
+          setPlants(cached.data);
           setError(null);
         } else {
           debug.log('OFFLINE: No cached data available');
@@ -286,8 +286,6 @@ export function usePlants(): UsePlantsReturn {
 
       // ONLINE MODE: Fetch from Supabase
       debug.log('ONLINE: Fetching plants for user:', user.id);
-      // DEBUG: Log user_id for cross-device sync debugging
-      console.log('🌱 [FETCH] Fetching plants for USER_ID:', user.id);
 
       // Fetch plants with joins
       const { data: plantsData, error: plantsError } = await supabase
@@ -319,8 +317,6 @@ export function usePlants(): UsePlantsReturn {
       if (plantsError) throw plantsError;
 
       debug.log('Plants count:', plantsData?.length);
-      // DEBUG: Log fetched plants count
-      console.log('🌱 [FETCH] Found', plantsData?.length, 'plants for USER_ID:', user.id);
 
       // Fetch last actions for each plant
       const plantIds = plantsData?.map(p => p.id) || [];
@@ -511,10 +507,7 @@ export function usePlants(): UsePlantsReturn {
         status: 'active',
       };
 
-      debug.log('addPlant: Inserting data');
-      // DEBUG: Log user_id when adding plant
-      console.log('🌱 [ADD] Adding plant for USER_ID:', user.id);
-      console.log('🌱 [ADD] Plant name:', insertData.name);
+      debug.log('addPlant: Inserting data', { userId: user.id, name: insertData.name });
 
       const { data, error } = await supabase
         .from('plants')
@@ -527,9 +520,7 @@ export function usePlants(): UsePlantsReturn {
         throw error;
       }
 
-      debug.log('addPlant: SUCCESS');
-      // DEBUG: Confirm plant was added
-      console.log('🌱 [ADD] SUCCESS - Plant ID:', data.id, 'for USER_ID:', user.id);
+      debug.log('addPlant: SUCCESS', { plantId: data.id });
 
       // Upload photo if present
       if (plantData.photoBlob) {

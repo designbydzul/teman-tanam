@@ -3,8 +3,8 @@
 import React, { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import ResetPassword from '@/components/ResetPassword';
-import ErrorBoundary from '@/components/ErrorBoundary';
+import { ResetPassword } from '@/components/auth';
+import { ErrorBoundary } from '@/components/shared';
 import { CircleNotch } from '@phosphor-icons/react';
 
 function LoadingSpinner() {

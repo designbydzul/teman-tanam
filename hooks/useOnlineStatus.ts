@@ -1,71 +1,39 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { createDebugger } from '@/lib/debug';
-
-const debug = createDebugger('useOnlineStatus');
+import { useState, useEffect } from 'react';
 
 export interface UseOnlineStatusReturn {
   isOnline: boolean;
-  wasOffline: boolean; // True if was recently offline (for showing "back online" toast)
-  clearWasOffline: () => void;
+  isOffline: boolean;
 }
 
 /**
- * useOnlineStatus Hook
- *
- * Detects and tracks online/offline status.
- * Returns isOnline boolean and wasOffline for showing "back online" notifications.
+ * Custom hook for detecting online/offline network status
  */
 export function useOnlineStatus(): UseOnlineStatusReturn {
-  const [isOnline, setIsOnline] = useState(true);
-  const [wasOffline, setWasOffline] = useState(false);
+  const [isOnline, setIsOnline] = useState<boolean>(true);
 
-  // Initialize with actual status on mount
   useEffect(() => {
+    // Set initial state from navigator (only in browser)
     if (typeof navigator !== 'undefined') {
       setIsOnline(navigator.onLine);
-      debug.log('Initial online status:', navigator.onLine);
     }
-  }, []);
 
-  // Handle online event
-  const handleOnline = useCallback(() => {
-    debug.log('Connection restored - online');
-    setIsOnline(true);
-    setWasOffline(true); // Mark that we were offline
-  }, []);
-
-  // Handle offline event
-  const handleOffline = useCallback(() => {
-    debug.log('Connection lost - offline');
-    setIsOnline(false);
-  }, []);
-
-  // Clear wasOffline flag (after showing toast)
-  const clearWasOffline = useCallback(() => {
-    setWasOffline(false);
-  }, []);
-
-  // Add event listeners
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
+    const handleOnline = (): void => setIsOnline(true);
+    const handleOffline = (): void => setIsOnline(false);
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-
-    debug.log('Online status listeners attached');
 
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, [handleOnline, handleOffline]);
+  }, []);
 
   return {
     isOnline,
-    wasOffline,
-    clearWasOffline,
+    isOffline: !isOnline,
   };
 }
 

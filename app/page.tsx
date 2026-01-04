@@ -1,12 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Splash from '../components/Splash';
-import AuthScreen from '../components/AuthScreen';
-import ForgotPassword from '../components/ForgotPassword';
-import Onboarding from '../components/Onboarding';
-import Home from '../components/Home';
-import ErrorBoundary from '../components/ErrorBoundary';
+import { Splash, ErrorBoundary } from '@/components/shared';
+import { AuthScreen, ForgotPassword, Onboarding } from '@/components/auth';
+import { Home } from '@/components/Home';
 import { useAuth } from '@/hooks/useAuth';
 import { createDebugger } from '@/lib/debug';
 
