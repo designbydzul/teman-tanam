@@ -203,7 +203,42 @@ const AddPlant: React.FC<AddPlantProps> = ({ onClose, onSelectSpecies }) => {
           </motion.button>
         </div>
 
-        {/* Expandable Search Bar */}
+        {/* Category Tabs */}
+        <div
+          className="hide-scrollbar"
+          style={{
+            display: 'flex',
+            gap: '8px',
+            padding: '0 24px 16px 24px',
+            overflowX: 'auto',
+            WebkitOverflowScrolling: 'touch',
+          }}
+        >
+          {CATEGORIES.map((category) => (
+            <motion.button
+              key={category.id}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setSelectedCategory(category.id)}
+              style={{
+                flexShrink: 0,
+                padding: '10px 20px',
+                fontSize: '14px',
+                fontFamily: "'Inter', sans-serif",
+                fontWeight: 500,
+                color: selectedCategory === category.id ? '#FFFFFF' : '#757575',
+                backgroundColor: selectedCategory === category.id ? '#7CB342' : 'transparent',
+                border: selectedCategory === category.id ? 'none' : '1px solid #E0E0E0',
+                borderRadius: '20px',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              {category.label}
+            </motion.button>
+          ))}
+        </div>
+
+        {/* Expandable Search Bar - Below Category Tabs */}
         <AnimatePresence>
           {isSearchExpanded && (
             <motion.div
@@ -259,41 +294,6 @@ const AddPlant: React.FC<AddPlantProps> = ({ onClose, onSelectSpecies }) => {
             </motion.div>
           )}
         </AnimatePresence>
-
-        {/* Category Tabs */}
-        <div
-          className="hide-scrollbar"
-          style={{
-            display: 'flex',
-            gap: '8px',
-            padding: '0 24px 16px 24px',
-            overflowX: 'auto',
-            WebkitOverflowScrolling: 'touch',
-          }}
-        >
-          {CATEGORIES.map((category) => (
-            <motion.button
-              key={category.id}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setSelectedCategory(category.id)}
-              style={{
-                flexShrink: 0,
-                padding: '10px 20px',
-                fontSize: '14px',
-                fontFamily: "'Inter', sans-serif",
-                fontWeight: 500,
-                color: selectedCategory === category.id ? '#FFFFFF' : '#757575',
-                backgroundColor: selectedCategory === category.id ? '#7CB342' : 'transparent',
-                border: selectedCategory === category.id ? 'none' : '1px solid #E0E0E0',
-                borderRadius: '20px',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-              }}
-            >
-              {category.label}
-            </motion.button>
-          ))}
-        </div>
       </div>
 
       {/* Scrollable Plant Grid */}
