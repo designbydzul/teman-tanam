@@ -897,17 +897,17 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
       <div
         style={{
           position: 'fixed',
-          bottom: 0,
+          bottom: keyboardHeight > 0 ? keyboardHeight : 0,
           left: '50%',
-          transform: `translateX(-50%) translateY(${-keyboardHeight}px)`,
+          transform: 'translateX(-50%)',
           width: '100%',
           maxWidth: 'var(--app-max-width)',
           backgroundColor: '#FFFFFF',
           borderTop: '1px solid #F5F5F5',
           padding: '16px 24px',
-          paddingBottom: 'max(16px, env(safe-area-inset-bottom))',
+          paddingBottom: keyboardHeight > 0 ? '16px' : 'calc(16px + env(safe-area-inset-bottom))',
           zIndex: 10001,
-          transition: 'transform 0.2s ease-out',
+          transition: 'bottom 0.2s ease-out',
         }}
       >
         {/* Attached Images Preview */}
