@@ -131,12 +131,10 @@ const AddPlant: React.FC<AddPlantProps> = ({ onClose, onSelectSpecies }) => {
           position: 'relative',
           zIndex: 10,
           backgroundColor: '#FFFFFF',
-          borderBottom: '1px solid #E0E0E0',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
           paddingTop: 'env(safe-area-inset-top, 0px)',
         }}
       >
-        {/* Navigation Row */}
+        {/* Navigation Row with bottom border */}
         <div
           style={{
             display: 'flex',
@@ -144,6 +142,8 @@ const AddPlant: React.FC<AddPlantProps> = ({ onClose, onSelectSpecies }) => {
             alignItems: 'center',
             padding: '24px',
             position: 'relative',
+            borderBottom: '1px solid #E0E0E0',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
           }}
         >
           {/* Back Button */}
@@ -203,13 +203,13 @@ const AddPlant: React.FC<AddPlantProps> = ({ onClose, onSelectSpecies }) => {
           </motion.button>
         </div>
 
-        {/* Category Tabs */}
+        {/* Category Tabs - Below header line */}
         <div
           className="hide-scrollbar"
           style={{
             display: 'flex',
             gap: '8px',
-            padding: '0 24px 16px 24px',
+            padding: '16px 24px',
             overflowX: 'auto',
             WebkitOverflowScrolling: 'touch',
           }}
