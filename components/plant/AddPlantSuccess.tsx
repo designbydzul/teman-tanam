@@ -7,6 +7,7 @@ interface PlantSpecies {
   emoji: string;
   name: string;
   scientific: string;
+  imageUrl?: string | null;
 }
 
 interface PlantData {
@@ -79,6 +80,16 @@ const AddPlantSuccess: React.FC<AddPlantSuccessProps> = ({ plantData, onViewDeta
                 width: '100%',
                 height: '100%',
                 objectFit: 'cover',
+              }}
+            />
+          ) : plantData.species?.imageUrl ? (
+            <img
+              src={plantData.species.imageUrl}
+              alt={plantData.species.name || 'Tanaman'}
+              style={{
+                width: '80%',
+                height: '80%',
+                objectFit: 'contain',
               }}
             />
           ) : (
