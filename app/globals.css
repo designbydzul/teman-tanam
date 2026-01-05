@@ -14,13 +14,14 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
+/* Force light mode - no dark mode support for now */
+/* @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
     --desktop-bg: #1a1a1a;
   }
-}
+} */
 
 html, body {
   height: 100%;

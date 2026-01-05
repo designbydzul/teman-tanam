@@ -18,6 +18,7 @@ const caveat = Caveat({
 export const metadata: Metadata = {
   title: "Teman Tanam",
   description: "Your plant companion app",
+  manifest: "/manifest.json",
 };
 
 export const viewport: Viewport = {
@@ -26,6 +27,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: 'cover',
+  themeColor: '#FFFFFF',
 };
 
 export default function RootLayout({
