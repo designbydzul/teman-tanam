@@ -249,7 +249,21 @@ const AddPlant: React.FC<AddPlantProps> = ({ onClose, onSelectSpecies }) => {
               style={{ overflow: 'hidden' }}
             >
               <div style={{ padding: '0 24px 16px 24px' }}>
-                <div style={{ position: 'relative' }}>
+                <div
+                  style={{
+                    position: 'relative',
+                    display: 'flex',
+                    alignItems: 'center',
+                    backgroundColor: '#FAFAFA',
+                    border: '2px solid #7CB342',
+                    borderRadius: '12px',
+                    padding: '0 8px 0 16px',
+                  }}
+                >
+                  {/* Search Icon */}
+                  <MagnifyingGlass size={20} weight="regular" color="#757575" style={{ flexShrink: 0 }} />
+
+                  {/* Input */}
                   <input
                     ref={searchInputRef}
                     type="text"
@@ -257,25 +271,23 @@ const AddPlant: React.FC<AddPlantProps> = ({ onClose, onSelectSpecies }) => {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     style={{
-                      width: '100%',
-                      padding: '14px 50px 14px 20px',
+                      flex: 1,
+                      padding: '14px 8px',
                       fontSize: '1rem',
                       fontFamily: "'Inter', sans-serif",
                       color: '#2C2C2C',
-                      backgroundColor: '#FAFAFA',
-                      border: '2px solid #7CB342',
-                      borderRadius: '12px',
+                      backgroundColor: 'transparent',
+                      border: 'none',
                       outline: 'none',
                     }}
                   />
+
+                  {/* Clear Button */}
                   <motion.button
                     whileTap={{ scale: 0.95 }}
                     onClick={handleSearchClear}
                     style={{
-                      position: 'absolute',
-                      right: '12px',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
+                      flexShrink: 0,
                       width: '32px',
                       height: '32px',
                       borderRadius: '50%',
