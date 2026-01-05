@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { ArrowLeft } from '@phosphor-icons/react';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowLeft, MagnifyingGlass, X } from '@phosphor-icons/react';
 import { supabase } from '@/lib/supabase';
 import { SPECIES_EMOJI_MAP } from '@/lib/constants';
 import { createDebugger } from '@/lib/debug';
@@ -24,12 +24,23 @@ interface AddPlantProps {
   onSelectSpecies: (species: AddPlantSpecies) => void;
 }
 
+// Category options matching database values
+const CATEGORIES = [
+  { id: 'semua', label: 'Semua' },
+  { id: 'Sayuran', label: 'Sayuran' },
+  { id: 'Rempah', label: 'Rempah' },
+  { id: 'Bunga', label: 'Bunga' },
+  { id: 'Tanaman Hias', label: 'Tanaman Hias' },
+];
+
 const AddPlant: React.FC<AddPlantProps> = ({ onClose, onSelectSpecies }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [speciesList, setSpeciesList] = useState<AddPlantSpecies[]>([]);
   const [loading, setLoading] = useState(true);
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
-  const [searchFocused, setSearchFocused] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('semua');
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch species from Supabase on mount
   useEffect(() => {
@@ -68,13 +79,40 @@ const AddPlant: React.FC<AddPlantProps> = ({ onClose, onSelectSpecies }) => {
     fetchSpecies();
   }, []);
 
+  // Focus search input when expanded
+  useEffect(() => {
+    if (isSearchExpanded && searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, [isSearchExpanded]);
+
+  // Filter plants by category and search query
   const filteredPlants = speciesList.filter((plant) => {
+    // Category filter
+    const categoryMatch = selectedCategory === 'semua' || plant.category === selectedCategory;
+
+    // Search filter
     const query = searchQuery.toLowerCase();
-    return (
+    const searchMatch = !searchQuery ||
       plant.name.toLowerCase().includes(query) ||
-      plant.scientific.toLowerCase().includes(query)
-    );
+      plant.scientific.toLowerCase().includes(query);
+
+    return categoryMatch && searchMatch;
   });
+
+  const handleSearchToggle = () => {
+    if (isSearchExpanded) {
+      setSearchQuery('');
+      setIsSearchExpanded(false);
+    } else {
+      setIsSearchExpanded(true);
+    }
+  };
+
+  const handleSearchClear = () => {
+    setSearchQuery('');
+    setIsSearchExpanded(false);
+  };
 
   return (
     <motion.div
@@ -87,141 +125,182 @@ const AddPlant: React.FC<AddPlantProps> = ({ onClose, onSelectSpecies }) => {
         zIndex: 1000,
       }}
     >
-      {/* Sticky Header */}
+      {/* Sticky Header - Same styling as Tanya Tanam */}
       <div
         style={{
           position: 'relative',
           zIndex: 10,
           backgroundColor: '#FFFFFF',
+          borderBottom: '1px solid #E0E0E0',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+          paddingTop: 'env(safe-area-inset-top, 0px)',
         }}
       >
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '20px 24px',
-          borderBottom: '1px solid #F5F5F5',
-        }}
-      >
-        {/* Back Button */}
-        <motion.button
-          whileTap={{ scale: 0.95 }}
-          onClick={onClose}
-          style={{
-            width: '40px',
-            height: '40px',
-            borderRadius: '50%',
-            backgroundColor: '#FFFFFF',
-            border: '1px solid #E0E0E0',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-          }}
-        >
-          <ArrowLeft size={20} weight="regular" color="#2D5016" />
-        </motion.button>
-
-        {/* Title */}
-        <h1
-          className="font-accent"
-          style={{
-            fontFamily: "'Caveat', cursive",
-            fontSize: '1.5rem',
-            fontWeight: 600,
-            color: '#2D5016',
-            margin: 0,
-          }}
-        >
-          Tambah Teman Baru
-        </h1>
-
-        <div style={{ width: '40px' }} /> {/* Spacer for centering */}
-      </div>
-
-      {/* Sticky Search Bar */}
-      <div style={{ padding: '16px 24px' }}>
+        {/* Navigation Row */}
         <div
           style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '24px',
             position: 'relative',
           }}
         >
-          <input
-            type="text"
-            placeholder="Cari tanaman"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onFocus={() => setSearchFocused(true)}
-            onBlur={() => setSearchFocused(false)}
+          {/* Back Button */}
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={onClose}
+            aria-label="Kembali"
             style={{
-              width: '100%',
-              padding: '16px 50px 16px 20px',
-              fontSize: '1rem',
-              fontFamily: "'Inter', sans-serif",
-              color: '#2C2C2C',
-              backgroundColor: '#FAFAFA',
-              border: searchFocused || searchQuery ? '2px solid #7CB342' : '2px solid transparent',
-              borderRadius: '12px',
-              outline: 'none',
-              transition: 'border-color 200ms',
-            }}
-          />
-          {/* Icon container - same position for both states, inside the input */}
-          <div
-            style={{
-              position: 'absolute',
-              right: '12px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              width: '32px',
-              height: '32px',
+              width: '40px',
+              height: '40px',
+              borderRadius: '50%',
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #E0E0E0',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              cursor: 'pointer',
             }}
           >
-            {searchQuery ? (
-              <motion.button
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setSearchQuery('')}
-                style={{
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '50%',
-                  backgroundColor: '#E0E0E0',
-                  border: 'none',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                }}
-              >
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <path d="M12 4L4 12M4 4l8 8" stroke="#757575" strokeWidth="2" strokeLinecap="round" />
-                </svg>
-              </motion.button>
-            ) : (
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-              >
-                <circle cx="11" cy="11" r="8" stroke="#757575" strokeWidth="2" />
-                <path d="M21 21l-4.35-4.35" stroke="#757575" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-            )}
-          </div>
+            <ArrowLeft size={20} weight="regular" color="#2C2C2C" />
+          </motion.button>
+
+          {/* Title - Centered */}
+          <h1
+            style={{
+              fontFamily: "'Caveat', cursive",
+              fontSize: '1.75rem',
+              fontWeight: 600,
+              color: '#2D5016',
+              margin: 0,
+              position: 'absolute',
+              left: '50%',
+              transform: 'translateX(-50%)',
+            }}
+          >
+            Tambah Teman Baru
+          </h1>
+
+          {/* Search Button */}
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={handleSearchToggle}
+            aria-label="Cari tanaman"
+            style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '50%',
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #E0E0E0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+            }}
+          >
+            <MagnifyingGlass size={20} weight="regular" color="#2C2C2C" />
+          </motion.button>
         </div>
-      </div>
+
+        {/* Expandable Search Bar */}
+        <AnimatePresence>
+          {isSearchExpanded && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              style={{ overflow: 'hidden' }}
+            >
+              <div style={{ padding: '0 24px 16px 24px' }}>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    placeholder="Cari tanaman..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '14px 50px 14px 20px',
+                      fontSize: '1rem',
+                      fontFamily: "'Inter', sans-serif",
+                      color: '#2C2C2C',
+                      backgroundColor: '#FAFAFA',
+                      border: '2px solid #7CB342',
+                      borderRadius: '12px',
+                      outline: 'none',
+                    }}
+                  />
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={handleSearchClear}
+                    style={{
+                      position: 'absolute',
+                      right: '12px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '50%',
+                      backgroundColor: '#E0E0E0',
+                      border: 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <X size={16} weight="bold" color="#757575" />
+                  </motion.button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Category Tabs */}
+        <div
+          className="hide-scrollbar"
+          style={{
+            display: 'flex',
+            gap: '8px',
+            padding: '0 24px 16px 24px',
+            overflowX: 'auto',
+            WebkitOverflowScrolling: 'touch',
+          }}
+        >
+          {CATEGORIES.map((category) => (
+            <motion.button
+              key={category.id}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setSelectedCategory(category.id)}
+              style={{
+                flexShrink: 0,
+                padding: '10px 20px',
+                fontSize: '14px',
+                fontFamily: "'Inter', sans-serif",
+                fontWeight: 500,
+                color: selectedCategory === category.id ? '#FFFFFF' : '#757575',
+                backgroundColor: selectedCategory === category.id ? '#7CB342' : 'transparent',
+                border: selectedCategory === category.id ? 'none' : '1px solid #E0E0E0',
+                borderRadius: '20px',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              {category.label}
+            </motion.button>
+          ))}
+        </div>
       </div>
 
       {/* Scrollable Plant Grid */}
       <div
         style={{
           position: 'absolute',
-          top: '175px',
+          top: isSearchExpanded ? '220px' : '160px',
           left: 0,
           right: 0,
           bottom: 0,
@@ -229,7 +308,8 @@ const AddPlant: React.FC<AddPlantProps> = ({ onClose, onSelectSpecies }) => {
           overflowX: 'hidden',
           WebkitOverflowScrolling: 'touch',
           touchAction: 'pan-y',
-          padding: '0 24px 100px 24px',
+          padding: '16px 24px 100px 24px',
+          transition: 'top 0.2s ease',
         }}
       >
         <div
@@ -337,7 +417,7 @@ const AddPlant: React.FC<AddPlantProps> = ({ onClose, onSelectSpecies }) => {
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              minHeight: 'calc(100vh - 350px)',
+              minHeight: 'calc(100vh - 400px)',
               textAlign: 'center',
               width: '100%',
             }}
@@ -366,16 +446,26 @@ const AddPlant: React.FC<AddPlantProps> = ({ onClose, onSelectSpecies }) => {
             <p
               style={{
                 fontFamily: "'Inter', sans-serif",
-                fontSize: '1.125rem',
+                fontSize: '1rem',
                 fontWeight: 500,
                 color: '#757575',
                 margin: 0,
                 lineHeight: 1.6,
               }}
             >
-              Tidak ada hasil untuk
-              <br />
-              &quot;{searchQuery}&quot;
+              {searchQuery ? (
+                <>
+                  Tidak ada hasil untuk
+                  <br />
+                  &quot;{searchQuery}&quot;
+                </>
+              ) : (
+                <>
+                  Tidak ada tanaman dalam
+                  <br />
+                  kategori ini
+                </>
+              )}
             </p>
           </motion.div>
         )}

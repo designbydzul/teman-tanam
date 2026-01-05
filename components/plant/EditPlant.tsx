@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LocationSettings } from '@/components/modals';
 import { useLocations } from '@/hooks/useLocations';
-import { Drop, Leaf, ArrowCounterClockwise, X, Trash } from '@phosphor-icons/react';
+import { Drop, Leaf, ArrowCounterClockwise, ArrowLeft, Trash } from '@phosphor-icons/react';
 import { createDebugger } from '@/lib/debug';
 
 const debug = createDebugger('EditPlant');
@@ -125,6 +125,16 @@ const EditPlant: React.FC<EditPlantProps> = ({ plant, onClose, onSave, onDelete 
     }
   }, [plant]);
 
+  // Lock body scroll when component is open
+  useEffect(() => {
+    const originalStyle = document.body.style.cssText;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.cssText = originalStyle;
+    };
+  }, []);
+
   const isValid = formData.location;
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -153,16 +163,6 @@ const EditPlant: React.FC<EditPlantProps> = ({ plant, onClose, onSave, onDelete 
   const handleLocationSettingsBack = () => {
     setShowLocationSettings(false);
     refetchLocations(); // Refetch locations from Supabase to get newly added ones
-  };
-
-  const handleDateSelect = (date: string) => {
-    if (date === 'Pilih Tanggal') {
-      // Trigger native date picker
-      dateInputRef.current?.showPicker?.();
-      dateInputRef.current?.click();
-    } else {
-      setFormData({ ...formData, startedDate: date, customDate: '' });
-    }
   };
 
   const handleCustomDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -202,603 +202,602 @@ const EditPlant: React.FC<EditPlantProps> = ({ plant, onClose, onSave, onDelete 
     }
   };
 
+  // If showing LocationSettings, render it as full page
+  if (showLocationSettings) {
+    return (
+      <LocationSettings
+        key="location-settings-modal"
+        onBack={handleLocationSettingsBack}
+        onLocationAdded={() => {
+          // Location added, will be loaded when going back
+        }}
+        onLocationDeleted={() => {
+          // Location deleted callback
+        }}
+        onPlantsUpdated={() => {
+          // Plants updated callback
+        }}
+      />
+    );
+  }
+
   return (
-    <AnimatePresence>
-      <motion.div
-        key="edit-plant-form-backdrop"
-        className="ios-fixed-container"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        onClick={onClose}
+    <>
+      {/* Main Full Page Container */}
+      <div
         style={{
           position: 'fixed',
           top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: '100%',
+          maxWidth: 'var(--app-max-width)',
+          height: '100vh',
+          backgroundColor: '#FFFFFF',
           zIndex: 3000,
           display: 'flex',
-          alignItems: 'flex-end',
+          flexDirection: 'column',
+          overflow: 'hidden',
         }}
       >
-        <motion.div
-          initial={{ y: '100%' }}
-          animate={{ y: 0 }}
-          exit={{ y: '100%' }}
-          transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-          onClick={(e) => e.stopPropagation()}
+        {/* Fixed Header - Same styling as Tanya Tanam */}
+        <div
           style={{
-            width: '100%',
-            maxHeight: '95vh',
-            // @ts-expect-error - 95dvh is valid CSS
-            maxHeight: '95dvh',
+            position: 'sticky',
+            top: 0,
+            left: 0,
+            right: 0,
             backgroundColor: '#FFFFFF',
-            borderRadius: '12px 12px 0 0',
-            display: 'flex',
-            flexDirection: 'column',
-            position: 'relative',
-            overflowX: 'hidden',
+            borderBottom: '1px solid #E0E0E0',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+            zIndex: 10,
+            paddingTop: 'env(safe-area-inset-top, 0px)',
           }}
         >
-          {/* Sticky Header with Close Button */}
+          {/* Navigation Row */}
           <div
             style={{
-              position: 'sticky',
-              top: 0,
-              left: 0,
-              right: 0,
-              padding: '24px 24px 16px 24px',
-              backgroundColor: '#FFFFFF',
-              borderBottom: '1px solid #F5F5F5',
-              borderRadius: '12px 12px 0 0',
-              zIndex: 10,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '24px',
+              position: 'relative',
             }}
           >
-            {/* Close Button */}
-            <button
+            {/* Back Button */}
+            <motion.button
+              whileTap={{ scale: 0.95 }}
               onClick={onClose}
-              aria-label="Tutup"
+              aria-label="Kembali"
               style={{
-                position: 'absolute',
-                top: '20px',
-                right: '20px',
-                width: '32px',
-                height: '32px',
+                width: '40px',
+                height: '40px',
                 borderRadius: '50%',
-                backgroundColor: '#F5F5F5',
-                border: 'none',
+                backgroundColor: '#FFFFFF',
+                border: '1px solid #E0E0E0',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: 'pointer',
               }}
             >
-              <X size={20} weight="regular" color="#757575" />
-            </button>
+              <ArrowLeft size={20} weight="regular" color="#2C2C2C" />
+            </motion.button>
 
-            {/* Header */}
-            <div>
-              <h2
-                className="font-accent"
+            {/* Title - Centered */}
+            <h1
+              style={{
+                fontFamily: "'Caveat', cursive",
+                fontSize: '1.75rem',
+                fontWeight: 600,
+                color: '#2D5016',
+                margin: 0,
+                position: 'absolute',
+                left: '50%',
+                transform: 'translateX(-50%)',
+              }}
+            >
+              Edit Tanaman
+            </h1>
+
+            {/* Delete Button */}
+            {onDelete ? (
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setShowDeleteConfirm(true)}
+                aria-label="Hapus tanaman"
                 style={{
-                  fontFamily: "'Caveat', cursive",
-                  fontSize: '1.5rem',
-                  fontWeight: 600,
-                  color: '#2D5016',
-                  margin: 0,
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '50%',
+                  backgroundColor: '#FEF2F2',
+                  border: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
                 }}
               >
-                Edit Tanaman
-              </h2>
-            </div>
+                <Trash size={20} weight="regular" color="#DC2626" />
+              </motion.button>
+            ) : (
+              <div style={{ width: '40px', height: '40px' }} />
+            )}
           </div>
+        </div>
 
-          {/* Scrollable Content */}
-          <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch', touchAction: 'pan-y', padding: '24px', paddingBottom: '100px' }}>
+        {/* Scrollable Content */}
+        <div
+          style={{
+            flex: 1,
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            WebkitOverflowScrolling: 'touch',
+            touchAction: 'pan-y',
+            padding: '24px',
+            paddingBottom: '120px',
+          }}
+        >
+          {/* Form */}
+          <form onSubmit={handleSubmit} id="edit-plant-form">
+            {/* Name Input */}
+            <div style={{ marginBottom: '24px' }}>
+              <label
+                style={{
+                  display: 'block',
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '14px',
+                  color: '#757575',
+                  marginBottom: '8px',
+                }}
+              >
+                Nama Tanaman
+              </label>
+              <input
+                type="text"
+                placeholder="Beri nama biar kece"
+                value={formData.customName}
+                onChange={(e) => setFormData({ ...formData, customName: e.target.value })}
+                onFocus={() => setFocusedInput('name')}
+                onBlur={() => setFocusedInput(null)}
+                style={{
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  padding: '16px',
+                  fontSize: '1rem',
+                  fontFamily: "'Inter', sans-serif",
+                  color: '#2C2C2C',
+                  backgroundColor: '#FAFAFA',
+                  border: focusedInput === 'name' ? '2px solid #7CB342' : '2px solid transparent',
+                  borderRadius: '12px',
+                  outline: 'none',
+                  transition: 'border-color 200ms',
+                }}
+              />
+            </div>
 
-            {/* Form */}
-            <form onSubmit={handleSubmit} id="edit-plant-form">
-              {/* Name Input */}
-              <div style={{ marginBottom: '24px' }}>
-                <label
-                  style={{
-                    display: 'block',
-                    fontFamily: "'Inter', sans-serif",
-                    fontSize: '14px',
-                    color: '#757575',
-                    marginBottom: '8px',
-                  }}
-                >
-                  Nama Tanaman
-                </label>
-                <input
-                  type="text"
-                  placeholder="Beri nama biar kece"
-                  value={formData.customName}
-                  onChange={(e) => setFormData({ ...formData, customName: e.target.value })}
-                  onFocus={() => setFocusedInput('name')}
-                  onBlur={() => setFocusedInput(null)}
-                  style={{
-                    width: '100%',
-                    boxSizing: 'border-box',
-                    padding: '16px',
-                    fontSize: '1rem',
-                    fontFamily: "'Inter', sans-serif",
-                    color: '#2C2C2C',
-                    backgroundColor: '#FAFAFA',
-                    border: focusedInput === 'name' ? '2px solid #7CB342' : '2px solid transparent',
-                    borderRadius: '12px',
-                    outline: 'none',
-                    transition: 'border-color 200ms',
-                  }}
-                />
+            {/* Location Pills */}
+            <div style={{ marginBottom: '24px' }}>
+              <label
+                style={{
+                  display: 'block',
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '14px',
+                  color: '#757575',
+                  marginBottom: '12px',
+                }}
+              >
+                Lokasi
+              </label>
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                {[...locationOptions, 'Tambah Tempat'].map((location, index) => (
+                  <button
+                    key={`location-${index}-${location}`}
+                    type="button"
+                    onClick={() => handleLocationSelect(location)}
+                    style={{
+                      padding: '12px 24px',
+                      fontSize: '1rem',
+                      fontFamily: "'Inter', sans-serif",
+                      fontWeight: 500,
+                      color: formData.location === location ? '#2D5016' : '#757575',
+                      backgroundColor: formData.location === location ? '#F1F8E9' : 'transparent',
+                      border: formData.location === location ? '2px solid #7CB342' : '2px solid #E0E0E0',
+                      borderRadius: '24px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    {location}
+                  </button>
+                ))}
               </div>
+            </div>
 
-              {/* Location Pills */}
-              <div style={{ marginBottom: '24px' }}>
-                <label
-                  style={{
-                    display: 'block',
-                    fontFamily: "'Inter', sans-serif",
-                    fontSize: '14px',
-                    color: '#757575',
-                    marginBottom: '12px',
-                  }}
-                >
-                  Lokasi
-                </label>
-                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                  {[...locationOptions, 'Tambah Tempat'].map((location, index) => (
-                    <button
-                      key={`location-${index}-${location}`}
-                      type="button"
-                      onClick={() => handleLocationSelect(location)}
-                      style={{
-                        padding: '12px 24px',
-                        fontSize: '1rem',
-                        fontFamily: "'Inter', sans-serif",
-                        fontWeight: 500,
-                        color: formData.location === location ? '#2D5016' : '#757575',
-                        backgroundColor: formData.location === location ? '#F1F8E9' : 'transparent',
-                        border: formData.location === location ? '2px solid #7CB342' : '2px solid #E0E0E0',
-                        borderRadius: '24px',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                      }}
-                    >
-                      {location}
-                    </button>
-                  ))}
+            {/* Started Date - Native Date Input */}
+            <div style={{ marginBottom: '24px' }}>
+              <label
+                style={{
+                  display: 'block',
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '14px',
+                  color: '#757575',
+                  marginBottom: '8px',
+                }}
+              >
+                Mulai Dirawat
+              </label>
+              <input
+                ref={dateInputRef}
+                type="date"
+                value={formData.customDate}
+                max={new Date().toISOString().split('T')[0]}
+                onChange={handleCustomDateChange}
+                onFocus={() => setFocusedInput('date')}
+                onBlur={() => setFocusedInput(null)}
+                style={{
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  padding: '16px',
+                  fontSize: '1rem',
+                  fontFamily: "'Inter', sans-serif",
+                  color: '#2C2C2C',
+                  backgroundColor: '#FAFAFA',
+                  border: focusedInput === 'date' ? '2px solid #7CB342' : '2px solid transparent',
+                  borderRadius: '12px',
+                  outline: 'none',
+                  transition: 'border-color 200ms',
+                  WebkitAppearance: 'none',
+                  appearance: 'none',
+                }}
+              />
+            </div>
+
+            {/* Notes (Optional) */}
+            <div style={{ marginBottom: '24px' }}>
+              <label
+                style={{
+                  display: 'block',
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '14px',
+                  color: '#757575',
+                  marginBottom: '8px',
+                }}
+              >
+                Catatan (Optional)
+              </label>
+              <textarea
+                placeholder="Tulis apa aja: lokasi, asal benih, dll"
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                onFocus={() => setFocusedInput('notes')}
+                onBlur={() => setFocusedInput(null)}
+                style={{
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  minHeight: '96px',
+                  padding: '16px',
+                  fontSize: '1rem',
+                  fontFamily: "'Inter', sans-serif",
+                  color: '#2C2C2C',
+                  backgroundColor: '#FAFAFA',
+                  border: focusedInput === 'notes' ? '2px solid #7CB342' : '2px solid transparent',
+                  borderRadius: '12px',
+                  outline: 'none',
+                  resize: 'vertical',
+                  transition: 'border-color 200ms',
+                }}
+              />
+            </div>
+
+            {/* Frekuensi Perawatan Section */}
+            <div style={{ marginBottom: '24px' }}>
+              {/* Section Title - consistent with other labels */}
+              <label
+                style={{
+                  display: 'block',
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  color: '#757575',
+                  marginBottom: '8px',
+                }}
+              >
+                Frekuensi Perawatan
+              </label>
+
+              {/* Watering Frequency Row - Gray background like other form fields */}
+              <div
+                style={{
+                  backgroundColor: '#FAFAFA',
+                  borderRadius: '12px',
+                  padding: '16px',
+                  marginBottom: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                {/* Left side: Icon + Label */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+                  <Drop size={20} weight="regular" color="#757575" />
+                  <span
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: '14px',
+                      color: '#2C2C2C',
+                    }}
+                  >
+                    Siram setiap
+                  </span>
                 </div>
-              </div>
-
-              {/* Started Date - Native Date Input */}
-              <div style={{ marginBottom: '24px' }}>
-                <label
-                  style={{
-                    display: 'block',
-                    fontFamily: "'Inter', sans-serif",
-                    fontSize: '14px',
-                    color: '#757575',
-                    marginBottom: '8px',
-                  }}
-                >
-                  Mulai Dirawat
-                </label>
-                <input
-                  ref={dateInputRef}
-                  type="date"
-                  value={formData.customDate}
-                  max={new Date().toISOString().split('T')[0]}
-                  onChange={handleCustomDateChange}
-                  onFocus={() => setFocusedInput('date')}
-                  onBlur={() => setFocusedInput(null)}
-                  style={{
-                    width: '100%',
-                    boxSizing: 'border-box',
-                    padding: '16px',
-                    fontSize: '1rem',
-                    fontFamily: "'Inter', sans-serif",
-                    color: '#2C2C2C',
-                    backgroundColor: '#FAFAFA',
-                    border: focusedInput === 'date' ? '2px solid #7CB342' : '2px solid transparent',
-                    borderRadius: '12px',
-                    outline: 'none',
-                    transition: 'border-color 200ms',
-                    WebkitAppearance: 'none',
-                    appearance: 'none',
-                  }}
-                />
-              </div>
-
-              {/* Notes (Optional) */}
-              <div style={{ marginBottom: '24px' }}>
-                <label
-                  style={{
-                    display: 'block',
-                    fontFamily: "'Inter', sans-serif",
-                    fontSize: '14px',
-                    color: '#757575',
-                    marginBottom: '8px',
-                  }}
-                >
-                  Catatan (Optional)
-                </label>
-                <textarea
-                  placeholder="Tulis apa aja: lokasi, asal benih, dll"
-                  value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  onFocus={() => setFocusedInput('notes')}
-                  onBlur={() => setFocusedInput(null)}
-                  style={{
-                    width: '100%',
-                    boxSizing: 'border-box',
-                    minHeight: '96px',
-                    padding: '16px',
-                    fontSize: '1rem',
-                    fontFamily: "'Inter', sans-serif",
-                    color: '#2C2C2C',
-                    backgroundColor: '#FAFAFA',
-                    border: focusedInput === 'notes' ? '2px solid #7CB342' : '2px solid transparent',
-                    borderRadius: '12px',
-                    outline: 'none',
-                    resize: 'vertical',
-                    transition: 'border-color 200ms',
-                  }}
-                />
-              </div>
-
-              {/* Frekuensi Perawatan Section */}
-              <div style={{ marginBottom: '24px' }}>
-                {/* Section Title - consistent with other labels */}
-                <label
-                  style={{
-                    display: 'block',
-                    fontFamily: "'Inter', sans-serif",
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    color: '#757575',
-                    marginBottom: '8px',
-                  }}
-                >
-                  Frekuensi Perawatan
-                </label>
-
-                {/* Watering Frequency Row - Gray background like other form fields */}
-                <div
-                  style={{
-                    backgroundColor: '#FAFAFA',
-                    borderRadius: '12px',
-                    padding: '16px',
-                    marginBottom: '8px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                  }}
-                >
-                  {/* Left side: Icon + Label */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
-                    <Drop size={20} weight="regular" color="#757575" />
-                    <span
-                      style={{
-                        fontFamily: "'Inter', sans-serif",
-                        fontSize: '14px',
-                        color: '#2C2C2C',
-                      }}
-                    >
-                      Siram setiap
-                    </span>
-                  </div>
-                  {/* Right side: Value display + Reset */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <input
-                      type="number"
-                      min="1"
-                      max="30"
-                      placeholder={String(plant?.species?.wateringFrequencyDays || 3)}
-                      value={formData.customWateringDays}
-                      onChange={(e) => setFormData({ ...formData, customWateringDays: e.target.value })}
-                      style={{
-                        width: '32px',
-                        padding: '0',
-                        fontSize: '14px',
-                        fontFamily: "'Inter', sans-serif",
-                        color: '#2C2C2C',
-                        backgroundColor: 'transparent',
-                        border: 'none',
-                        outline: 'none',
-                        textAlign: 'right',
-                        MozAppearance: 'textfield',
-                      }}
-                    />
-                    <span
-                      style={{
-                        fontFamily: "'Inter', sans-serif",
-                        fontSize: '14px',
-                        color: '#757575',
-                      }}
-                    >
-                      hari
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setFormData({ ...formData, customWateringDays: '' })}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        padding: '4px',
-                        marginLeft: '4px',
-                        backgroundColor: 'transparent',
-                        border: 'none',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      <ArrowCounterClockwise size={20} weight="regular" color="#757575" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Fertilizing Frequency Row - Gray background like other form fields */}
-                <div
-                  style={{
-                    backgroundColor: '#FAFAFA',
-                    borderRadius: '12px',
-                    padding: '16px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                  }}
-                >
-                  {/* Left side: Icon + Label */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
-                    <Leaf size={20} weight="regular" color="#757575" />
-                    <span
-                      style={{
-                        fontFamily: "'Inter', sans-serif",
-                        fontSize: '14px',
-                        color: '#2C2C2C',
-                      }}
-                    >
-                      Pupuk setiap
-                    </span>
-                  </div>
-                  {/* Right side: Value display + Reset */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <input
-                      type="number"
-                      min="1"
-                      max="90"
-                      placeholder={String(plant?.species?.fertilizingFrequencyDays || 14)}
-                      value={formData.customFertilizingDays}
-                      onChange={(e) => setFormData({ ...formData, customFertilizingDays: e.target.value })}
-                      style={{
-                        width: '32px',
-                        padding: '0',
-                        fontSize: '14px',
-                        fontFamily: "'Inter', sans-serif",
-                        color: '#2C2C2C',
-                        backgroundColor: 'transparent',
-                        border: 'none',
-                        outline: 'none',
-                        textAlign: 'right',
-                        MozAppearance: 'textfield',
-                      }}
-                    />
-                    <span
-                      style={{
-                        fontFamily: "'Inter', sans-serif",
-                        fontSize: '14px',
-                        color: '#757575',
-                      }}
-                    >
-                      hari
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setFormData({ ...formData, customFertilizingDays: '' })}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        padding: '4px',
-                        marginLeft: '4px',
-                        backgroundColor: 'transparent',
-                        border: 'none',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      <ArrowCounterClockwise size={20} weight="regular" color="#757575" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Photo Upload */}
-              <div style={{ marginBottom: '24px' }}>
-                <label
-                  style={{
-                    display: 'block',
-                    fontFamily: "'Inter', sans-serif",
-                    fontSize: '14px',
-                    color: '#757575',
-                    marginBottom: '12px',
-                  }}
-                >
-                  Foto Tanaman
-                </label>
-
-                {photoPreview ? (
-                  <div style={{ position: 'relative' }}>
-                    <img
-                      src={photoPreview}
-                      alt="Preview"
-                      style={{
-                        width: '100%',
-                        height: '200px',
-                        objectFit: 'cover',
-                        borderRadius: '12px',
-                      }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setPhotoPreview(null);
-                        setFormData({ ...formData, photo: null });
-                      }}
-                      aria-label="Hapus foto"
-                      style={{
-                        position: 'absolute',
-                        top: '8px',
-                        right: '8px',
-                        width: '32px',
-                        height: '32px',
-                        borderRadius: '50%',
-                        backgroundColor: 'rgba(0, 0, 0, 0.6)',
-                        border: 'none',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
-                        <path
-                          d="M15 5L5 15M5 5l10 10"
-                          stroke="#FFFFFF"
-                          strokeWidth="2.5"
-                          strokeLinecap="round"
-                        />
-                      </svg>
-                    </button>
-                  </div>
-                ) : (
-                  <label
+                {/* Right side: Value display + Reset */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <input
+                    type="number"
+                    min="1"
+                    max="30"
+                    placeholder={String(plant?.species?.wateringFrequencyDays || 3)}
+                    value={formData.customWateringDays}
+                    onChange={(e) => setFormData({ ...formData, customWateringDays: e.target.value })}
+                    style={{
+                      width: '32px',
+                      padding: '0',
+                      fontSize: '14px',
+                      fontFamily: "'Inter', sans-serif",
+                      color: '#2C2C2C',
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      outline: 'none',
+                      textAlign: 'right',
+                      MozAppearance: 'textfield',
+                    }}
+                  />
+                  <span
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: '14px',
+                      color: '#757575',
+                    }}
+                  >
+                    hari
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, customWateringDays: '' })}
                     style={{
                       display: 'flex',
-                      flexDirection: 'column',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      height: '200px',
-                      border: '2px dashed #E0E0E0',
-                      borderRadius: '12px',
-                      backgroundColor: '#FAFAFA',
+                      padding: '4px',
+                      marginLeft: '4px',
+                      backgroundColor: 'transparent',
+                      border: 'none',
                       cursor: 'pointer',
                     }}
                   >
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
-                      <path
-                        d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"
-                        stroke="#7CB342"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                    <span
-                      style={{
-                        fontFamily: "'Inter', sans-serif",
-                        fontSize: '14px',
-                        color: '#7CB342',
-                        marginTop: '12px',
-                      }}
-                    >
-                      Upload Foto
-                    </span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handlePhotoChange}
-                      style={{ display: 'none' }}
-                    />
-                  </label>
-                )}
+                    <ArrowCounterClockwise size={20} weight="regular" color="#757575" />
+                  </button>
+                </div>
               </div>
 
-              {/* Delete Plant Button */}
-              {onDelete && (
-                <button
-                  type="button"
-                  onClick={() => setShowDeleteConfirm(true)}
+              {/* Fertilizing Frequency Row - Gray background like other form fields */}
+              <div
+                style={{
+                  backgroundColor: '#FAFAFA',
+                  borderRadius: '12px',
+                  padding: '16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                {/* Left side: Icon + Label */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+                  <Leaf size={20} weight="regular" color="#757575" />
+                  <span
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: '14px',
+                      color: '#2C2C2C',
+                    }}
+                  >
+                    Pupuk setiap
+                  </span>
+                </div>
+                {/* Right side: Value display + Reset */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <input
+                    type="number"
+                    min="1"
+                    max="90"
+                    placeholder={String(plant?.species?.fertilizingFrequencyDays || 14)}
+                    value={formData.customFertilizingDays}
+                    onChange={(e) => setFormData({ ...formData, customFertilizingDays: e.target.value })}
+                    style={{
+                      width: '32px',
+                      padding: '0',
+                      fontSize: '14px',
+                      fontFamily: "'Inter', sans-serif",
+                      color: '#2C2C2C',
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      outline: 'none',
+                      textAlign: 'right',
+                      MozAppearance: 'textfield',
+                    }}
+                  />
+                  <span
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: '14px',
+                      color: '#757575',
+                    }}
+                  >
+                    hari
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, customFertilizingDays: '' })}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '4px',
+                      marginLeft: '4px',
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <ArrowCounterClockwise size={20} weight="regular" color="#757575" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Photo Upload */}
+            <div style={{ marginBottom: '24px' }}>
+              <label
+                style={{
+                  display: 'block',
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '14px',
+                  color: '#757575',
+                  marginBottom: '12px',
+                }}
+              >
+                Foto Tanaman
+              </label>
+
+              {photoPreview ? (
+                <div style={{ position: 'relative' }}>
+                  <img
+                    src={photoPreview}
+                    alt="Preview"
+                    style={{
+                      width: '100%',
+                      height: '200px',
+                      objectFit: 'cover',
+                      borderRadius: '12px',
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPhotoPreview(null);
+                      setFormData({ ...formData, photo: null });
+                    }}
+                    aria-label="Hapus foto"
+                    style={{
+                      position: 'absolute',
+                      top: '8px',
+                      right: '8px',
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '50%',
+                      backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                      border: 'none',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+                      <path
+                        d="M15 5L5 15M5 5l10 10"
+                        stroke="#FFFFFF"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              ) : (
+                <label
                   style={{
-                    width: '100%',
-                    padding: '16px',
-                    marginTop: '32px',
-                    fontSize: '1rem',
-                    fontFamily: "'Inter', sans-serif",
-                    fontWeight: 500,
-                    color: '#DC2626',
-                    backgroundColor: '#FEF2F2',
-                    border: '1px solid #FEE2E2',
-                    borderRadius: '12px',
-                    cursor: 'pointer',
                     display: 'flex',
+                    flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: '8px',
+                    height: '200px',
+                    border: '2px dashed #E0E0E0',
+                    borderRadius: '12px',
+                    backgroundColor: '#FAFAFA',
+                    cursor: 'pointer',
                   }}
                 >
-                  <Trash size={20} weight="regular" color="#DC2626" />
-                  Hapus Tanaman
-                </button>
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"
+                      stroke="#7CB342"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  <span
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: '14px',
+                      color: '#7CB342',
+                      marginTop: '12px',
+                    }}
+                  >
+                    Upload Foto
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePhotoChange}
+                    style={{ display: 'none' }}
+                  />
+                </label>
               )}
-            </form>
-          </div>
+            </div>
 
-          {/* Sticky Submit Button */}
-          <div
+          </form>
+        </div>
+
+        {/* Fixed Submit Button at Bottom */}
+        <div
+          style={{
+            position: 'fixed',
+            bottom: 0,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: '100%',
+            maxWidth: 'var(--app-max-width)',
+            padding: '16px 24px',
+            paddingBottom: 'calc(16px + env(safe-area-inset-bottom))',
+            backgroundColor: '#FFFFFF',
+            borderTop: '1px solid #F5F5F5',
+            boxShadow: '0 -2px 10px rgba(0, 0, 0, 0.05)',
+            zIndex: 11,
+          }}
+        >
+          <button
+            type="submit"
+            form="edit-plant-form"
+            disabled={!isValid}
             style={{
-              position: 'sticky',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              padding: '16px 24px',
-              backgroundColor: '#FFFFFF',
-              borderTop: '1px solid #F5F5F5',
-              boxShadow: '0 -2px 10px rgba(0, 0, 0, 0.05)',
+              width: '100%',
+              padding: '16px',
+              fontSize: '1rem',
+              fontFamily: "'Inter', sans-serif",
+              fontWeight: 600,
+              color: '#FFFFFF',
+              backgroundColor: isValid ? '#7CB342' : '#E0E0E0',
+              border: 'none',
+              borderRadius: '12px',
+              cursor: isValid ? 'pointer' : 'not-allowed',
             }}
           >
-            <button
-              type="submit"
-              form="edit-plant-form"
-              disabled={!isValid}
-              style={{
-                width: '100%',
-                padding: '16px',
-                fontSize: '1rem',
-                fontFamily: "'Inter', sans-serif",
-                fontWeight: 600,
-                color: '#FFFFFF',
-                backgroundColor: isValid ? '#7CB342' : '#E0E0E0',
-                border: 'none',
-                borderRadius: '12px',
-                cursor: isValid ? 'pointer' : 'not-allowed',
-              }}
-            >
-              Simpan Perubahan
-            </button>
-          </div>
-        </motion.div>
-      </motion.div>
-
-      {/* LocationSettings Modal */}
-      {showLocationSettings && (
-        <LocationSettings
-          key="location-settings-modal"
-          onBack={handleLocationSettingsBack}
-          onLocationAdded={() => {
-            // Location added, will be loaded when going back
-          }}
-          onLocationDeleted={() => {
-            // Location deleted callback
-          }}
-          onPlantsUpdated={() => {
-            // Plants updated callback
-          }}
-        />
-      )}
+            Simpan Perubahan
+          </button>
+        </div>
+      </div>
 
       {/* Delete Confirmation Modal */}
       <AnimatePresence>
@@ -807,12 +806,16 @@ const EditPlant: React.FC<EditPlantProps> = ({ plant, onClose, onSave, onDelete 
             {/* Backdrop */}
             <motion.div
               key="delete-confirm-backdrop"
-              className="ios-fixed-container"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowDeleteConfirm(false)}
               style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
                 backgroundColor: 'rgba(0, 0, 0, 0.5)',
                 zIndex: 4000,
                 display: 'flex',
@@ -933,7 +936,7 @@ const EditPlant: React.FC<EditPlantProps> = ({ plant, onClose, onSave, onDelete 
           </>
         )}
       </AnimatePresence>
-    </AnimatePresence>
+    </>
   );
 };
 
