@@ -1020,51 +1020,20 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
           {/* Center Plant Image */}
           <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
             {plantData.photoUrl && !imageLoadError ? (
-              <div style={{ position: 'relative' }}>
-                <img
-                  src={plantData.photoUrl}
-                  alt={plantData.customName}
-                  onClick={() => setShowImagePreview(true)}
-                  onError={() => setImageLoadError(true)}
-                  style={{
-                    width: '120px',
-                    height: '120px',
-                    objectFit: 'cover',
-                    borderRadius: '16px',
-                    cursor: 'pointer',
-                  }}
-                />
-                {/* Species image badge */}
-                {sourcePlant?.species?.imageUrl && !speciesImageError && (
-                  <div
-                    style={{
-                      position: 'absolute',
-                      bottom: '-8px',
-                      right: '-8px',
-                      width: '48px',
-                      height: '48px',
-                      borderRadius: '12px',
-                      backgroundColor: '#FFFFFF',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      padding: '6px',
-                    }}
-                  >
-                    <img
-                      src={sourcePlant.species.imageUrl}
-                      alt={sourcePlant.species.name || ''}
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'contain',
-                      }}
-                      onError={() => setSpeciesImageError(true)}
-                    />
-                  </div>
-                )}
-              </div>
+              /* Show only user photo - no species badge when user has uploaded a photo */
+              <img
+                src={plantData.photoUrl}
+                alt={plantData.customName}
+                onClick={() => setShowImagePreview(true)}
+                onError={() => setImageLoadError(true)}
+                style={{
+                  width: '120px',
+                  height: '120px',
+                  objectFit: 'cover',
+                  borderRadius: '16px',
+                  cursor: 'pointer',
+                }}
+              />
             ) : sourcePlant?.species?.imageUrl && !speciesImageError ? (
               /* Show species image when no plant photo */
               <div
