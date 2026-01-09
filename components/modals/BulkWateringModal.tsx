@@ -3,6 +3,7 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Camera, CircleNotch } from '@phosphor-icons/react';
+import { compressImage } from '@/lib/imageUtils';
 
 // Spin animation style
 const spinStyle = `
@@ -67,12 +68,22 @@ const BulkWateringModal: React.FC<BulkWateringModalProps> = ({
     setIsLoadingPhoto(true);
 
     try {
-      // Create preview
+      // Create preview immediately
       const previewUrl = URL.createObjectURL(file);
       setPhotoPreview(previewUrl);
-      setPhotoFile(file);
+
+      // Compress the image (max 200KB for storage optimization)
+      console.log(`Original file size: ${(file.size / 1024).toFixed(1)}KB`);
+      const compressedBlob = await compressImage(file, 200, 1200, 1200);
+      console.log(`Compressed to: ${(compressedBlob.size / 1024).toFixed(1)}KB`);
+
+      // Convert Blob to File for upload compatibility
+      const compressedFile = new File([compressedBlob], file.name, { type: 'image/jpeg' });
+      setPhotoFile(compressedFile);
     } catch (err) {
       console.error('Error processing photo:', err);
+      // Fall back to original file if compression fails
+      setPhotoFile(file);
     } finally {
       setIsLoadingPhoto(false);
     }

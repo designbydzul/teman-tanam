@@ -93,9 +93,9 @@ const AddPlantForm: React.FC<AddPlantFormProps> = ({ species, onClose, onSubmit,
       reader.readAsDataURL(file);
 
       try {
-        // Compress image in the background (max 1MB)
+        // Compress image in the background (max 200KB for storage optimization)
         debug.log(`Original file size: ${(file.size / 1024).toFixed(1)}KB`);
-        const compressedBlob = await compressImage(file, 1024, 1200, 1200);
+        const compressedBlob = await compressImage(file, 200, 1200, 1200);
         debug.log(`Compressed to: ${(compressedBlob.size / 1024).toFixed(1)}KB`);
 
         setFormData(prev => ({ ...prev, compressedPhoto: compressedBlob }));

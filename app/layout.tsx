@@ -19,6 +19,10 @@ export const metadata: Metadata = {
   title: "Teman Tanam",
   description: "Your plant companion app",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
+  },
 };
 
 export const viewport: Viewport = {

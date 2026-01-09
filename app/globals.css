@@ -3,8 +3,15 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
-  --app-max-width: 480px;
+  --app-max-width: 100%; /* Full width on mobile by default */
   --desktop-bg: #f5f5f5;
+}
+
+/* Only constrain to 480px on desktop/tablet */
+@media (min-width: 481px) {
+  :root {
+    --app-max-width: 480px;
+  }
 }
 
 @theme inline {
@@ -33,7 +40,7 @@ html, body {
 }
 
 body {
-  background: var(--desktop-bg);
+  background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
   overflow-x: hidden;
@@ -41,17 +48,27 @@ body {
   justify-content: center;
 }
 
-/* Mobile app container - locks layout to mobile width on all screens */
+/* Mobile app container - full width on mobile, constrained on desktop */
 .app-container {
   width: 100%;
-  max-width: var(--app-max-width);
-  margin: 0 auto;
   min-height: 100vh;
   min-height: 100dvh;
   background: var(--background);
   position: relative;
   overflow-x: hidden;
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+}
+
+/* Only apply max-width and desktop styling on larger screens */
+@media (min-width: 481px) {
+  body {
+    background: var(--desktop-bg);
+  }
+
+  .app-container {
+    max-width: var(--app-max-width);
+    margin: 0 auto;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+  }
 }
 
 
@@ -77,16 +94,25 @@ body {
   }
 }
 
-/* Ensure fixed elements stay fixed on iOS - constrained to app width */
+/* Ensure fixed elements stay fixed on iOS - full width on mobile, constrained on desktop */
 .ios-fixed-container {
   position: fixed !important;
   top: 0 !important;
   bottom: 0 !important;
-  left: 50% !important;
-  transform: translateX(-50%);
-  -webkit-transform: translateX(-50%) translateZ(0);
+  left: 0 !important;
+  right: 0 !important;
   width: 100%;
-  max-width: var(--app-max-width);
+}
+
+/* Only constrain fixed containers on desktop */
+@media (min-width: 481px) {
+  .ios-fixed-container {
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%);
+    -webkit-transform: translateX(-50%) translateZ(0);
+    max-width: var(--app-max-width);
+  }
 }
 
 /* Hide scrollbar for horizontal scroll containers */

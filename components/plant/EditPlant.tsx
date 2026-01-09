@@ -6,6 +6,7 @@ import { LocationSettings } from '@/components/modals';
 import { useLocations } from '@/hooks/useLocations';
 import { Drop, Leaf, ArrowCounterClockwise, ArrowLeft, Trash } from '@phosphor-icons/react';
 import { createDebugger } from '@/lib/debug';
+import { compressImage } from '@/lib/imageUtils';
 
 const debug = createDebugger('EditPlant');
 
@@ -41,6 +42,7 @@ interface FormData {
   customDate: string;
   notes: string;
   photo: File | null;
+  compressedPhoto: Blob | File | null;
   customWateringDays: string;
   customFertilizingDays: string;
 }
@@ -61,6 +63,7 @@ const EditPlant: React.FC<EditPlantProps> = ({ plant, onClose, onSave, onDelete 
     customDate: '',
     notes: '',
     photo: null,
+    compressedPhoto: null,
     customWateringDays: '',
     customFertilizingDays: '',
   });
@@ -70,6 +73,7 @@ const EditPlant: React.FC<EditPlantProps> = ({ plant, onClose, onSave, onDelete 
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
   const [showLocationSettings, setShowLocationSettings] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isCompressing, setIsCompressing] = useState(false);
   const dateInputRef = useRef<HTMLInputElement>(null);
 
   // Get locations from Supabase via useLocations hook
@@ -117,6 +121,7 @@ const EditPlant: React.FC<EditPlantProps> = ({ plant, onClose, onSave, onDelete 
         customDate: startedDateStr,
         notes: plant.notes || '',
         photo: null,
+        compressedPhoto: null,
         customWateringDays: plant.customWateringDays != null ? String(plant.customWateringDays) : '',
         customFertilizingDays: plant.customFertilizingDays != null ? String(plant.customFertilizingDays) : '',
       });
@@ -137,15 +142,33 @@ const EditPlant: React.FC<EditPlantProps> = ({ plant, onClose, onSave, onDelete 
 
   const isValid = formData.location;
 
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setFormData({ ...formData, photo: file });
+      setIsCompressing(true);
+      setFormData({ ...formData, photo: file, compressedPhoto: null });
+
+      // Show preview immediately
       const reader = new FileReader();
       reader.onloadend = () => {
         setPhotoPreview(reader.result as string);
       };
       reader.readAsDataURL(file);
+
+      try {
+        // Compress image in the background (max 200KB for storage optimization)
+        debug.log(`Original file size: ${(file.size / 1024).toFixed(1)}KB`);
+        const compressedBlob = await compressImage(file, 200, 1200, 1200);
+        debug.log(`Compressed to: ${(compressedBlob.size / 1024).toFixed(1)}KB`);
+
+        setFormData(prev => ({ ...prev, compressedPhoto: compressedBlob }));
+      } catch (error) {
+        debug.error('Compression error:', error);
+        // Fall back to original file if compression fails
+        setFormData(prev => ({ ...prev, compressedPhoto: file }));
+      } finally {
+        setIsCompressing(false);
+      }
     }
   };
 
@@ -682,12 +705,39 @@ const EditPlant: React.FC<EditPlantProps> = ({ plant, onClose, onSave, onDelete 
                       borderRadius: '12px',
                     }}
                   />
+                  {/* Compression overlay */}
+                  {isCompressing && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                        borderRadius: '12px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                      }}
+                    >
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" style={{ animation: 'spin 1s linear infinite' }}>
+                        <circle cx="12" cy="12" r="10" stroke="#FFFFFF" strokeWidth="3" strokeLinecap="round" strokeDasharray="31.4 31.4" />
+                      </svg>
+                      <span style={{ color: '#FFFFFF', fontSize: '14px', fontFamily: "'Inter', sans-serif" }}>
+                        Mengompres...
+                      </span>
+                    </div>
+                  )}
                   <button
                     type="button"
                     onClick={() => {
                       setPhotoPreview(null);
-                      setFormData({ ...formData, photo: null });
+                      setFormData({ ...formData, photo: null, compressedPhoto: null });
                     }}
+                    disabled={isCompressing}
                     aria-label="Hapus foto"
                     style={{
                       position: 'absolute',
@@ -698,7 +748,8 @@ const EditPlant: React.FC<EditPlantProps> = ({ plant, onClose, onSave, onDelete 
                       borderRadius: '50%',
                       backgroundColor: 'rgba(0, 0, 0, 0.6)',
                       border: 'none',
-                      cursor: 'pointer',
+                      cursor: isCompressing ? 'not-allowed' : 'pointer',
+                      opacity: isCompressing ? 0.5 : 1,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -780,7 +831,7 @@ const EditPlant: React.FC<EditPlantProps> = ({ plant, onClose, onSave, onDelete 
           <button
             type="submit"
             form="edit-plant-form"
-            disabled={!isValid}
+            disabled={!isValid || isCompressing}
             style={{
               width: '100%',
               padding: '16px',
@@ -788,14 +839,33 @@ const EditPlant: React.FC<EditPlantProps> = ({ plant, onClose, onSave, onDelete 
               fontFamily: "'Inter', sans-serif",
               fontWeight: 600,
               color: '#FFFFFF',
-              backgroundColor: isValid ? '#7CB342' : '#E0E0E0',
+              backgroundColor: (isValid && !isCompressing) ? '#7CB342' : '#E0E0E0',
               border: 'none',
               borderRadius: '12px',
-              cursor: isValid ? 'pointer' : 'not-allowed',
+              cursor: (isValid && !isCompressing) ? 'pointer' : 'not-allowed',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
             }}
           >
-            Simpan Perubahan
+            {isCompressing ? (
+              <>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ animation: 'spin 1s linear infinite' }}>
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeDasharray="31.4 31.4" />
+                </svg>
+                Mengompres foto...
+              </>
+            ) : (
+              'Simpan Perubahan'
+            )}
           </button>
+          <style>{`
+            @keyframes spin {
+              from { transform: rotate(0deg); }
+              to { transform: rotate(360deg); }
+            }
+          `}</style>
         </div>
       </div>
 

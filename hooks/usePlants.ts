@@ -14,6 +14,7 @@ import {
 } from '@/lib/offlineStorage';
 import { syncAll } from '@/lib/syncService';
 import { createDebugger } from '@/lib/debug';
+import { compressImage, compressImageToBase64 } from '@/lib/imageUtils';
 import {
   ACTION_TYPES,
   PLANT_STATUS,
@@ -373,13 +374,21 @@ export function usePlants(): UsePlantsReturn {
     fetchPlants();
   }, [fetchPlants]);
 
-  // Upload photo to Supabase Storage
+  // Upload photo to Supabase Storage (with compression)
   const uploadPhoto = async (photoBlob: Blob, plantId: string): Promise<string | null> => {
     if (!photoBlob || !user?.id) {
       return null;
     }
 
     try {
+      // Compress image before upload if it's a File
+      let blobToUpload = photoBlob;
+      if (photoBlob instanceof File) {
+        debug.log('uploadPhoto: Compressing before upload...');
+        blobToUpload = await compressImage(photoBlob, 200, 1200, 1200);
+        debug.log(`uploadPhoto: Compressed from ${(photoBlob.size / 1024).toFixed(1)}KB to ${(blobToUpload.size / 1024).toFixed(1)}KB`);
+      }
+
       const timestamp = Date.now();
       const filePath = `${user.id}/${plantId}/${timestamp}.jpg`;
 
@@ -387,7 +396,7 @@ export function usePlants(): UsePlantsReturn {
 
       const { data, error } = await supabase.storage
         .from('plant-photos')
-        .upload(filePath, photoBlob, {
+        .upload(filePath, blobToUpload, {
           contentType: 'image/jpeg',
           upsert: false,
         });
@@ -410,8 +419,13 @@ export function usePlants(): UsePlantsReturn {
     }
   };
 
-  // Convert blob to base64 for offline storage
+  // Convert blob to base64 for offline storage (with compression)
   const blobToBase64 = async (blob: Blob): Promise<string> => {
+    // If it's a File, compress it first
+    if (blob instanceof File) {
+      return compressImageToBase64(blob);
+    }
+    // For Blob, convert to base64 directly (likely already compressed)
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onloadend = () => resolve(reader.result as string);
@@ -723,16 +737,21 @@ export function usePlants(): UsePlantsReturn {
       insertData.notes = notes.trim();
     }
 
-    // Upload photo if provided
+    // Upload photo if provided (compress first)
     if (photoFile) {
       try {
-        const fileExt = photoFile.name.split('.').pop() || 'jpg';
-        const fileName = `${user.id}/${plantId}/${actionType}_${Date.now()}.${fileExt}`;
+        // Compress photo before upload
+        debug.log('recordAction: Compressing photo before upload...');
+        const compressedBlob = await compressImage(photoFile, 200, 1200, 1200);
+        debug.log(`recordAction: Compressed from ${(photoFile.size / 1024).toFixed(1)}KB to ${(compressedBlob.size / 1024).toFixed(1)}KB`);
+
+        const fileName = `${user.id}/${plantId}/${actionType}_${Date.now()}.jpg`;
 
         debug.log('recordAction: Uploading photo to storage');
         const { error: uploadError } = await supabase.storage
           .from('action-photos')
-          .upload(fileName, photoFile, {
+          .upload(fileName, compressedBlob, {
+            contentType: 'image/jpeg',
             cacheControl: '3600',
             upsert: false,
           });

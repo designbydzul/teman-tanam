@@ -1,99 +1,106 @@
 /**
  * Image compression and upload utilities for Teman Tanam
+ * Uses browser-image-compression for efficient client-side compression
  */
 
+import imageCompression from 'browser-image-compression';
 import { createDebugger } from '@/lib/debug';
 
 const debug = createDebugger('imageUtils');
 
 /**
- * Compress an image file to a maximum size
- * @param file - The image file to compress
- * @param maxSizeKB - Maximum size in KB (default 1024 = 1MB)
- * @param maxWidth - Maximum width in pixels (default 1200)
- * @param maxHeight - Maximum height in pixels (default 1200)
- * @returns Compressed image as Blob
+ * Compression settings for Teman Tanam
+ * - maxSizeMB: Target file size (0.2MB = 200KB)
+ * - maxWidthOrHeight: Max dimension in pixels
+ * - useWebWorker: Process in background thread (doesn't freeze UI)
+ * - fileType: Output format
+ */
+const COMPRESSION_OPTIONS = {
+  maxSizeMB: 0.2,           // 200KB target
+  maxWidthOrHeight: 1200,   // Max 1200px on longest side
+  useWebWorker: true,       // Better performance
+  fileType: 'image/jpeg' as const,  // Convert all to JPEG
+  initialQuality: 0.8,      // 80% quality
+};
+
+/**
+ * Size threshold for skipping compression (200KB)
+ */
+const SKIP_COMPRESSION_THRESHOLD = 200 * 1024;
+
+/**
+ * Compress an image file before upload
+ * @param file - The original image file from input or camera
+ * @param maxSizeKB - Maximum size in KB (default 200 = 200KB) - for backwards compatibility
+ * @param maxWidth - Maximum width in pixels (default 1200) - for backwards compatibility
+ * @param maxHeight - Maximum height in pixels (default 1200) - for backwards compatibility
+ * @returns Compressed image as Blob (or File)
  */
 export async function compressImage(
   file: File,
-  maxSizeKB: number = 1024,
+  maxSizeKB: number = 200,
   maxWidth: number = 1200,
   maxHeight: number = 1200
 ): Promise<Blob> {
+  // Skip if already small enough (under threshold)
+  if (file.size <= SKIP_COMPRESSION_THRESHOLD) {
+    debug.log('Image already small, skipping compression:', `${(file.size / 1024).toFixed(1)}KB`);
+    return file;
+  }
+
+  try {
+    debug.log(`Original size: ${(file.size / 1024 / 1024).toFixed(2)}MB`);
+
+    const options = {
+      ...COMPRESSION_OPTIONS,
+      maxSizeMB: maxSizeKB / 1024, // Convert KB to MB
+      maxWidthOrHeight: Math.max(maxWidth, maxHeight),
+    };
+
+    const compressedFile = await imageCompression(file, options);
+
+    debug.log(`Compressed size: ${(compressedFile.size / 1024 / 1024).toFixed(2)}MB`);
+    debug.log(`Reduction: ${((1 - compressedFile.size / file.size) * 100).toFixed(0)}%`);
+
+    return compressedFile;
+  } catch (error) {
+    debug.error('Compression failed, using original:', error);
+    // If compression fails, return original file
+    // Better to upload large file than fail completely
+    return file;
+  }
+}
+
+/**
+ * Compress image and convert to base64 (for offline storage)
+ * @param file - The original image file
+ * @returns Base64 string of compressed image
+ */
+export async function compressImageToBase64(file: File): Promise<string> {
+  const compressedFile = await compressImage(file);
+
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(compressedFile);
+  });
+}
 
-    reader.onload = (event: ProgressEvent<FileReader>) => {
-      const img = new Image();
-
-      img.onload = () => {
-        // Calculate new dimensions while maintaining aspect ratio
-        let { width, height } = img;
-
-        if (width > maxWidth) {
-          height = (height * maxWidth) / width;
-          width = maxWidth;
-        }
-
-        if (height > maxHeight) {
-          width = (width * maxHeight) / height;
-          height = maxHeight;
-        }
-
-        // Create canvas and draw resized image
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          reject(new Error('Failed to get canvas context'));
-          return;
-        }
-        ctx.drawImage(img, 0, 0, width, height);
-
-        // Start with high quality and reduce if needed
-        let quality = 0.9;
-        const maxSizeBytes = maxSizeKB * 1024;
-
-        const tryCompress = (): void => {
-          canvas.toBlob(
-            (blob) => {
-              if (!blob) {
-                reject(new Error('Failed to compress image'));
-                return;
-              }
-
-              debug.log(`Compressed to ${(blob.size / 1024).toFixed(1)}KB at quality ${quality}`);
-
-              // If still too large and quality can be reduced
-              if (blob.size > maxSizeBytes && quality > 0.1) {
-                quality -= 0.1;
-                tryCompress();
-              } else {
-                resolve(blob);
-              }
-            },
-            'image/jpeg',
-            quality
-          );
-        };
-
-        tryCompress();
-      };
-
-      img.onerror = () => {
-        reject(new Error('Failed to load image'));
-      };
-
-      img.src = event.target?.result as string;
+/**
+ * Get image dimensions (useful for debugging/logging)
+ * @param file - The image file
+ * @returns Object with width and height
+ */
+export async function getImageDimensions(file: File): Promise<{ width: number; height: number }> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      resolve({ width: img.width, height: img.height });
+      URL.revokeObjectURL(img.src);
     };
-
-    reader.onerror = () => {
-      reject(new Error('Failed to read file'));
-    };
-
-    reader.readAsDataURL(file);
+    img.onerror = reject;
+    img.src = URL.createObjectURL(file);
   });
 }
 
