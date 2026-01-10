@@ -649,8 +649,9 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
             overflowY: 'auto',
             overflowX: 'hidden',
             padding: '16px 24px',
-            // Extra padding for floating input card: ~100px card height + 16px margin + safe area
-            paddingBottom: 'calc(120px + env(safe-area-inset-bottom, 0px))',
+            // Extra padding for floating input card: input card (~60px) + bottom margin (80px min) + extra buffer
+            // Using max() to ensure enough space above iOS browser toolbars
+            paddingBottom: 'max(160px, calc(100px + env(safe-area-inset-bottom, 0px)))',
             display: 'flex',
             flexDirection: 'column',
             WebkitOverflowScrolling: 'touch',
@@ -931,10 +932,11 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
         style={{
           position: 'fixed',
           // When keyboard is open, position just above keyboard
-          // When keyboard is closed: use 16px base + safe area (works for all browsers)
+          // When keyboard is closed: use max() to handle both browser toolbar (~60px) and safe area
+          // This ensures input is above iOS browser toolbars (Safari/Chrome ~50-60px)
           bottom: keyboardHeight > 0
             ? `${keyboardHeight + 8}px`
-            : 'calc(16px + env(safe-area-inset-bottom, 0px))',
+            : 'max(80px, calc(16px + env(safe-area-inset-bottom, 0px)))',
           left: '50%',
           transform: 'translateX(-50%)',
           width: 'calc(100% - 32px)', // 16px margin on each side
