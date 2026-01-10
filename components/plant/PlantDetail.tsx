@@ -783,13 +783,21 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
   };
 
   // Handle watering card tap
-  const handleWateringCardTap = () => {
+  const handleWateringCardTap = async () => {
+    // Prevent multiple rapid taps
+    if (isSubmittingAction) return;
+
     if (wateringStatus.doneToday) {
       // Already watered today - show drawer with options
       setShowWateringDrawer(true);
     } else {
       // Not watered today - quick action
-      handleActionLog('water');
+      setIsSubmittingAction(true);
+      try {
+        await handleActionLog('water');
+      } finally {
+        setIsSubmittingAction(false);
+      }
     }
   };
 
@@ -946,14 +954,28 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
     }
   };
 
-  const handleMenuAction = (action: string): void => {
+  const handleMenuAction = async (action: string): Promise<void> => {
     setShowMenu(false);
     switch (action) {
       case 'water':
-        handleActionLog('water');
+        if (!isSubmittingAction) {
+          setIsSubmittingAction(true);
+          try {
+            await handleActionLog('water');
+          } finally {
+            setIsSubmittingAction(false);
+          }
+        }
         break;
       case 'fertilize':
-        handleActionLog('fertilize');
+        if (!isSubmittingAction) {
+          setIsSubmittingAction(true);
+          try {
+            await handleActionLog('fertilize');
+          } finally {
+            setIsSubmittingAction(false);
+          }
+        }
         break;
       case 'diagnose':
         if (!isOnline) {
@@ -2468,9 +2490,16 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
                 {/* Add Another Watering */}
                 <button
                   onClick={async () => {
+                    if (isSubmittingAction) return;
+                    setIsSubmittingAction(true);
                     setShowWateringDrawer(false);
-                    await handleActionLog('water');
+                    try {
+                      await handleActionLog('water');
+                    } finally {
+                      setIsSubmittingAction(false);
+                    }
                   }}
+                  disabled={isSubmittingAction}
                   style={{
                     width: '100%',
                     padding: '16px',
@@ -2480,7 +2509,8 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
                     display: 'flex',
                     alignItems: 'center',
                     gap: '12px',
-                    cursor: 'pointer',
+                    cursor: isSubmittingAction ? 'not-allowed' : 'pointer',
+                    opacity: isSubmittingAction ? 0.6 : 1,
                   }}
                 >
                   <Plus size={24} weight="bold" color="#3B82F6" />
