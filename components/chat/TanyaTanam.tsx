@@ -131,17 +131,6 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
   const [careHistory, setCareHistory] = useState<CareHistoryItem[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
-  const [isStandalone, setIsStandalone] = useState(false);
-
-  // Detect if running as PWA (standalone) or in Safari browser
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      // Check if running in standalone mode (PWA)
-      const standalone = window.matchMedia('(display-mode: standalone)').matches
-        || (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
-      setIsStandalone(standalone);
-    }
-  }, []);
 
   // Constants for image handling
   const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -630,10 +619,8 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
             overflowY: 'auto',
             overflowX: 'hidden',
             padding: '16px 24px',
-            // Extra padding for floating input card: ~100px card height + 16px margin + toolbar offset
-            paddingBottom: isStandalone
-              ? 'calc(130px + env(safe-area-inset-bottom, 0px))'
-              : '200px',
+            // Extra padding for floating input card: ~100px card height + 16px margin + safe area
+            paddingBottom: 'calc(120px + env(safe-area-inset-bottom, 0px))',
             display: 'flex',
             flexDirection: 'column',
             WebkitOverflowScrolling: 'touch',
@@ -911,14 +898,13 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
       <div
         className="chat-input-area"
         data-keyboard-open={keyboardHeight > 0 ? "true" : "false"}
-        data-standalone={isStandalone ? "true" : "false"}
         style={{
           position: 'fixed',
-          // When keyboard is open, position just above keyboard with small margin
-          // When keyboard is closed: add margin from bottom to clear browser toolbars
+          // When keyboard is open, position just above keyboard
+          // When keyboard is closed: use 16px base + safe area (works for all browsers)
           bottom: keyboardHeight > 0
             ? `${keyboardHeight + 8}px`
-            : `calc(16px + ${isStandalone ? 'env(safe-area-inset-bottom, 0px)' : '70px'})`,
+            : 'calc(16px + env(safe-area-inset-bottom, 0px))',
           left: '50%',
           transform: 'translateX(-50%)',
           width: 'calc(100% - 32px)', // 16px margin on each side

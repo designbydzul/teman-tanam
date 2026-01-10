@@ -155,11 +155,4 @@ input:-webkit-autofill:active {
   background-color: #FAFAFA !important;
 }
 
-/* Chat input area - iOS safe area handling */
-.chat-input-area {
-  bottom: env(safe-area-inset-bottom, 0px);
-}
-
-.chat-input-area[data-keyboard-open="true"] {
-  /* When keyboard is open, bottom is controlled by JS */
-}
+/* Chat input area - simplified, bottom handled via inline styles */
