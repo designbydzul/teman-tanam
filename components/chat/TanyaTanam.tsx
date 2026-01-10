@@ -895,9 +895,11 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
 
       {/* Input Area */}
       <div
+        className="chat-input-area"
+        data-keyboard-open={keyboardHeight > 0 ? "true" : "false"}
         style={{
           position: 'fixed',
-          bottom: keyboardHeight > 0 ? `${keyboardHeight}px` : 0,
+          ...(keyboardHeight > 0 ? { bottom: `${keyboardHeight}px` } : {}),
           left: '50%',
           transform: 'translateX(-50%)',
           width: '100%',
@@ -905,7 +907,7 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
           backgroundColor: '#FFFFFF',
           borderTop: '1px solid #F5F5F5',
           padding: '16px 24px',
-          paddingBottom: keyboardHeight > 0 ? '16px' : 'max(16px, env(safe-area-inset-bottom, 16px))',
+          paddingBottom: '16px',
           zIndex: 10001,
           transition: 'bottom 0.2s ease-out',
         }}

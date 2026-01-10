@@ -5,6 +5,7 @@
   --foreground: #171717;
   --app-max-width: 100%; /* Full width on mobile by default */
   --desktop-bg: #f5f5f5;
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 /* Only constrain to 480px on desktop/tablet */
@@ -152,4 +153,13 @@ input:-webkit-autofill:active {
   -webkit-box-shadow: 0 0 0 30px #FAFAFA inset !important;
   -webkit-text-fill-color: #2C2C2C !important;
   background-color: #FAFAFA !important;
+}
+
+/* Chat input area - iOS safe area handling */
+.chat-input-area {
+  bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.chat-input-area[data-keyboard-open="true"] {
+  /* When keyboard is open, bottom is controlled by JS */
 }
