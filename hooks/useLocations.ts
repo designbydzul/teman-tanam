@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, startTransition } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useAuth } from './useAuth';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
@@ -84,11 +84,17 @@ export function useLocations() {
     // OFFLINE MODE: Load from cache directly
     if (!isOnline) {
       console.log('[useLocations] OFFLINE: Loading from cache');
-      const hasCache = loadFromCache(true);
-      if (!hasCache) {
-        console.log('[useLocations] OFFLINE: No cached data available');
-        setLocations([]);
-      }
+      const cached = getFromCache<LocationState[]>(LOCATIONS_CACHE_KEY);
+      // Use startTransition to mark cached data updates as lower priority than animations
+      startTransition(() => {
+        if (cached?.data) {
+          console.log('[useLocations] OFFLINE: Found cached locations:', cached.data.length);
+          setLocations(cached.data);
+        } else {
+          console.log('[useLocations] OFFLINE: No cached data available');
+          setLocations([]);
+        }
+      });
       setLoading(false);
       return;
     }

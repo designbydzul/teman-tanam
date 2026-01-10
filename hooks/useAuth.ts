@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, startTransition } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase, auth } from '@/lib/supabase';
 import { createDebugger } from '@/lib/debug';
@@ -48,7 +48,10 @@ export function useAuth(): UseAuthReturn {
       // Keep existing state if we have it, otherwise assume completed to allow offline usage
       if (!hasFetchedProfile.current) {
         // First time and offline - assume completed so user can use app offline
-        setHasCompletedOnboarding(true);
+        // Use startTransition to mark cached data updates as lower priority than animations
+        startTransition(() => {
+          setHasCompletedOnboarding(true);
+        });
         hasFetchedProfile.current = true;
       }
       return hasCompletedOnboarding;
@@ -107,7 +110,10 @@ export function useAuth(): UseAuthReturn {
       if (!navigator.onLine) {
         debug.log('Network error while offline - using cached state');
         if (!hasFetchedProfile.current) {
-          setHasCompletedOnboarding(true);
+          // Use startTransition to mark cached data updates as lower priority than animations
+          startTransition(() => {
+            setHasCompletedOnboarding(true);
+          });
           hasFetchedProfile.current = true;
         }
         return hasCompletedOnboarding;

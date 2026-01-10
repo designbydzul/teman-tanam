@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, startTransition } from 'react';
 import { differenceInDays, isToday, startOfDay } from 'date-fns';
 import { supabase } from '@/lib/supabase/client';
 import { useAuth } from './useAuth';
@@ -272,15 +272,18 @@ export function usePlants(): UsePlantsReturn {
         debug.log('OFFLINE: Loading from cache');
         const cached = getFromCache<Plant[]>(CACHE_KEYS.PLANTS);
 
-        if (cached?.data) {
-          debug.log('OFFLINE: Found cached plants:', cached.data.length);
-          setPlants(cached.data);
-          setError(null);
-        } else {
-          debug.log('OFFLINE: No cached data available');
-          setPlants([]);
-          setError('Tidak ada data tersimpan. Hubungkan ke internet untuk memuat tanaman.');
-        }
+        // Use startTransition to mark cached data updates as lower priority than animations
+        startTransition(() => {
+          if (cached?.data) {
+            debug.log('OFFLINE: Found cached plants:', cached.data.length);
+            setPlants(cached.data);
+            setError(null);
+          } else {
+            debug.log('OFFLINE: No cached data available');
+            setPlants([]);
+            setError('Tidak ada data tersimpan. Hubungkan ke internet untuk memuat tanaman.');
+          }
+        });
         setLoading(false);
         return;
       }

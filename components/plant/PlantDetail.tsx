@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, startTransition } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { differenceInDays, isToday, startOfDay } from 'date-fns';
@@ -439,12 +439,15 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
     if (!navigator.onLine) {
       console.log('[PlantDetail] Offline, loading actions from cache');
       const cached = getFromCache<ActionHistory[]>(cacheKey);
-      if (cached?.data) {
-        console.log('[PlantDetail] Found cached actions:', cached.data.length);
-        setActionsHistory(cached.data);
-      } else {
-        console.log('[PlantDetail] No cached actions found');
-      }
+      // Use startTransition to mark cached data updates as lower priority than animations
+      startTransition(() => {
+        if (cached?.data) {
+          console.log('[PlantDetail] Found cached actions:', cached.data.length);
+          setActionsHistory(cached.data);
+        } else {
+          console.log('[PlantDetail] No cached actions found');
+        }
+      });
       return;
     }
 
@@ -460,10 +463,13 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
         console.error('[PlantDetail] Error fetching actions:', error);
         // Try to load from cache on error
         const cached = getFromCache<ActionHistory[]>(cacheKey);
-        if (cached?.data) {
-          console.log('[PlantDetail] Using cached actions as fallback');
-          setActionsHistory(cached.data);
-        }
+        // Use startTransition to mark cached data updates as lower priority than animations
+        startTransition(() => {
+          if (cached?.data) {
+            console.log('[PlantDetail] Using cached actions as fallback');
+            setActionsHistory(cached.data);
+          }
+        });
         return;
       }
 
@@ -478,14 +484,17 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
     } catch (err) {
       // Try to load from cache on network errors
       const cached = getFromCache<ActionHistory[]>(cacheKey);
-      if (cached?.data) {
-        console.log('[PlantDetail] Network error, using cached actions');
-        setActionsHistory(cached.data);
-      } else if (!navigator.onLine) {
-        console.log('[PlantDetail] Network error while offline, no cache available');
-      } else {
-        console.error('[PlantDetail] Error:', err);
-      }
+      // Use startTransition to mark cached data updates as lower priority than animations
+      startTransition(() => {
+        if (cached?.data) {
+          console.log('[PlantDetail] Network error, using cached actions');
+          setActionsHistory(cached.data);
+        } else if (!navigator.onLine) {
+          console.log('[PlantDetail] Network error while offline, no cache available');
+        } else {
+          console.error('[PlantDetail] Error:', err);
+        }
+      });
     } finally {
       setActionsLoading(false);
     }

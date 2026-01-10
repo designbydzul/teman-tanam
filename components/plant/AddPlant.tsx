@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, startTransition } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, MagnifyingGlass, X } from '@phosphor-icons/react';
 import { supabase } from '@/lib/supabase';
@@ -94,11 +94,14 @@ const AddPlant: React.FC<AddPlantProps> = ({ onClose, onSelectSpecies }) => {
       if (!navigator.onLine) {
         debug.log('Offline - loading species from cache');
         const cached = loadFromCache();
-        if (cached && cached.length > 0) {
-          setSpeciesList(cached);
-          debug.log(`Loaded ${cached.length} species from cache`);
-        }
-        setIsOffline(true);
+        // Use startTransition to mark cached data updates as lower priority than animations
+        startTransition(() => {
+          if (cached && cached.length > 0) {
+            setSpeciesList(cached);
+            debug.log(`Loaded ${cached.length} species from cache`);
+          }
+          setIsOffline(true);
+        });
         setLoading(false);
         return;
       }
@@ -136,13 +139,16 @@ const AddPlant: React.FC<AddPlantProps> = ({ onClose, onSelectSpecies }) => {
 
         // Try to load from cache when offline/error
         const cached = loadFromCache();
-        if (cached && cached.length > 0) {
-          setSpeciesList(cached);
-          setIsOffline(true);
-          debug.log('Using cached species (offline mode)');
-        } else {
-          setIsOffline(true);
-        }
+        // Use startTransition to mark cached data updates as lower priority than animations
+        startTransition(() => {
+          if (cached && cached.length > 0) {
+            setSpeciesList(cached);
+            setIsOffline(true);
+            debug.log('Using cached species (offline mode)');
+          } else {
+            setIsOffline(true);
+          }
+        });
       } finally {
         setLoading(false);
       }
