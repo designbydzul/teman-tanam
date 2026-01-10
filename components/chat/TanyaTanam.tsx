@@ -134,6 +134,7 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
   const [careHistory, setCareHistory] = useState<CareHistoryItem[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [bottomOffset, setBottomOffset] = useState(16); // Default for desktop
 
   // Constants for image handling
   const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -298,6 +299,34 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
     return () => {
       document.body.style.cssText = originalStyle;
     };
+  }, []);
+
+  // Detect platform and set appropriate bottom offset for input
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const ua = navigator.userAgent.toLowerCase();
+    const isIOS = /iphone|ipad|ipod/.test(ua);
+    const isAndroid = /android/.test(ua);
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
+    const isMobile = isIOS || isAndroid || window.innerWidth < 768;
+
+    if (isStandalone) {
+      // PWA mode: Use safe area inset (handled via CSS env())
+      setBottomOffset(16);
+    } else if (isIOS) {
+      // iOS Safari/Chrome: Need space for browser toolbar
+      // Chrome iOS has taller toolbar (~70px) than Safari (~50px)
+      const isChrome = /crios/.test(ua);
+      setBottomOffset(isChrome ? 80 : 70);
+    } else if (isMobile) {
+      // Other mobile browsers: moderate offset
+      setBottomOffset(60);
+    } else {
+      // Desktop: simple 16px from bottom
+      setBottomOffset(16);
+    }
   }, []);
 
   // Detect keyboard and adjust input position to stick to visible viewport bottom
@@ -649,9 +678,9 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
             overflowY: 'auto',
             overflowX: 'hidden',
             padding: '16px 24px',
-            // Extra padding for floating input card: input card (~60px) + bottom margin (80px min) + extra buffer
-            // Using max() to ensure enough space above iOS browser toolbars
-            paddingBottom: 'max(160px, calc(100px + env(safe-area-inset-bottom, 0px)))',
+            // Extra padding for floating input card: input card (~60px) + platform-specific bottomOffset + buffer
+            // bottomOffset varies: desktop=16px, iOS Safari=70px, iOS Chrome=80px
+            paddingBottom: `calc(${bottomOffset + 80}px + env(safe-area-inset-bottom, 0px))`,
             display: 'flex',
             flexDirection: 'column',
             WebkitOverflowScrolling: 'touch',
@@ -932,11 +961,11 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
         style={{
           position: 'fixed',
           // When keyboard is open, position just above keyboard
-          // When keyboard is closed: use max() to handle both browser toolbar (~60px) and safe area
-          // This ensures input is above iOS browser toolbars (Safari/Chrome ~50-60px)
+          // When keyboard is closed: use platform-specific bottomOffset + safe area
+          // bottomOffset is set based on platform detection (desktop=16px, iOS Safari=70px, iOS Chrome=80px)
           bottom: keyboardHeight > 0
             ? `${keyboardHeight + 8}px`
-            : 'max(80px, calc(16px + env(safe-area-inset-bottom, 0px)))',
+            : `calc(${bottomOffset}px + env(safe-area-inset-bottom, 0px))`,
           left: '50%',
           transform: 'translateX(-50%)',
           width: 'calc(100% - 32px)', // 16px margin on each side
