@@ -106,6 +106,79 @@ interface PlantData {
 // Helper to get chat storage key for a plant
 const getChatStorageKey = (plantId: string): string => `tanyaTanam_chat_${plantId}`;
 
+// Indonesian day names
+const HARI_INDONESIA = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+const BULAN_INDONESIA = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
+// Format date for date divider (Indonesian)
+const formatDateDivider = (date: Date): string => {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const messageDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+  // Today
+  if (messageDate.getTime() === today.getTime()) {
+    return 'Hari Ini';
+  }
+
+  // Yesterday
+  if (messageDate.getTime() === yesterday.getTime()) {
+    return 'Kemarin';
+  }
+
+  // Within last 7 days - show day name
+  const diffDays = Math.floor((today.getTime() - messageDate.getTime()) / (1000 * 60 * 60 * 24));
+  if (diffDays < 7) {
+    return HARI_INDONESIA[date.getDay()];
+  }
+
+  // Older - show full date
+  return `${date.getDate()} ${BULAN_INDONESIA[date.getMonth()]} ${date.getFullYear()}`;
+};
+
+// Format time for message timestamp (24-hour format)
+const formatMessageTime = (date: Date): string => {
+  const hours = date.getHours().toString().padStart(2, '0');
+  const minutes = date.getMinutes().toString().padStart(2, '0');
+  return `${hours}:${minutes}`;
+};
+
+// Check if two dates are on the same day
+const isSameDay = (date1: Date, date2: Date): boolean => {
+  return date1.getFullYear() === date2.getFullYear() &&
+    date1.getMonth() === date2.getMonth() &&
+    date1.getDate() === date2.getDate();
+};
+
+// Date divider component
+const DateDivider: React.FC<{ date: Date }> = ({ date }) => (
+  <div
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      margin: '16px 0',
+      gap: '12px',
+    }}
+  >
+    <div style={{ flex: 1, height: '1px', backgroundColor: '#E0E0E0' }} />
+    <span
+      style={{
+        fontFamily: "'Inter', sans-serif",
+        fontSize: '12px',
+        color: '#9E9E9E',
+        fontWeight: 500,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {formatDateDivider(date)}
+    </span>
+    <div style={{ flex: 1, height: '1px', backgroundColor: '#E0E0E0' }} />
+  </div>
+);
+
 interface TanyaTanamProps {
   plant: Plant | null;
   plants?: Plant[];
@@ -811,112 +884,137 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
         )}
 
         {/* Messages */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {messages.map((message) => (
-            <motion.div
-              key={message.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: message.role === 'user' ? 'flex-end' : 'flex-start',
-                gap: '8px',
-              }}
-            >
-              {/* Attached Images - Outside bubble */}
-              {message.images && message.images.length > 0 && (
-                <div
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {messages.map((message, index) => {
+            // Check if we need to show a date divider before this message
+            const showDateDivider = index === 0 ||
+              !isSameDay(new Date(messages[index - 1].timestamp), new Date(message.timestamp));
+
+            return (
+              <React.Fragment key={message.id}>
+                {/* Date Divider */}
+                {showDateDivider && <DateDivider date={new Date(message.timestamp)} />}
+
+                {/* Message */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
                   style={{
                     display: 'flex',
-                    gap: '8px',
-                    flexWrap: 'wrap',
-                    justifyContent: message.role === 'user' ? 'flex-end' : 'flex-start',
+                    flexDirection: 'column',
+                    alignItems: message.role === 'user' ? 'flex-end' : 'flex-start',
+                    gap: '4px',
                   }}
                 >
-                  {message.images.map((img, idx) => (
-                    <img
-                      key={idx}
-                      src={img}
-                      alt={`Attachment ${idx + 1}`}
-                      onClick={() => setFullscreenImage(img)}
-                      style={{
-                        width: '120px',
-                        height: '120px',
-                        borderRadius: '12px',
-                        objectFit: 'cover',
-                        backgroundColor: '#F5F5F5',
-                        cursor: 'pointer',
-                      }}
-                    />
-                  ))}
-                </div>
-              )}
-
-              {/* Message Content - In bubble */}
-              {message.content && (
-                <div
-                  style={{
-                    maxWidth: '80%',
-                    padding: '12px 16px',
-                    backgroundColor: message.role === 'user' ? '#FFF9E6' : 'transparent',
-                    borderRadius: '16px',
-                    border: message.role === 'user' ? '1px solid #F5F0D0' : 'none',
-                  }}
-                >
-                  {message.role === 'user' ? (
-                    <p
-                      style={{
-                        fontFamily: "'Inter', sans-serif",
-                        fontSize: '14px',
-                        lineHeight: 1.6,
-                        color: '#2C2C2C',
-                        margin: 0,
-                        whiteSpace: 'pre-wrap',
-                      }}
-                    >
-                      {message.content}
-                    </p>
-                  ) : (
+                  {/* Attached Images - Outside bubble */}
+                  {message.images && message.images.length > 0 && (
                     <div
-                      className="markdown-content"
                       style={{
-                        fontFamily: "'Inter', sans-serif",
-                        fontSize: '14px',
-                        lineHeight: 1.6,
-                        color: '#2C2C2C',
+                        display: 'flex',
+                        gap: '8px',
+                        flexWrap: 'wrap',
+                        justifyContent: message.role === 'user' ? 'flex-end' : 'flex-start',
                       }}
                     >
-                      <ReactMarkdown
-                        components={{
-                          p: ({ children }) => (
-                            <p style={{ margin: '0 0 12px 0' }}>{children}</p>
-                          ),
-                          strong: ({ children }) => (
-                            <strong style={{ fontWeight: 600 }}>{children}</strong>
-                          ),
-                          em: ({ children }) => (
-                            <em style={{ fontStyle: 'italic' }}>{children}</em>
-                          ),
-                          ul: ({ children }) => (
-                            <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>{children}</ul>
-                          ),
-                          ol: ({ children }) => (
-                            <ol style={{ margin: '8px 0', paddingLeft: '20px' }}>{children}</ol>
-                          ),
-                          li: ({ children }) => (
-                            <li style={{ marginBottom: '4px' }}>{children}</li>
-                          ),
-                        }}
-                      >
-                        {message.content}
-                      </ReactMarkdown>
+                      {message.images.map((img, idx) => (
+                        <img
+                          key={idx}
+                          src={img}
+                          alt={`Attachment ${idx + 1}`}
+                          onClick={() => setFullscreenImage(img)}
+                          style={{
+                            width: '120px',
+                            height: '120px',
+                            borderRadius: '12px',
+                            objectFit: 'cover',
+                            backgroundColor: '#F5F5F5',
+                            cursor: 'pointer',
+                          }}
+                        />
+                      ))}
                     </div>
                   )}
-                </div>
-              )}
-            </motion.div>
-          ))}
+
+                  {/* Message Content - In bubble */}
+                  {message.content && (
+                    <div
+                      style={{
+                        maxWidth: '80%',
+                        padding: '12px 16px',
+                        backgroundColor: message.role === 'user' ? '#FFF9E6' : 'transparent',
+                        borderRadius: '16px',
+                        border: message.role === 'user' ? '1px solid #F5F0D0' : 'none',
+                      }}
+                    >
+                      {message.role === 'user' ? (
+                        <p
+                          style={{
+                            fontFamily: "'Inter', sans-serif",
+                            fontSize: '14px',
+                            lineHeight: 1.6,
+                            color: '#2C2C2C',
+                            margin: 0,
+                            whiteSpace: 'pre-wrap',
+                          }}
+                        >
+                          {message.content}
+                        </p>
+                      ) : (
+                        <div
+                          className="markdown-content"
+                          style={{
+                            fontFamily: "'Inter', sans-serif",
+                            fontSize: '14px',
+                            lineHeight: 1.6,
+                            color: '#2C2C2C',
+                          }}
+                        >
+                          <ReactMarkdown
+                            components={{
+                              p: ({ children }) => (
+                                <p style={{ margin: '0 0 12px 0' }}>{children}</p>
+                              ),
+                              strong: ({ children }) => (
+                                <strong style={{ fontWeight: 600 }}>{children}</strong>
+                              ),
+                              em: ({ children }) => (
+                                <em style={{ fontStyle: 'italic' }}>{children}</em>
+                              ),
+                              ul: ({ children }) => (
+                                <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>{children}</ul>
+                              ),
+                              ol: ({ children }) => (
+                                <ol style={{ margin: '8px 0', paddingLeft: '20px' }}>{children}</ol>
+                              ),
+                              li: ({ children }) => (
+                                <li style={{ marginBottom: '4px' }}>{children}</li>
+                              ),
+                            }}
+                          >
+                            {message.content}
+                          </ReactMarkdown>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Timestamp */}
+                  <span
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: '11px',
+                      color: '#9E9E9E',
+                      marginTop: '2px',
+                      paddingLeft: message.role === 'assistant' ? '4px' : '0',
+                      paddingRight: message.role === 'user' ? '4px' : '0',
+                    }}
+                  >
+                    {formatMessageTime(new Date(message.timestamp))}
+                  </span>
+                </motion.div>
+              </React.Fragment>
+            );
+          })}
 
           {/* Typing Indicator */}
           <AnimatePresence>
