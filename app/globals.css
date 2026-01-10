@@ -156,3 +156,13 @@ input:-webkit-autofill:active {
 }
 
 /* Chat input area - simplified, bottom handled via inline styles */
+
+/* Markdown content styling for chat */
+.markdown-content p:last-child {
+  margin-bottom: 0 !important;
+}
+
+.markdown-content ul:last-child,
+.markdown-content ol:last-child {
+  margin-bottom: 0 !important;
+}

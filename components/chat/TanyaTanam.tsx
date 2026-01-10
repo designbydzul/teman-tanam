@@ -19,6 +19,7 @@ import useOnlineStatus from '@/hooks/useOnlineStatus';
 import { OfflineModal } from '@/components/modals';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
+import ReactMarkdown from 'react-markdown';
 
 interface PlantSpecies {
   id?: string;
@@ -863,18 +864,55 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
                     border: message.role === 'user' ? '1px solid #F5F0D0' : 'none',
                   }}
                 >
-                  <p
-                    style={{
-                      fontFamily: "'Inter', sans-serif",
-                      fontSize: '14px',
-                      lineHeight: 1.6,
-                      color: '#2C2C2C',
-                      margin: 0,
-                      whiteSpace: 'pre-wrap',
-                    }}
-                  >
-                    {message.content}
-                  </p>
+                  {message.role === 'user' ? (
+                    <p
+                      style={{
+                        fontFamily: "'Inter', sans-serif",
+                        fontSize: '14px',
+                        lineHeight: 1.6,
+                        color: '#2C2C2C',
+                        margin: 0,
+                        whiteSpace: 'pre-wrap',
+                      }}
+                    >
+                      {message.content}
+                    </p>
+                  ) : (
+                    <div
+                      className="markdown-content"
+                      style={{
+                        fontFamily: "'Inter', sans-serif",
+                        fontSize: '14px',
+                        lineHeight: 1.6,
+                        color: '#2C2C2C',
+                      }}
+                    >
+                      <ReactMarkdown
+                        components={{
+                          p: ({ children }) => (
+                            <p style={{ margin: '0 0 12px 0' }}>{children}</p>
+                          ),
+                          strong: ({ children }) => (
+                            <strong style={{ fontWeight: 600 }}>{children}</strong>
+                          ),
+                          em: ({ children }) => (
+                            <em style={{ fontStyle: 'italic' }}>{children}</em>
+                          ),
+                          ul: ({ children }) => (
+                            <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>{children}</ul>
+                          ),
+                          ol: ({ children }) => (
+                            <ol style={{ margin: '8px 0', paddingLeft: '20px' }}>{children}</ol>
+                          ),
+                          li: ({ children }) => (
+                            <li style={{ marginBottom: '4px' }}>{children}</li>
+                          ),
+                        }}
+                      >
+                        {message.content}
+                      </ReactMarkdown>
+                    </div>
+                  )}
                 </div>
               )}
             </motion.div>
