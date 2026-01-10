@@ -145,6 +145,15 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
     }
   }, [profile?.show_statistics]);
 
+  // Helper to safely get timestamp from date (handles both Date objects and strings from cache)
+  const getTimestamp = (date: Date | string | null | undefined): number | null => {
+    if (!date) return null;
+    if (date instanceof Date) return date.getTime();
+    // Handle string dates from cache
+    const parsed = new Date(date);
+    return isNaN(parsed.getTime()) ? null : parsed.getTime();
+  };
+
   // Sync selectedPlant with plants array when plants update (e.g., after recording an action)
   useEffect(() => {
     if (selectedPlant && plants.length > 0) {
@@ -152,8 +161,8 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
       if (updatedPlant) {
         // Only update if there are actual changes to avoid unnecessary re-renders
         const hasChanges =
-          updatedPlant.lastWatered?.getTime() !== selectedPlant.lastWatered?.getTime() ||
-          updatedPlant.lastFertilized?.getTime() !== selectedPlant.lastFertilized?.getTime() ||
+          getTimestamp(updatedPlant.lastWatered) !== getTimestamp(selectedPlant.lastWatered) ||
+          getTimestamp(updatedPlant.lastFertilized) !== getTimestamp(selectedPlant.lastFertilized) ||
           updatedPlant.wateringStatus?.status !== selectedPlant.wateringStatus?.status ||
           updatedPlant.fertilizingStatus?.status !== selectedPlant.fertilizingStatus?.status;
 

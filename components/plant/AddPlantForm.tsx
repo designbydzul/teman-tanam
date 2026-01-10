@@ -4,6 +4,7 @@ import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Camera, DiceFive } from '@phosphor-icons/react';
 import { LocationSettings } from '@/components/modals';
+import { GlobalOfflineBanner } from '@/components/shared';
 import { compressImage } from '@/lib/imageUtils';
 import { useLocations } from '@/hooks/useLocations';
 import { generatePlantName } from '@/lib/plantNameGenerator';

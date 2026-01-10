@@ -4,6 +4,7 @@ import React, { useState, useRef } from 'react';
 import { ArrowLeft, UploadSimple, CircleNotch } from '@phosphor-icons/react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
+import { GlobalOfflineBanner } from '@/components/shared';
 import { createDebugger } from '@/lib/debug';
 
 const debug = createDebugger('EditProfile');
@@ -272,6 +273,8 @@ const EditProfile: React.FC<EditProfileProps> = ({
         flexDirection: 'column',
       }}
     >
+      {/* Global Offline Banner */}
+      <GlobalOfflineBanner />
       {/* Spin animation styles */}
       <style>{spinStyle}</style>
 

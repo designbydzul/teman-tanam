@@ -28,8 +28,11 @@ import {
 import { TanyaTanam } from '@/components/chat';
 import { EditPlant } from '@/components/plant';
 import { OfflineModal } from '@/components/modals';
+import { GlobalOfflineBanner } from '@/components/shared';
 import useOnlineStatus from '@/hooks/useOnlineStatus';
 import { supabase } from '@/lib/supabase/client';
+import { saveToCache, getFromCache } from '@/lib/offlineStorage';
+import { CACHE_KEYS } from '@/lib/constants';
 
 // TypeScript Interfaces
 interface PlantSpecies {
@@ -409,9 +412,14 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
   const daysSinceWatered = wateringStatus.daysSinceLast;
   const daysSinceFertilized = fertilizingStatus.daysSinceLast;
 
-  // Fetch actions history from Supabase
+  // Helper to get cache key for plant actions
+  const getActionsCacheKey = (plantId: string | number) => `${CACHE_KEYS.ACTIONS}_${plantId}`;
+
+  // Fetch actions history from Supabase (with offline cache support)
   const fetchActionsHistory = useCallback(async () => {
     if (!plantData?.id) return;
+
+    const cacheKey = getActionsCacheKey(plantData.id);
 
     // Skip fetching from Supabase for offline/temp plants
     if (typeof plantData.id === 'string' && plantData.id.startsWith('temp-')) {
@@ -427,9 +435,16 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
       return;
     }
 
-    // Skip fetching if offline
+    // Load from cache when offline
     if (!navigator.onLine) {
-      console.log('[PlantDetail] Offline, skipping fetch');
+      console.log('[PlantDetail] Offline, loading actions from cache');
+      const cached = getFromCache<ActionHistory[]>(cacheKey);
+      if (cached?.data) {
+        console.log('[PlantDetail] Found cached actions:', cached.data.length);
+        setActionsHistory(cached.data);
+      } else {
+        console.log('[PlantDetail] No cached actions found');
+      }
       return;
     }
 
@@ -443,18 +458,34 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
 
       if (error) {
         console.error('[PlantDetail] Error fetching actions:', error);
+        // Try to load from cache on error
+        const cached = getFromCache<ActionHistory[]>(cacheKey);
+        if (cached?.data) {
+          console.log('[PlantDetail] Using cached actions as fallback');
+          setActionsHistory(cached.data);
+        }
         return;
       }
 
       console.log('[PlantDetail] Fetched actions:', data);
       setActionsHistory(data || []);
-    } catch (err) {
-      // Silently handle network errors when offline
-      if (!navigator.onLine) {
-        console.log('[PlantDetail] Network error while offline, ignoring');
-        return;
+
+      // Save to cache for offline use
+      if (data && data.length > 0) {
+        saveToCache(cacheKey, data);
+        console.log('[PlantDetail] Saved actions to cache');
       }
-      console.error('[PlantDetail] Error:', err);
+    } catch (err) {
+      // Try to load from cache on network errors
+      const cached = getFromCache<ActionHistory[]>(cacheKey);
+      if (cached?.data) {
+        console.log('[PlantDetail] Network error, using cached actions');
+        setActionsHistory(cached.data);
+      } else if (!navigator.onLine) {
+        console.log('[PlantDetail] Network error while offline, no cache available');
+      } else {
+        console.error('[PlantDetail] Error:', err);
+      }
     } finally {
       setActionsLoading(false);
     }
@@ -1008,6 +1039,9 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
         flexDirection: 'column',
       }}
     >
+      {/* Global Offline Banner */}
+      <GlobalOfflineBanner />
+
       {/* Sticky Header Section */}
       <div style={{ position: 'relative', zIndex: 10, backgroundColor: '#FFFFFF', flexShrink: 0 }}>
         {/* Header with Navigation - Back, Image Center, Settings */}

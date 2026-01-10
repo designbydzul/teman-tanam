@@ -27,11 +27,11 @@ import {
   DotsSixVertical,
   Trash,
   Plus,
-  WifiSlash,
   MapPin,
   X,
 } from '@phosphor-icons/react';
 import { useLocations } from '@/hooks/useLocations';
+import { GlobalOfflineBanner } from '@/components/shared';
 
 interface Location {
   id: string;
@@ -393,6 +393,9 @@ const LocationSettings: React.FC<LocationSettingsProps> = ({
         touchAction: 'pan-y',
       }}
     >
+      {/* Global Offline Banner */}
+      <GlobalOfflineBanner />
+
       {/* Header */}
       <div
         style={{
@@ -444,32 +447,6 @@ const LocationSettings: React.FC<LocationSettingsProps> = ({
 
       {/* Content */}
       <div style={{ padding: '24px', paddingBottom: '100px', minHeight: 'calc(100vh - 100px)' }}>
-        {/* Offline Banner */}
-        {!isOnline && (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '12px 16px',
-              backgroundColor: '#FEF3C7',
-              borderRadius: '8px',
-              marginBottom: '16px',
-            }}
-          >
-            <WifiSlash size={20} weight="bold" color="#D97706" />
-            <span
-              style={{
-                fontFamily: "'Inter', sans-serif",
-                fontSize: '14px',
-                color: '#92400E',
-              }}
-            >
-              Mode offline - perubahan akan disinkronkan saat online
-            </span>
-          </div>
-        )}
-
         {/* Loading State */}
         {loading && (
           <div style={{ textAlign: 'center', padding: '40px' }}>

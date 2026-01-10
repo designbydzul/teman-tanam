@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Splash, ErrorBoundary } from '@/components/shared';
+import { Splash, ErrorBoundary, GlobalOfflineBanner } from '@/components/shared';
 import { AuthScreen, ForgotPassword, Onboarding } from '@/components/auth';
 import { Home } from '@/components/Home';
 import { useAuth } from '@/hooks/useAuth';
@@ -105,24 +105,27 @@ export default function Page() {
   // Show forgot password screen - keep showing even if authenticated (during password reset flow)
   if (authScreen === 'forgot-password' || isResettingPassword) {
     return (
-      <ErrorBoundary>
-        <ForgotPassword
-          initialEmail={forgotPasswordEmail}
-          onNavigate={(screen: string) => {
-            setAuthScreen(screen as 'login' | 'forgot-password');
-            setIsResettingPassword(false);
-            if (screen === 'login') {
+      <>
+        <GlobalOfflineBanner />
+        <ErrorBoundary>
+          <ForgotPassword
+            initialEmail={forgotPasswordEmail}
+            onNavigate={(screen: string) => {
+              setAuthScreen(screen as 'login' | 'forgot-password');
+              setIsResettingPassword(false);
+              if (screen === 'login') {
+                setForgotPasswordEmail('');
+              }
+            }}
+            onStartReset={() => setIsResettingPassword(true)}
+            onResetComplete={() => {
+              setIsResettingPassword(false);
+              setAuthScreen('login');
               setForgotPasswordEmail('');
-            }
-          }}
-          onStartReset={() => setIsResettingPassword(true)}
-          onResetComplete={() => {
-            setIsResettingPassword(false);
-            setAuthScreen('login');
-            setForgotPasswordEmail('');
-          }}
-        />
-      </ErrorBoundary>
+            }}
+          />
+        </ErrorBoundary>
+      </>
     );
   }
 
@@ -130,17 +133,20 @@ export default function Page() {
   if (!isAuthenticated) {
     // Show login/signup screen
     return (
-      <ErrorBoundary>
-        <AuthScreen
-          onLogin={handleLogin}
-          onNavigate={(screen: string, email?: string) => {
-            setAuthScreen(screen as 'login' | 'forgot-password');
-            if (screen === 'forgot-password' && email) {
-              setForgotPasswordEmail(email);
-            }
-          }}
-        />
-      </ErrorBoundary>
+      <>
+        <GlobalOfflineBanner />
+        <ErrorBoundary>
+          <AuthScreen
+            onLogin={handleLogin}
+            onNavigate={(screen: string, email?: string) => {
+              setAuthScreen(screen as 'login' | 'forgot-password');
+              if (screen === 'forgot-password' && email) {
+                setForgotPasswordEmail(email);
+              }
+            }}
+          />
+        </ErrorBoundary>
+      </>
     );
   }
 
@@ -148,13 +154,16 @@ export default function Page() {
   // hasCompletedOnboarding is true only when profile has display_name
   if (!hasCompletedOnboarding) {
     return (
-      <ErrorBoundary>
-        <Onboarding onComplete={handleOnboardingComplete} />
-      </ErrorBoundary>
+      <>
+        <GlobalOfflineBanner />
+        <ErrorBoundary>
+          <Onboarding onComplete={handleOnboardingComplete} />
+        </ErrorBoundary>
+      </>
     );
   }
 
-  // Show the Home component
+  // Show the Home component (Home has its own detailed OfflineIndicator)
   return (
     <ErrorBoundary>
       <Home userName={userName || 'Teman'} />

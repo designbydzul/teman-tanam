@@ -49,13 +49,16 @@ const OfflineIndicator: React.FC<OfflineIndicatorProps> = ({
   const getIndicatorConfig = (): IndicatorConfig => {
     // Offline state - more prominent orange/yellow style
     if (!isOnline) {
+      const offlineText = pendingCount > 0
+        ? `Kamu sedang offline · ${pendingCount} aksi tersimpan`
+        : 'Kamu sedang offline';
       return {
         show: true,
         bg: '#FFF3E0', // light orange background
         borderColor: '#FFE0B2',
         textColor: '#E65100', // dark orange text
         icon: <WifiSlash size={18} weight="bold" color="#E65100" />,
-        text: 'Kamu sedang offline',
+        text: offlineText,
         showRetry: false,
       };
     }

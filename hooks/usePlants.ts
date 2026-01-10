@@ -716,6 +716,14 @@ export function usePlants(): UsePlantsReturn {
           saveToCache(CACHE_KEYS.PLANTS, updatedCache);
         }
 
+        // Also cache the action for Riwayat tab offline viewing
+        const actionsCacheKey = `${CACHE_KEYS.ACTIONS}_${plantId}`;
+        const cachedActions = getFromCache<Record<string, unknown>[]>(actionsCacheKey);
+        const existingActions = cachedActions?.data || [];
+        // Add new action at the beginning (most recent first)
+        saveToCache(actionsCacheKey, [actionData, ...existingActions]);
+        debug.log('OFFLINE: Cached action for plant', plantId);
+
         setPendingCount(getSyncQueueCount());
         return { success: true, action: actionData, offline: true };
       } catch (err) {

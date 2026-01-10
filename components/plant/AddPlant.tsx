@@ -4,6 +4,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, MagnifyingGlass, X } from '@phosphor-icons/react';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/hooks/useAuth';
+import { GlobalOfflineBanner } from '@/components/shared';
 import { SPECIES_EMOJI_MAP } from '@/lib/constants';
 import { createDebugger } from '@/lib/debug';
 
@@ -33,19 +35,71 @@ const CATEGORIES = [
   { id: 'Tanaman Hias', label: 'Tanaman Hias' },
 ];
 
+const SPECIES_CACHE_KEY = 'teman-tanam-species-cache';
+
 const AddPlant: React.FC<AddPlantProps> = ({ onClose, onSelectSpecies }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [speciesList, setSpeciesList] = useState<AddPlantSpecies[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isOffline, setIsOffline] = useState(false);
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
+  const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
   const [selectedCategory, setSelectedCategory] = useState('semua');
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Plant request feature
+  const { user } = useAuth();
+  const [requestedPlants, setRequestedPlants] = useState<Set<string>>(new Set());
+  const [isRequesting, setIsRequesting] = useState(false);
+  const [showToastState, setShowToastState] = useState(false);
+  const [toastContent, setToastContent] = useState<{ title: string; message: string }>({ title: '', message: '' });
+  const toastTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Load species from cache
+  const loadFromCache = (): AddPlantSpecies[] | null => {
+    try {
+      const cached = localStorage.getItem(SPECIES_CACHE_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        debug.log('Loaded species from cache:', parsed.length);
+        return parsed;
+      }
+    } catch (err) {
+      debug.error('Error loading cache:', err);
+    }
+    return null;
+  };
+
+  // Save species to cache
+  const saveToCache = (species: AddPlantSpecies[]) => {
+    try {
+      localStorage.setItem(SPECIES_CACHE_KEY, JSON.stringify(species));
+      debug.log('Saved species to cache:', species.length);
+    } catch (err) {
+      debug.error('Error saving cache:', err);
+    }
+  };
 
   // Fetch species from Supabase on mount
   useEffect(() => {
     const fetchSpecies = async () => {
       setLoading(true);
+      setIsOffline(false);
+
+      // Check if offline first - load from cache immediately
+      if (!navigator.onLine) {
+        debug.log('Offline - loading species from cache');
+        const cached = loadFromCache();
+        if (cached && cached.length > 0) {
+          setSpeciesList(cached);
+          debug.log(`Loaded ${cached.length} species from cache`);
+        }
+        setIsOffline(true);
+        setLoading(false);
+        return;
+      }
+
       try {
         const { data, error } = await supabase
           .from('plant_species')
@@ -53,8 +107,7 @@ const AddPlant: React.FC<AddPlantProps> = ({ onClose, onSelectSpecies }) => {
           .order('common_name', { ascending: true });
 
         if (error) {
-          debug.error('Error fetching species:', error);
-          return;
+          throw error;
         }
 
         // Transform to component format
@@ -69,8 +122,24 @@ const AddPlant: React.FC<AddPlantProps> = ({ onClose, onSelectSpecies }) => {
 
         debug.log('Fetched species:', transformed.length);
         setSpeciesList(transformed);
+        saveToCache(transformed);
       } catch (err) {
-        debug.error('Error:', err);
+        // Only log as error if not a network issue
+        if (navigator.onLine) {
+          debug.error('Error fetching species:', err);
+        } else {
+          debug.log('Network error while offline');
+        }
+
+        // Try to load from cache when offline/error
+        const cached = loadFromCache();
+        if (cached && cached.length > 0) {
+          setSpeciesList(cached);
+          setIsOffline(true);
+          debug.log('Using cached species (offline mode)');
+        } else {
+          setIsOffline(true);
+        }
       } finally {
         setLoading(false);
       }
@@ -114,6 +183,55 @@ const AddPlant: React.FC<AddPlantProps> = ({ onClose, onSelectSpecies }) => {
     setIsSearchExpanded(false);
   };
 
+  // Toast helper
+  const showToast = (title: string, message: string) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToastContent({ title, message });
+    setShowToastState(true);
+    toastTimerRef.current = setTimeout(() => setShowToastState(false), 3000);
+  };
+
+  // Request plant handler
+  const handleRequestPlant = async () => {
+    if (!user?.id || !searchQuery.trim()) return;
+
+    const normalizedName = searchQuery.trim().toLowerCase();
+
+    if (requestedPlants.has(normalizedName)) {
+      showToast('Sudah direquest', 'Kamu udah request ini sebelumnya');
+      return;
+    }
+
+    setIsRequesting(true);
+
+    try {
+      const { error } = await supabase
+        .from('plant_requests')
+        .insert({
+          user_id: user.id,
+          plant_name: normalizedName,
+        });
+
+      if (error) {
+        if (error.code === '23505') {
+          // Unique constraint violation = already requested
+          setRequestedPlants(prev => new Set([...prev, normalizedName]));
+          showToast('Sudah direquest', 'Kamu udah request ini sebelumnya');
+        } else {
+          throw error;
+        }
+      } else {
+        setRequestedPlants(prev => new Set([...prev, normalizedName]));
+        showToast('Request diterima', 'Makasih! Kami catet ya');
+      }
+    } catch (err) {
+      debug.error('Error requesting plant:', err);
+      showToast('Gagal', 'Gagal mengirim request. Coba lagi ya.');
+    } finally {
+      setIsRequesting(false);
+    }
+  };
+
   return (
     <motion.div
       className="ios-fixed-container"
@@ -125,6 +243,9 @@ const AddPlant: React.FC<AddPlantProps> = ({ onClose, onSelectSpecies }) => {
         zIndex: 1000,
       }}
     >
+      {/* Global Offline Banner */}
+      <GlobalOfflineBanner />
+
       {/* Sticky Header - Same styling as Tanya Tanam */}
       <div
         style={{
@@ -362,21 +483,37 @@ const AddPlant: React.FC<AddPlantProps> = ({ onClose, onSelectSpecies }) => {
                   fontSize: '3rem',
                   marginBottom: '8px',
                   padding: plant.imageUrl && !failedImages.has(plant.id) ? '12px' : 0,
+                  position: 'relative',
+                  overflow: 'hidden',
                 }}
               >
                 {plant.imageUrl && !failedImages.has(plant.id) ? (
-                  <img
-                    src={plant.imageUrl}
-                    alt={plant.name}
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'contain',
-                    }}
-                    onError={() => {
-                      setFailedImages(prev => new Set([...prev, plant.id]));
-                    }}
-                  />
+                  <>
+                    {/* Placeholder emoji while loading */}
+                    {!loadedImages.has(plant.id) && (
+                      <span style={{ position: 'absolute', opacity: 0.5 }}>
+                        {plant.emoji}
+                      </span>
+                    )}
+                    <img
+                      src={plant.imageUrl}
+                      alt={plant.name}
+                      loading="lazy"
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'contain',
+                        opacity: loadedImages.has(plant.id) ? 1 : 0,
+                        transition: 'opacity 0.3s ease-in-out',
+                      }}
+                      onLoad={() => {
+                        setLoadedImages(prev => new Set([...prev, plant.id]));
+                      }}
+                      onError={() => {
+                        setFailedImages(prev => new Set([...prev, plant.id]));
+                      }}
+                    />
+                  </>
                 ) : (
                   plant.emoji
                 )}
@@ -465,7 +602,13 @@ const AddPlant: React.FC<AddPlantProps> = ({ onClose, onSelectSpecies }) => {
                 lineHeight: 1.6,
               }}
             >
-              {searchQuery ? (
+              {isOffline && speciesList.length === 0 ? (
+                <>
+                  Kamu perlu online dulu
+                  <br />
+                  untuk memuat daftar tanaman
+                </>
+              ) : searchQuery ? (
                 <>
                   Tidak ada hasil untuk
                   <br />
@@ -479,10 +622,118 @@ const AddPlant: React.FC<AddPlantProps> = ({ onClose, onSelectSpecies }) => {
                 </>
               )}
             </p>
+
+            {/* Request Plant Button - only show when online or has cached species */}
+            {searchQuery && user && !(isOffline && speciesList.length === 0) && (
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={handleRequestPlant}
+                disabled={isRequesting || requestedPlants.has(searchQuery.toLowerCase())}
+                style={{
+                  marginTop: '20px',
+                  padding: '12px 24px',
+                  border: '1.5px solid #7CB342',
+                  borderRadius: '24px',
+                  backgroundColor: requestedPlants.has(searchQuery.toLowerCase()) ? '#F0F7E6' : 'transparent',
+                  color: '#7CB342',
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '0.875rem',
+                  fontWeight: 500,
+                  cursor: requestedPlants.has(searchQuery.toLowerCase()) ? 'default' : 'pointer',
+                  opacity: isRequesting ? 0.6 : 1,
+                }}
+              >
+                {requestedPlants.has(searchQuery.toLowerCase())
+                  ? 'Sudah direquest ✓'
+                  : 'Request tanaman ini'}
+              </motion.button>
+            )}
+
+            {/* Login prompt for unauthenticated users - only show when online or has cached species */}
+            {searchQuery && !user && !(isOffline && speciesList.length === 0) && (
+              <p
+                style={{
+                  marginTop: '16px',
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '0.875rem',
+                  color: '#999999',
+                }}
+              >
+                Login untuk request tanaman baru
+              </p>
+            )}
           </motion.div>
         )}
         </div>
       </div>
+
+      {/* Toast */}
+      <AnimatePresence>
+        {showToastState && (
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            style={{
+              position: 'fixed',
+              bottom: '24px',
+              left: '24px',
+              right: '24px',
+              backgroundColor: '#FFFFFF',
+              borderRadius: '16px',
+              padding: '16px 20px',
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+              display: 'flex',
+              alignItems: 'flex-start',
+              justifyContent: 'space-between',
+              gap: '12px',
+              zIndex: 10001,
+            }}
+          >
+            <div style={{ flex: 1 }}>
+              <h4
+                style={{
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '1rem',
+                  fontWeight: 600,
+                  color: '#2C2C2C',
+                  margin: '0 0 4px 0',
+                }}
+              >
+                {toastContent.title}
+              </h4>
+              <p
+                style={{
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '14px',
+                  fontWeight: 400,
+                  color: '#757575',
+                  margin: 0,
+                  lineHeight: 1.4,
+                }}
+              >
+                {toastContent.message}
+              </p>
+            </div>
+            <button
+              onClick={() => setShowToastState(false)}
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: '4px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <X size={20} weight="bold" color="#757575" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };

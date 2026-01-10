@@ -42,6 +42,18 @@ export function useAuth(): UseAuthReturn {
 
     currentUserId.current = userId;
 
+    // Check if offline - skip network request and use cached state
+    if (!navigator.onLine) {
+      debug.log('Offline - skipping profile fetch, using cached onboarding state');
+      // Keep existing state if we have it, otherwise assume completed to allow offline usage
+      if (!hasFetchedProfile.current) {
+        // First time and offline - assume completed so user can use app offline
+        setHasCompletedOnboarding(true);
+        hasFetchedProfile.current = true;
+      }
+      return hasCompletedOnboarding;
+    }
+
     try {
       debug.log('Fetching profile for onboarding check...');
 
@@ -91,13 +103,22 @@ export function useAuth(): UseAuthReturn {
       hasFetchedProfile.current = true;
       return completed;
     } catch (err) {
+      // Handle offline/network errors gracefully
+      if (!navigator.onLine) {
+        debug.log('Network error while offline - using cached state');
+        if (!hasFetchedProfile.current) {
+          setHasCompletedOnboarding(true);
+          hasFetchedProfile.current = true;
+        }
+        return hasCompletedOnboarding;
+      }
       debug.error('Profile fetch error:', err);
       setHasCompletedOnboarding(false);
       setProfile(null);
       hasFetchedProfile.current = true;
       return false;
     }
-  }, [hasCompletedOnboarding]);
+  }, []);
 
   // Initialize auth state
   useEffect(() => {

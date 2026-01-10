@@ -105,6 +105,7 @@ export function getSpeciesEmoji(speciesName: string | null | undefined): string 
 export const CACHE_KEYS = {
   PLANTS: 'plants',
   LOCATIONS: 'locations',
+  ACTIONS: 'actions', // Stores actions by plant_id
   TEMP_ID_MAP: 'temp_id_map',
   SYNC_QUEUE: 'syncQueue',
 } as const;
