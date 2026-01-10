@@ -49,6 +49,7 @@ const AddPlant: React.FC<AddPlantProps> = ({ onClose, onSelectSpecies }) => {
   const [selectedCategory, setSelectedCategory] = useState('semua');
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const [isContentReady, setIsContentReady] = useState(false);
 
   // Plant request feature
   const { user } = useAuth();
@@ -150,6 +151,15 @@ const AddPlant: React.FC<AddPlantProps> = ({ onClose, onSelectSpecies }) => {
     fetchSpecies();
   }, []);
 
+  // Mark content as ready once data is loaded (for smooth animation)
+  useEffect(() => {
+    if (!loading) {
+      // Small delay to ensure DOM has updated
+      const timer = setTimeout(() => setIsContentReady(true), 50);
+      return () => clearTimeout(timer);
+    }
+  }, [loading]);
+
   // Focus search input when expanded
   useEffect(() => {
     if (isSearchExpanded && searchInputRef.current) {
@@ -235,15 +245,16 @@ const AddPlant: React.FC<AddPlantProps> = ({ onClose, onSelectSpecies }) => {
   };
 
   // Use instant animations when offline for snappier feel
+  // Also skip animation if content is already ready (from cache)
   const instantTransition = !isOnline;
 
   return (
     <motion.div
       className="ios-fixed-container"
       initial={instantTransition ? false : { opacity: 0 }}
-      animate={{ opacity: 1 }}
+      animate={isContentReady || instantTransition ? { opacity: 1 } : { opacity: 0 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: instantTransition ? 0 : 0.2 }}
+      transition={{ duration: instantTransition ? 0 : 0.15 }}
       style={{
         backgroundColor: '#FFFFFF',
         zIndex: 1000,
