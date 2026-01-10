@@ -86,11 +86,11 @@ const SortableLocationCard: React.FC<SortableLocationCardProps> = ({
           gap: '16px',
           padding: '16px',
           backgroundColor: isDragging ? '#F1F8E9' : '#FFFFFF',
-          border: isDragging ? '2px dashed #7CB342' : 'none',
+          border: isDragging ? '2px dashed #7CB342' : '1px solid #E4E4E7',
           borderRadius: '12px',
           marginBottom: '12px',
-          boxShadow: isDragging ? 'none' : '0 1px 3px rgba(0, 0, 0, 0.08)',
-          transition: 'background-color 0.2s, border 0.2s',
+          boxShadow: isDragging ? 'none' : '0 2px 8px rgba(0, 0, 0, 0.06)',
+          transition: 'background-color 0.2s, border 0.2s, box-shadow 0.2s',
         }}
       >
         {/* Drag Handle */}
@@ -449,7 +449,7 @@ const LocationSettings: React.FC<LocationSettingsProps> = ({
       <div style={{ padding: '24px', paddingBottom: '100px', minHeight: 'calc(100vh - 100px)' }}>
         {/* Loading State - Skeleton Cards */}
         {loading && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
             {[1, 2, 3, 4].map((i) => (
               <div
                 key={`skeleton-${i}`}
@@ -459,8 +459,10 @@ const LocationSettings: React.FC<LocationSettingsProps> = ({
                   gap: '16px',
                   padding: '16px',
                   backgroundColor: '#FFFFFF',
+                  border: '1px solid #E4E4E7',
                   borderRadius: '12px',
-                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)',
+                  marginBottom: '12px',
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
                 }}
               >
                 {/* Drag Handle Skeleton */}
@@ -614,7 +616,7 @@ const LocationSettings: React.FC<LocationSettingsProps> = ({
                     gap: '16px',
                     padding: '16px',
                     backgroundColor: '#FFFFFF',
-                    border: 'none',
+                    border: '1px solid #E4E4E7',
                     borderRadius: '12px',
                     boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
                     opacity: 0.95,
@@ -670,9 +672,9 @@ const LocationSettings: React.FC<LocationSettingsProps> = ({
             onClick={() => setShowAddModal(true)}
             style={{
               width: '100%',
-              padding: '16px',
+              padding: '14px 24px',
               backgroundColor: '#FFFFFF',
-              border: '2px dashed #7CB342',
+              border: '1.5px solid #2D5016',
               borderRadius: '12px',
               display: 'flex',
               alignItems: 'center',
@@ -681,13 +683,13 @@ const LocationSettings: React.FC<LocationSettingsProps> = ({
               cursor: 'pointer',
             }}
           >
-            <Plus size={24} weight="bold" color="#7CB342" />
+            <Plus size={20} weight="bold" color="#2D5016" />
             <span
               style={{
                 fontFamily: "'Inter', sans-serif",
                 fontSize: '1rem',
                 fontWeight: 600,
-                color: '#7CB342',
+                color: '#2D5016',
               }}
             >
               Tambah Lokasi Baru
