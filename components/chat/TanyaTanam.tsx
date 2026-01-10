@@ -1002,79 +1002,67 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
           style={{
             display: 'flex',
             gap: '12px',
-            alignItems: 'flex-end',
+            alignItems: 'center',
           }}
         >
-          {/* Input Container */}
-          <div
+          {/* Camera Button */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/gif,image/webp"
+            multiple
+            onChange={handleAttachImage}
+            style={{ display: 'none' }}
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            aria-label="Lampirkan foto"
             style={{
-              flex: 1,
-              display: 'flex',
-              alignItems: 'flex-end',
-              gap: '12px',
-              padding: '4px 0',
               backgroundColor: 'transparent',
+              border: 'none',
+              padding: '8px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
             }}
           >
-            {/* Attachment Button - accept="image/*" enables both camera and gallery on mobile */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/gif,image/webp"
-              multiple
-              onChange={handleAttachImage}
-              style={{ display: 'none' }}
-            />
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              aria-label="Lampirkan foto"
-              style={{
-                backgroundColor: 'transparent',
-                border: 'none',
-                padding: 0,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-                marginBottom: '2px',
-              }}
-            >
-              <Camera size={24} weight="regular" color="#757575" />
-            </button>
+            <Camera size={24} weight="regular" color="#757575" />
+          </button>
 
-            {/* Text Input - Expandable Textarea */}
-            <textarea
-              ref={inputRef}
-              placeholder="Tulis pertanyaan kamu disini"
-              value={inputText}
-              onChange={(e) => {
-                setInputText(e.target.value);
-                // Auto-resize textarea
-                e.target.style.height = 'auto';
-                e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
-              }}
-              onKeyPress={handleKeyPress}
-              onFocus={() => setInputFocused(true)}
-              onBlur={() => setInputFocused(false)}
-              aria-label="Tulis pertanyaan"
-              rows={1}
-              style={{
-                flex: 1,
-                border: 'none',
-                outline: 'none',
-                fontFamily: "'Inter', sans-serif",
-                fontSize: '14px',
-                lineHeight: '1.4',
-                color: '#2C2C2C',
-                backgroundColor: 'transparent',
-                resize: 'none',
-                overflow: 'hidden',
-                minHeight: '21px',
-                maxHeight: '120px',
-              }}
-            />
-          </div>
+          {/* Text Input - Expandable Textarea */}
+          <textarea
+            ref={inputRef}
+            placeholder="Tulis pertanyaan kamu disini"
+            value={inputText}
+            onChange={(e) => {
+              setInputText(e.target.value);
+              // Auto-resize textarea
+              e.target.style.height = 'auto';
+              e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+            }}
+            onKeyPress={handleKeyPress}
+            onFocus={() => setInputFocused(true)}
+            onBlur={() => setInputFocused(false)}
+            aria-label="Tulis pertanyaan"
+            rows={1}
+            style={{
+              flex: 1,
+              border: 'none',
+              outline: 'none',
+              fontFamily: "'Inter', sans-serif",
+              fontSize: '14px',
+              lineHeight: '1.5',
+              color: '#2C2C2C',
+              backgroundColor: 'transparent',
+              resize: 'none',
+              overflow: 'hidden',
+              minHeight: '24px',
+              maxHeight: '120px',
+              padding: '4px 0',
+            }}
+          />
 
           {/* Send Button */}
           <motion.button
@@ -1083,11 +1071,11 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
             disabled={!hasInput}
             aria-label="Kirim pesan"
             style={{
-              width: '48px',
-              height: '48px',
+              width: '40px',
+              height: '40px',
               borderRadius: '50%',
-              backgroundColor: hasInput ? '#7CB342' : '#FFFFFF',
-              border: hasInput ? 'none' : '1px solid #E0E0E0',
+              backgroundColor: hasInput ? '#7CB342' : '#F5F5F5',
+              border: 'none',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -1096,7 +1084,7 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
             }}
           >
             <PaperPlaneTilt
-              size={24}
+              size={20}
               weight="fill"
               color={hasInput ? '#FFFFFF' : '#CCCCCC'}
             />
