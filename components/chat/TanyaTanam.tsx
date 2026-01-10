@@ -19,6 +19,7 @@ import useOnlineStatus from '@/hooks/useOnlineStatus';
 import { OfflineModal } from '@/components/modals';
 import { GlobalOfflineBanner } from '@/components/shared';
 import { supabase } from '@/lib/supabase';
+import TanyaTanamSkeleton from './TanyaTanamSkeleton';
 import { useAuth } from '@/hooks/useAuth';
 import ReactMarkdown from 'react-markdown';
 
@@ -726,6 +727,14 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
   };
 
   const hasInput = inputText.trim().length > 0 || attachedImages.length > 0;
+
+  // Show skeleton during initial load (loading chat and no messages yet)
+  const showSkeleton = isLoadingChat && messages.length === 0;
+
+  // Return skeleton if still loading initial data
+  if (showSkeleton) {
+    return <TanyaTanamSkeleton />;
+  }
 
   return (
     <>
