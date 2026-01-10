@@ -191,15 +191,15 @@ const AddPlant: React.FC<AddPlantProps> = ({ onClose, onSelectSpecies }) => {
               width: '40px',
               height: '40px',
               borderRadius: '50%',
-              backgroundColor: '#FFFFFF',
-              border: '1px solid #E0E0E0',
+              backgroundColor: isSearchExpanded ? '#F0F7E6' : '#FFFFFF',
+              border: isSearchExpanded ? '1px solid #7CB342' : '1px solid #E0E0E0',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
             }}
           >
-            <MagnifyingGlass size={20} weight="regular" color="#2C2C2C" />
+            <MagnifyingGlass size={20} weight="regular" color={isSearchExpanded ? '#7CB342' : '#2C2C2C'} />
           </motion.button>
         </div>
 
