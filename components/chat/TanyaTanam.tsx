@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft,
   CaretDown,
-  ClockCounterClockwise,
+  MagnifyingGlass,
   Camera,
   PaperPlaneTilt,
   X,
@@ -195,7 +195,8 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingChat, setIsLoadingChat] = useState(false);
   const [inputFocused, setInputFocused] = useState(false);
-  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [isSearchMode, setIsSearchMode] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
   const [imageError, setImageError] = useState<string | null>(null);
   const [careHistory, setCareHistory] = useState<CareHistoryItem[]>([]);
@@ -357,6 +358,14 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
   const chatAreaRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Filter messages based on search query
+  const filteredMessages = searchQuery.trim()
+    ? messages.filter(msg =>
+        msg.content.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : messages;
 
   // Lock body scroll when TanyaTanam is open
   useEffect(() => {
@@ -878,10 +887,36 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
 
         {/* Messages */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {messages.map((message, index) => {
+          {/* Empty search results */}
+          {searchQuery && filteredMessages.length === 0 && (
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '48px 24px',
+                textAlign: 'center',
+              }}
+            >
+              <MagnifyingGlass size={48} weight="light" color="#E0E0E0" />
+              <p
+                style={{
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '14px',
+                  color: '#9E9E9E',
+                  margin: '16px 0 0 0',
+                }}
+              >
+                Tidak ada pesan yang cocok dengan &quot;{searchQuery}&quot;
+              </p>
+            </div>
+          )}
+
+          {filteredMessages.map((message, index) => {
             // Check if we need to show a date divider before this message
             const showDateDivider = index === 0 ||
-              !isSameDay(new Date(messages[index - 1].timestamp), new Date(message.timestamp));
+              !isSameDay(new Date(filteredMessages[index - 1].timestamp), new Date(message.timestamp));
 
             return (
               <React.Fragment key={message.id}>
@@ -1271,190 +1306,165 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
         backfaceVisibility: 'hidden',
         paddingTop: 'env(safe-area-inset-top, 0px)',
       }}>
-        {/* Navigation Row */}
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '24px',
-            position: 'relative',
-          }}
-        >
-          {/* Back Button */}
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            onClick={onBack}
-            aria-label="Kembali"
-            style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '50%',
-              backgroundColor: '#FFFFFF',
-              border: '1px solid #E0E0E0',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-            }}
-          >
-            <ArrowLeft size={20} weight="regular" color="#2C2C2C" />
-          </motion.button>
-
-          {/* Title - Centered */}
-          <h1
-            style={{
-              fontFamily: "'Caveat', cursive",
-              fontSize: '1.75rem',
-              fontWeight: 600,
-              color: '#2D5016',
-              margin: 0,
-              position: 'absolute',
-              left: '50%',
-              transform: 'translateX(-50%)',
-            }}
-          >
-            Tanya Tanam
-          </h1>
-
-          {/* History Button */}
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setShowHistoryModal(true)}
-            aria-label="Riwayat chat"
-            style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '50%',
-              backgroundColor: '#FFFFFF',
-              border: '1px solid #E0E0E0',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-            }}
-          >
-            <ClockCounterClockwise size={20} weight="regular" color="#2C2C2C" />
-          </motion.button>
-        </div>
-      </div>
-
-      {/* History Coming Soon Modal */}
-      <AnimatePresence>
-        {showHistoryModal && (
-          <>
-            {/* Backdrop */}
+        <AnimatePresence mode="wait">
+          {isSearchMode ? (
+            /* Search Mode Header */
             <motion.div
+              key="search-header"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setShowHistoryModal(false)}
+              transition={{ duration: 0.15 }}
               style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                zIndex: 4000,
-              }}
-            />
-
-            {/* Modal */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                zIndex: 4001,
-                pointerEvents: 'none',
+                padding: '16px 24px',
+                gap: '12px',
               }}
             >
+              {/* Search Input */}
               <div
                 style={{
-                  backgroundColor: '#FFFFFF',
-                  borderRadius: '24px',
-                  padding: '32px 24px',
-                  width: 'calc(100% - 48px)',
-                  maxWidth: '320px',
-                  textAlign: 'center',
-                  pointerEvents: 'auto',
+                  flex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  backgroundColor: '#F5F5F5',
+                  borderRadius: '12px',
+                  padding: '10px 14px',
+                  gap: '10px',
                 }}
               >
-                {/* Icon */}
-                <div
+                <MagnifyingGlass size={20} weight="regular" color="#757575" />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  placeholder="Cari pesan..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  autoFocus
                   style={{
-                    width: '64px',
-                    height: '64px',
-                    borderRadius: '50%',
-                    backgroundColor: '#F1F8E9',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    margin: '0 auto 20px',
-                  }}
-                >
-                  <ClockCounterClockwise size={32} weight="bold" color="#7CB342" />
-                </div>
-
-                {/* Title */}
-                <h2
-                  style={{
-                    fontFamily: "'Caveat', cursive",
-                    fontSize: '1.75rem',
-                    fontWeight: 600,
-                    color: '#2D5016',
-                    margin: '0 0 12px 0',
-                  }}
-                >
-                  Segera Hadir!
-                </h2>
-
-                {/* Description */}
-                <p
-                  style={{
+                    flex: 1,
+                    border: 'none',
+                    outline: 'none',
+                    backgroundColor: 'transparent',
                     fontFamily: "'Inter', sans-serif",
                     fontSize: '14px',
-                    color: '#757575',
-                    margin: '0 0 24px 0',
-                    lineHeight: 1.5,
+                    color: '#2C2C2C',
                   }}
-                >
-                  Fitur riwayat chat akan tersedia di update selanjutnya. Tunggu ya!
-                </p>
-
-                {/* Button */}
-                <button
-                  onClick={() => setShowHistoryModal(false)}
-                  style={{
-                    width: '100%',
-                    padding: '14px 24px',
-                    fontSize: '1rem',
-                    fontFamily: "'Inter', sans-serif",
-                    fontWeight: 600,
-                    color: '#FFFFFF',
-                    backgroundColor: '#7CB342',
-                    border: 'none',
-                    borderRadius: '12px',
-                    cursor: 'pointer',
-                  }}
-                >
-                  Oke, Mengerti
-                </button>
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      padding: '2px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <X size={16} weight="bold" color="#757575" />
+                  </button>
+                )}
               </div>
+
+              {/* Cancel Button */}
+              <button
+                onClick={() => {
+                  setIsSearchMode(false);
+                  setSearchQuery('');
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  padding: '8px',
+                  cursor: 'pointer',
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  color: '#7CB342',
+                }}
+              >
+                Batal
+              </button>
             </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+          ) : (
+            /* Normal Header */
+            <motion.div
+              key="normal-header"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '24px',
+                position: 'relative',
+              }}
+            >
+              {/* Back Button */}
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={onBack}
+                aria-label="Kembali"
+                style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '50%',
+                  backgroundColor: '#FFFFFF',
+                  border: '1px solid #E0E0E0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                }}
+              >
+                <ArrowLeft size={20} weight="regular" color="#2C2C2C" />
+              </motion.button>
+
+              {/* Title - Centered */}
+              <h1
+                style={{
+                  fontFamily: "'Caveat', cursive",
+                  fontSize: '1.75rem',
+                  fontWeight: 600,
+                  color: '#2D5016',
+                  margin: 0,
+                  position: 'absolute',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                }}
+              >
+                Tanya Tanam
+              </h1>
+
+              {/* Search Button */}
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setIsSearchMode(true)}
+                aria-label="Cari pesan"
+                style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '50%',
+                  backgroundColor: '#FFFFFF',
+                  border: '1px solid #E0E0E0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                }}
+              >
+                <MagnifyingGlass size={20} weight="regular" color="#2C2C2C" />
+              </motion.button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
       {/* Fullscreen Image Viewer */}
       <AnimatePresence>
