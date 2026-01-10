@@ -145,6 +145,25 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
     }
   }, [profile?.show_statistics]);
 
+  // Sync selectedPlant with plants array when plants update (e.g., after recording an action)
+  useEffect(() => {
+    if (selectedPlant && plants.length > 0) {
+      const updatedPlant = plants.find(p => p.id === selectedPlant.id);
+      if (updatedPlant) {
+        // Only update if there are actual changes to avoid unnecessary re-renders
+        const hasChanges =
+          updatedPlant.lastWatered?.getTime() !== selectedPlant.lastWatered?.getTime() ||
+          updatedPlant.lastFertilized?.getTime() !== selectedPlant.lastFertilized?.getTime() ||
+          updatedPlant.wateringStatus?.status !== selectedPlant.wateringStatus?.status ||
+          updatedPlant.fertilizingStatus?.status !== selectedPlant.fertilizingStatus?.status;
+
+        if (hasChanges) {
+          setSelectedPlant(updatedPlant);
+        }
+      }
+    }
+  }, [plants, selectedPlant]);
+
   // Location Settings state
   const [showLocationSettings, setShowLocationSettings] = useState<boolean>(false);
 
