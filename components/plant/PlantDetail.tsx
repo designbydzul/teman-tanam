@@ -31,7 +31,7 @@ import { OfflineModal } from '@/components/modals';
 import { GlobalOfflineBanner } from '@/components/shared';
 import useOnlineStatus from '@/hooks/useOnlineStatus';
 import { supabase } from '@/lib/supabase/client';
-import { saveToCache, getFromCache } from '@/lib/offlineStorage';
+import { saveToCache, getFromCache, addToSyncQueue } from '@/lib/offlineStorage';
 import { CACHE_KEYS } from '@/lib/constants';
 
 // TypeScript Interfaces
@@ -953,7 +953,52 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
     console.log('[PlantDetail] handleDeleteHistoryAction:', actionId);
     setIsDeletingHistory(true);
 
+    // Helper to update local state and cache after deletion
+    const updateLocalStateAfterDelete = () => {
+      // Remove from local state
+      setActionsHistory(prev => prev.filter(action => action.id !== actionId));
+
+      // Update cache
+      if (plantData?.id) {
+        const cacheKey = `${CACHE_KEYS.ACTIONS}_${plantData.id}`;
+        const cached = getFromCache<ActionHistory[]>(cacheKey);
+        if (cached?.data) {
+          const updatedActions = cached.data.filter(action => action.id !== actionId);
+          saveToCache(cacheKey, updatedActions);
+        }
+      }
+
+      // Close drawers
+      setShowDeleteHistoryConfirm(false);
+      setShowHistoryDetailDrawer(false);
+      setSelectedHistoryEntry(null);
+
+      // Show success toast
+      setActionToastMessage('Catatan dihapus');
+      setShowActionToast(true);
+      setTimeout(() => setShowActionToast(false), 3000);
+    };
+
     try {
+      // OFFLINE MODE: Delete locally and queue for sync
+      if (!isOnline) {
+        console.log('[PlantDetail] OFFLINE: Deleting action locally');
+
+        // Only queue for sync if it's a real UUID (not a temp ID created offline)
+        if (!actionId.startsWith('temp-')) {
+          addToSyncQueue({
+            type: 'action',
+            action: 'delete',
+            data: { id: actionId },
+          });
+          console.log('[PlantDetail] OFFLINE: Added action delete to sync queue');
+        }
+
+        updateLocalStateAfterDelete();
+        return { success: true };
+      }
+
+      // ONLINE MODE: Delete from Supabase
       const { error: deleteError } = await supabase
         .from('actions')
         .delete()
@@ -968,19 +1013,7 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
       }
 
       console.log('[PlantDetail] Action deleted successfully');
-
-      // Close drawers
-      setShowDeleteHistoryConfirm(false);
-      setShowHistoryDetailDrawer(false);
-      setSelectedHistoryEntry(null);
-
-      // Refetch actions history
-      fetchActionsHistory();
-
-      // Show success toast
-      setActionToastMessage('Catatan dihapus');
-      setShowActionToast(true);
-      setTimeout(() => setShowActionToast(false), 3000);
+      updateLocalStateAfterDelete();
 
       return { success: true };
     } catch (err) {
