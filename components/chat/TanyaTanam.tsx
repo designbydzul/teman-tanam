@@ -131,6 +131,17 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
   const [careHistory, setCareHistory] = useState<CareHistoryItem[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [isStandalone, setIsStandalone] = useState(false);
+
+  // Detect if running as PWA (standalone) or in Safari browser
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // Check if running in standalone mode (PWA)
+      const standalone = window.matchMedia('(display-mode: standalone)').matches
+        || (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
+      setIsStandalone(standalone);
+    }
+  }, []);
 
   // Constants for image handling
   const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -619,7 +630,10 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
             overflowY: 'auto',
             overflowX: 'hidden',
             padding: '16px 24px',
-            paddingBottom: 'calc(120px + env(safe-area-inset-bottom, 0px))', // Space for fixed input area + safe area
+            // Extra padding: 120px for input + 50px for Safari toolbar (or safe-area for PWA)
+            paddingBottom: isStandalone
+              ? 'calc(120px + env(safe-area-inset-bottom, 0px))'
+              : '170px',
             display: 'flex',
             flexDirection: 'column',
             WebkitOverflowScrolling: 'touch',
@@ -897,9 +911,14 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
       <div
         className="chat-input-area"
         data-keyboard-open={keyboardHeight > 0 ? "true" : "false"}
+        data-standalone={isStandalone ? "true" : "false"}
         style={{
           position: 'fixed',
-          ...(keyboardHeight > 0 ? { bottom: `${keyboardHeight}px` } : {}),
+          // When keyboard is open, position above keyboard
+          // When keyboard is closed: in Safari browser add 50px for toolbar, in PWA use safe-area
+          bottom: keyboardHeight > 0
+            ? `${keyboardHeight}px`
+            : (isStandalone ? 'env(safe-area-inset-bottom, 0px)' : '50px'),
           left: '50%',
           transform: 'translateX(-50%)',
           width: '100%',
