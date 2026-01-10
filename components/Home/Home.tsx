@@ -1670,53 +1670,20 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
                   }}
                 >
                   {plant.image && !failedImages.has(plant.id) ? (
-                    <>
-                      <img
-                        src={plant.image}
-                        alt={plant.name}
-                        style={{
-                          width: '100%',
-                          height: '100%',
-                          objectFit: 'cover',
-                          display: 'block',
-                        }}
-                        onError={() => {
-                          setFailedImages(prev => new Set(prev).add(plant.id));
-                        }}
-                      />
-                      {/* Species image badge - only show when plant has custom photo */}
-                      {plant.species?.imageUrl && !failedSpeciesImages.has(plant.species.id || '') && (
-                        <div
-                          style={{
-                            position: 'absolute',
-                            bottom: '6px',
-                            right: '6px',
-                            width: '36px',
-                            height: '36px',
-                            borderRadius: '10px',
-                            backgroundColor: '#FFFFFF',
-                            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            padding: '4px',
-                          }}
-                        >
-                          <img
-                            src={plant.species.imageUrl}
-                            alt={plant.species.name || ''}
-                            style={{
-                              width: '100%',
-                              height: '100%',
-                              objectFit: 'contain',
-                            }}
-                            onError={() => {
-                              setFailedSpeciesImages(prev => new Set(prev).add(plant.species?.id || ''));
-                            }}
-                          />
-                        </div>
-                      )}
-                    </>
+                    /* User photo - show only the photo, no species illustration overlay */
+                    <img
+                      src={plant.image}
+                      alt={plant.name}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        display: 'block',
+                      }}
+                      onError={() => {
+                        setFailedImages(prev => new Set(prev).add(plant.id));
+                      }}
+                    />
                   ) : plant.species?.imageUrl && !failedSpeciesImages.has(plant.species.id || '') ? (
                     /* Show species image as main image when no plant photo */
                     <img
