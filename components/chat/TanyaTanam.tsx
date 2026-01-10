@@ -742,7 +742,8 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
           zIndex: 9999,
           display: 'flex',
           flexDirection: 'column',
-          paddingTop: 'calc(88px + env(safe-area-inset-top, 0px))', // Space for fixed header + safe area
+          // Space for fixed header + safe area (header is taller when search is open)
+          paddingTop: `calc(${isSearchMode ? '140px' : '88px'} + env(safe-area-inset-top, 0px))`,
           overflow: 'hidden', // Prevent any scroll on container itself
         }}
       >
@@ -1306,161 +1307,132 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
         backfaceVisibility: 'hidden',
         paddingTop: 'env(safe-area-inset-top, 0px)',
       }}>
-        <AnimatePresence mode="wait">
-          {isSearchMode ? (
-            /* Search Mode Header */
+        {/* Header Row - Always visible */}
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '24px',
+            position: 'relative',
+          }}
+        >
+          {/* Back Button */}
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={onBack}
+            aria-label="Kembali"
+            style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '50%',
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #E0E0E0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+            }}
+          >
+            <ArrowLeft size={20} weight="regular" color="#2C2C2C" />
+          </motion.button>
+
+          {/* Title - Centered */}
+          <h1
+            style={{
+              fontFamily: "'Caveat', cursive",
+              fontSize: '1.75rem',
+              fontWeight: 600,
+              color: '#2D5016',
+              margin: 0,
+              position: 'absolute',
+              left: '50%',
+              transform: 'translateX(-50%)',
+            }}
+          >
+            Tanya Tanam
+          </h1>
+
+          {/* Search Button */}
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setIsSearchMode(!isSearchMode)}
+            aria-label="Cari pesan"
+            style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '50%',
+              backgroundColor: isSearchMode ? '#F0F7E6' : '#FFFFFF',
+              border: isSearchMode ? '1px solid #7CB342' : '1px solid #E0E0E0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+            }}
+          >
+            <MagnifyingGlass size={20} weight="regular" color={isSearchMode ? '#7CB342' : '#2C2C2C'} />
+          </motion.button>
+        </div>
+
+        {/* Search Input Row - Below header when active */}
+        <AnimatePresence>
+          {isSearchMode && (
             <motion.div
-              key="search-header"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                padding: '16px 24px',
-                gap: '12px',
-              }}
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              style={{ overflow: 'hidden' }}
             >
-              {/* Search Input */}
-              <div
-                style={{
-                  flex: 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  backgroundColor: '#F5F5F5',
-                  borderRadius: '12px',
-                  padding: '10px 14px',
-                  gap: '10px',
-                }}
-              >
-                <MagnifyingGlass size={20} weight="regular" color="#757575" />
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  placeholder="Cari pesan..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  autoFocus
+              <div style={{ padding: '0 24px 16px 24px' }}>
+                <div
                   style={{
-                    flex: 1,
-                    border: 'none',
-                    outline: 'none',
-                    backgroundColor: 'transparent',
-                    fontFamily: "'Inter', sans-serif",
-                    fontSize: '14px',
-                    color: '#2C2C2C',
+                    display: 'flex',
+                    alignItems: 'center',
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '12px',
+                    border: '1px solid #7CB342',
+                    padding: '12px 16px',
+                    gap: '12px',
                   }}
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery('')}
+                >
+                  <MagnifyingGlass size={20} weight="regular" color="#757575" />
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    placeholder="Cari pesan..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    autoFocus
                     style={{
-                      background: 'none',
+                      flex: 1,
                       border: 'none',
-                      padding: '2px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                      outline: 'none',
+                      backgroundColor: 'transparent',
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: '14px',
+                      color: '#2C2C2C',
                     }}
-                  >
-                    <X size={16} weight="bold" color="#757575" />
-                  </button>
-                )}
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      aria-label="Hapus pencarian"
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        padding: '4px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <X size={18} weight="bold" color="#757575" />
+                    </button>
+                  )}
+                </div>
               </div>
-
-              {/* Cancel Button */}
-              <button
-                onClick={() => {
-                  setIsSearchMode(false);
-                  setSearchQuery('');
-                }}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  padding: '8px',
-                  cursor: 'pointer',
-                  fontFamily: "'Inter', sans-serif",
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  color: '#7CB342',
-                }}
-              >
-                Batal
-              </button>
-            </motion.div>
-          ) : (
-            /* Normal Header */
-            <motion.div
-              key="normal-header"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }}
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                padding: '24px',
-                position: 'relative',
-              }}
-            >
-              {/* Back Button */}
-              <motion.button
-                whileTap={{ scale: 0.95 }}
-                onClick={onBack}
-                aria-label="Kembali"
-                style={{
-                  width: '40px',
-                  height: '40px',
-                  borderRadius: '50%',
-                  backgroundColor: '#FFFFFF',
-                  border: '1px solid #E0E0E0',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                }}
-              >
-                <ArrowLeft size={20} weight="regular" color="#2C2C2C" />
-              </motion.button>
-
-              {/* Title - Centered */}
-              <h1
-                style={{
-                  fontFamily: "'Caveat', cursive",
-                  fontSize: '1.75rem',
-                  fontWeight: 600,
-                  color: '#2D5016',
-                  margin: 0,
-                  position: 'absolute',
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                }}
-              >
-                Tanya Tanam
-              </h1>
-
-              {/* Search Button */}
-              <motion.button
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setIsSearchMode(true)}
-                aria-label="Cari pesan"
-                style={{
-                  width: '40px',
-                  height: '40px',
-                  borderRadius: '50%',
-                  backgroundColor: '#FFFFFF',
-                  border: '1px solid #E0E0E0',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                }}
-              >
-                <MagnifyingGlass size={20} weight="regular" color="#2C2C2C" />
-              </motion.button>
             </motion.div>
           )}
         </AnimatePresence>
