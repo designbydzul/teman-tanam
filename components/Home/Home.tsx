@@ -20,6 +20,7 @@ import {
   Check,
   Scissors,
   Icon,
+  MagnifyingGlass,
 } from '@phosphor-icons/react';
 import { AddPlant, AddPlantForm, AddPlantSuccess, PlantDetail, EditPlant, type AddPlantSpecies } from '@/components/plant';
 import { ProfileModal, LocationSettings, BulkWateringModal, BulkFertilizeModal, BulkPruningModal, BulkOtherActionModal } from '@/components/modals';
@@ -1314,13 +1315,21 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
                 backgroundColor: '#FFFFFF',
               }}
             >
-              <div
-                style={{
-                  padding: '16px 24px',
-                  borderBottom: '1px solid #F0F0F0',
-                }}
-              >
-                <div style={{ position: 'relative' }}>
+              <div style={{ padding: '16px 24px' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    backgroundColor: '#FAFAFA',
+                    border: '2px solid #7CB342',
+                    borderRadius: '12px',
+                    padding: '0 8px 0 16px',
+                  }}
+                >
+                  {/* Search Icon */}
+                  <MagnifyingGlass size={20} weight="regular" color="#757575" style={{ flexShrink: 0 }} />
+
+                  {/* Input */}
                   <input
                     type="text"
                     placeholder="Cari tanaman..."
@@ -1328,19 +1337,20 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
                     autoFocus
                     style={{
-                      width: '100%',
-                      padding: '14px 80px 14px 16px',
+                      flex: 1,
+                      padding: '14px 8px',
                       fontSize: '1rem',
                       fontFamily: "'Inter', sans-serif",
                       color: '#2C2C2C',
-                      backgroundColor: '#FAFAFA',
-                      border: '2px solid #7CB342',
-                      borderRadius: '12px',
+                      backgroundColor: 'transparent',
+                      border: 'none',
                       outline: 'none',
                     }}
                   />
-                  {/* Single X button - clears text if present, closes search if empty */}
-                  <button
+
+                  {/* Clear Button */}
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
                     onClick={() => {
                       if (searchQuery) {
                         setSearchQuery('');
@@ -1349,14 +1359,11 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
                       }
                     }}
                     style={{
-                      position: 'absolute',
-                      right: '10px',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      width: '28px',
-                      height: '28px',
+                      flexShrink: 0,
+                      width: '32px',
+                      height: '32px',
                       borderRadius: '50%',
-                      backgroundColor: colors.gray200,
+                      backgroundColor: '#E0E0E0',
                       border: 'none',
                       display: 'flex',
                       alignItems: 'center',
@@ -1364,10 +1371,8 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
                       cursor: 'pointer',
                     }}
                   >
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                      <path d="M11 3L3 11M3 3l8 8" stroke={colors.gray600} strokeWidth="2" strokeLinecap="round" />
-                    </svg>
-                  </button>
+                    <X size={16} weight="bold" color="#757575" />
+                  </motion.button>
                 </div>
               </div>
             </motion.div>

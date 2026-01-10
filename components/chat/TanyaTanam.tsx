@@ -1388,14 +1388,16 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    backgroundColor: '#FFFFFF',
+                    backgroundColor: '#FAFAFA',
+                    border: '2px solid #7CB342',
                     borderRadius: '12px',
-                    border: '1px solid #7CB342',
-                    padding: '12px 16px',
-                    gap: '12px',
+                    padding: '0 8px 0 16px',
                   }}
                 >
-                  <MagnifyingGlass size={20} weight="regular" color="#9E9E9E" />
+                  {/* Search Icon */}
+                  <MagnifyingGlass size={20} weight="regular" color="#757575" style={{ flexShrink: 0 }} />
+
+                  {/* Input */}
                   <input
                     ref={searchInputRef}
                     type="text"
@@ -1405,33 +1407,41 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
                     autoFocus
                     style={{
                       flex: 1,
+                      padding: '14px 8px',
+                      fontSize: '1rem',
+                      fontFamily: "'Inter', sans-serif",
+                      color: '#2C2C2C',
+                      backgroundColor: 'transparent',
                       border: 'none',
                       outline: 'none',
-                      backgroundColor: 'transparent',
-                      fontFamily: "'Inter', sans-serif",
-                      fontSize: '14px',
-                      color: '#2C2C2C',
                     }}
                   />
-                  {searchQuery ? (
-                    <button
-                      onClick={() => setSearchQuery('')}
-                      aria-label="Hapus pencarian"
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        padding: '4px',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <X size={18} weight="bold" color="#9E9E9E" />
-                    </button>
-                  ) : (
-                    <X size={18} weight="bold" color="#9E9E9E" style={{ opacity: 0.5 }} />
-                  )}
+
+                  {/* Clear Button */}
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => {
+                      if (searchQuery) {
+                        setSearchQuery('');
+                      } else {
+                        setIsSearchMode(false);
+                      }
+                    }}
+                    style={{
+                      flexShrink: 0,
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '50%',
+                      backgroundColor: '#E0E0E0',
+                      border: 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <X size={16} weight="bold" color="#757575" />
+                  </motion.button>
                 </div>
               </div>
             </motion.div>
