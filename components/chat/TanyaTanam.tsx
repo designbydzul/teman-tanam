@@ -1300,8 +1300,6 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
         maxWidth: 'var(--app-max-width)',
         zIndex: 10000,
         backgroundColor: '#FFFFFF',
-        borderBottom: '1px solid #E0E0E0',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
         WebkitTransform: 'translateX(-50%) translateZ(0)',
         willChange: 'transform',
         backfaceVisibility: 'hidden',
@@ -1315,6 +1313,7 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
             alignItems: 'center',
             padding: '24px',
             position: 'relative',
+            borderBottom: '1px solid #E0E0E0',
           }}
         >
           {/* Back Button */}
@@ -1374,7 +1373,7 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
           </motion.button>
         </div>
 
-        {/* Search Input Row - Below header when active */}
+        {/* Search Input Row - Below header border when active */}
         <AnimatePresence>
           {isSearchMode && (
             <motion.div
@@ -1384,7 +1383,7 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
               transition={{ duration: 0.2 }}
               style={{ overflow: 'hidden' }}
             >
-              <div style={{ padding: '0 24px 16px 24px' }}>
+              <div style={{ padding: '16px 24px' }}>
                 <div
                   style={{
                     display: 'flex',
@@ -1396,7 +1395,7 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
                     gap: '12px',
                   }}
                 >
-                  <MagnifyingGlass size={20} weight="regular" color="#757575" />
+                  <MagnifyingGlass size={20} weight="regular" color="#9E9E9E" />
                   <input
                     ref={searchInputRef}
                     type="text"
@@ -1414,7 +1413,7 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
                       color: '#2C2C2C',
                     }}
                   />
-                  {searchQuery && (
+                  {searchQuery ? (
                     <button
                       onClick={() => setSearchQuery('')}
                       aria-label="Hapus pencarian"
@@ -1428,8 +1427,10 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
                         justifyContent: 'center',
                       }}
                     >
-                      <X size={18} weight="bold" color="#757575" />
+                      <X size={18} weight="bold" color="#9E9E9E" />
                     </button>
+                  ) : (
+                    <X size={18} weight="bold" color="#9E9E9E" style={{ opacity: 0.5 }} />
                   )}
                 </div>
               </div>
