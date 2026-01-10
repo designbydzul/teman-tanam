@@ -630,10 +630,10 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
             overflowY: 'auto',
             overflowX: 'hidden',
             padding: '16px 24px',
-            // Extra padding: 100px for input + 70px for browser toolbar (or safe-area for PWA)
+            // Extra padding for floating input card: ~100px card height + 16px margin + toolbar offset
             paddingBottom: isStandalone
-              ? 'calc(120px + env(safe-area-inset-bottom, 0px))'
-              : '190px',
+              ? 'calc(130px + env(safe-area-inset-bottom, 0px))'
+              : '200px',
             display: 'flex',
             flexDirection: 'column',
             WebkitOverflowScrolling: 'touch',
@@ -907,29 +907,29 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
         )}
       </AnimatePresence>
 
-      {/* Input Area */}
+      {/* Input Area - Floating Card */}
       <div
         className="chat-input-area"
         data-keyboard-open={keyboardHeight > 0 ? "true" : "false"}
         data-standalone={isStandalone ? "true" : "false"}
         style={{
           position: 'fixed',
-          // When keyboard is open, position above keyboard
-          // When keyboard is closed: in browser add 70px for toolbar (Chrome is taller than Safari)
-          // In PWA mode: use safe-area for home indicator only
+          // When keyboard is open, position just above keyboard with small margin
+          // When keyboard is closed: add margin from bottom to clear browser toolbars
           bottom: keyboardHeight > 0
-            ? `${keyboardHeight}px`
-            : (isStandalone ? 'env(safe-area-inset-bottom, 0px)' : '70px'),
+            ? `${keyboardHeight + 8}px`
+            : `calc(16px + ${isStandalone ? 'env(safe-area-inset-bottom, 0px)' : '70px'})`,
           left: '50%',
           transform: 'translateX(-50%)',
-          width: '100%',
-          maxWidth: 'var(--app-max-width)',
+          width: 'calc(100% - 32px)', // 16px margin on each side
+          maxWidth: 'calc(var(--app-max-width) - 32px)',
           backgroundColor: '#FFFFFF',
-          borderTop: '1px solid #F5F5F5',
-          padding: '16px 24px',
-          paddingBottom: isStandalone ? '16px' : 'calc(16px + env(safe-area-inset-bottom, 0px))',
+          border: '1px solid #E0E0E0',
+          borderRadius: '20px',
+          padding: '12px 16px',
           zIndex: 10001,
           transition: 'bottom 0.2s ease-out',
+          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
         }}
       >
         {/* Attached Images Preview */}
@@ -1012,11 +1012,8 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
               display: 'flex',
               alignItems: 'flex-end',
               gap: '12px',
-              padding: '12px 16px',
-              backgroundColor: '#FFFFFF',
-              border: inputFocused || inputText ? '2px solid #7CB342' : '2px solid transparent',
-              borderRadius: '24px',
-              transition: 'border-color 200ms',
+              padding: '4px 0',
+              backgroundColor: 'transparent',
             }}
           >
             {/* Attachment Button - accept="image/*" enables both camera and gallery on mobile */}
