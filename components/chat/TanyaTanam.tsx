@@ -619,7 +619,7 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
             overflowY: 'auto',
             overflowX: 'hidden',
             padding: '16px 24px',
-            paddingBottom: '120px', // Space for fixed input area
+            paddingBottom: 'calc(120px + env(safe-area-inset-bottom, 0px))', // Space for fixed input area + safe area
             display: 'flex',
             flexDirection: 'column',
             WebkitOverflowScrolling: 'touch',
@@ -897,7 +897,7 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
       <div
         style={{
           position: 'fixed',
-          bottom: keyboardHeight > 0 ? keyboardHeight : 0,
+          bottom: keyboardHeight > 0 ? `${keyboardHeight}px` : 0,
           left: '50%',
           transform: 'translateX(-50%)',
           width: '100%',
@@ -905,7 +905,7 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
           backgroundColor: '#FFFFFF',
           borderTop: '1px solid #F5F5F5',
           padding: '16px 24px',
-          paddingBottom: keyboardHeight > 0 ? '16px' : 'calc(16px + env(safe-area-inset-bottom))',
+          paddingBottom: keyboardHeight > 0 ? '16px' : 'max(16px, env(safe-area-inset-bottom, 16px))',
           zIndex: 10001,
           transition: 'bottom 0.2s ease-out',
         }}
