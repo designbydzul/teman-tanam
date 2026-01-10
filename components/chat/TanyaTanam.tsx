@@ -21,10 +21,12 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
 
 interface PlantSpecies {
+  id?: string;
   name?: string | null;
   scientific?: string | null;
   category?: string | null;
   emoji?: string;
+  imageUrl?: string | null;
   wateringFrequencyDays?: number;
   fertilizingFrequencyDays?: number;
   difficultyLevel?: string | null;
@@ -80,6 +82,7 @@ interface PlantData {
     name?: string;
     scientific?: string;
     category?: string;
+    imageUrl?: string | null;
     wateringFrequencyDays?: number;
     fertilizingFrequencyDays?: number;
     difficultyLevel?: string;
@@ -226,11 +229,36 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
     }
   }, [user?.id]);
 
-  // Also save to localStorage as backup
+  // Also save to localStorage as backup (with error handling for quota)
   useEffect(() => {
     if (selectedPlant?.id && messages.length > 0) {
       const storageKey = getChatStorageKey(selectedPlant.id);
-      localStorage.setItem(storageKey, JSON.stringify(messages));
+      try {
+        // Only save last 50 messages to prevent quota issues
+        const messagesToSave = messages.slice(-50);
+        localStorage.setItem(storageKey, JSON.stringify(messagesToSave));
+      } catch (err) {
+        // If quota exceeded, try to clear old chat data
+        if (err instanceof DOMException && err.name === 'QuotaExceededError') {
+          console.warn('localStorage quota exceeded, clearing old chat data');
+          // Clear all tanyaTanam chat keys except current one
+          const keysToRemove: string[] = [];
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key?.startsWith('tanyaTanam_chat_') && key !== storageKey) {
+              keysToRemove.push(key);
+            }
+          }
+          keysToRemove.forEach(key => localStorage.removeItem(key));
+          // Try saving again with fewer messages
+          try {
+            const messagesToSave = messages.slice(-20);
+            localStorage.setItem(storageKey, JSON.stringify(messagesToSave));
+          } catch {
+            console.error('Failed to save chat even after clearing old data');
+          }
+        }
+      }
     }
   }, [messages, selectedPlant?.id]);
 
@@ -321,6 +349,7 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
         name: selectedPlant.species?.name ?? undefined,
         scientific: selectedPlant.species?.scientific ?? undefined,
         category: selectedPlant.species?.category ?? undefined,
+        imageUrl: selectedPlant.species?.imageUrl ?? undefined,
         wateringFrequencyDays: selectedPlant.species?.wateringFrequencyDays || 3,
         fertilizingFrequencyDays: selectedPlant.species?.fertilizingFrequencyDays || 14,
         // New fields from updated schema
@@ -333,7 +362,8 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
       speciesEmoji: selectedPlant.species?.emoji || '🌱',
       location: selectedPlant.location ?? undefined,
       startedDate: selectedPlant.startedDate ? new Date(selectedPlant.startedDate) : undefined,
-      coverPhotoUrl: selectedPlant.photoUrl || selectedPlant.image || undefined,
+      // Priority: user's plant photo > species illustration
+      coverPhotoUrl: selectedPlant.photoUrl || selectedPlant.image || selectedPlant.species?.imageUrl || undefined,
       notes: selectedPlant.notes ?? undefined,
       lastWatered: selectedPlant.lastWatered ? new Date(selectedPlant.lastWatered) : undefined,
       lastFertilized: selectedPlant.lastFertilized ? new Date(selectedPlant.lastFertilized) : undefined,
