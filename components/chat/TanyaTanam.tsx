@@ -138,13 +138,6 @@ const formatDateDivider = (date: Date): string => {
   return `${date.getDate()} ${BULAN_INDONESIA[date.getMonth()]} ${date.getFullYear()}`;
 };
 
-// Format time for message timestamp (24-hour format)
-const formatMessageTime = (date: Date): string => {
-  const hours = date.getHours().toString().padStart(2, '0');
-  const minutes = date.getMinutes().toString().padStart(2, '0');
-  return `${hours}:${minutes}`;
-};
-
 // Check if two dates are on the same day
 const isSameDay = (date1: Date, date2: Date): boolean => {
   return date1.getFullYear() === date2.getFullYear() &&
@@ -903,7 +896,7 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: message.role === 'user' ? 'flex-end' : 'flex-start',
-                    gap: '4px',
+                    gap: '8px',
                   }}
                 >
                   {/* Attached Images - Outside bubble */}
@@ -997,20 +990,6 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
                       )}
                     </div>
                   )}
-
-                  {/* Timestamp */}
-                  <span
-                    style={{
-                      fontFamily: "'Inter', sans-serif",
-                      fontSize: '11px',
-                      color: '#9E9E9E',
-                      marginTop: '2px',
-                      paddingLeft: message.role === 'assistant' ? '4px' : '0',
-                      paddingRight: message.role === 'user' ? '4px' : '0',
-                    }}
-                  >
-                    {formatMessageTime(new Date(message.timestamp))}
-                  </span>
                 </motion.div>
               </React.Fragment>
             );
