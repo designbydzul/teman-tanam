@@ -630,10 +630,10 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
             overflowY: 'auto',
             overflowX: 'hidden',
             padding: '16px 24px',
-            // Extra padding: 120px for input + 50px for Safari toolbar (or safe-area for PWA)
+            // Extra padding: 100px for input + 70px for browser toolbar (or safe-area for PWA)
             paddingBottom: isStandalone
               ? 'calc(120px + env(safe-area-inset-bottom, 0px))'
-              : '170px',
+              : '190px',
             display: 'flex',
             flexDirection: 'column',
             WebkitOverflowScrolling: 'touch',
@@ -915,10 +915,11 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
         style={{
           position: 'fixed',
           // When keyboard is open, position above keyboard
-          // When keyboard is closed: in Safari browser add 50px for toolbar, in PWA use safe-area
+          // When keyboard is closed: in browser add 70px for toolbar (Chrome is taller than Safari)
+          // In PWA mode: use safe-area for home indicator only
           bottom: keyboardHeight > 0
             ? `${keyboardHeight}px`
-            : (isStandalone ? 'env(safe-area-inset-bottom, 0px)' : '50px'),
+            : (isStandalone ? 'env(safe-area-inset-bottom, 0px)' : '70px'),
           left: '50%',
           transform: 'translateX(-50%)',
           width: '100%',
@@ -926,7 +927,7 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
           backgroundColor: '#FFFFFF',
           borderTop: '1px solid #F5F5F5',
           padding: '16px 24px',
-          paddingBottom: '16px',
+          paddingBottom: isStandalone ? '16px' : 'calc(16px + env(safe-area-inset-bottom, 0px))',
           zIndex: 10001,
           transition: 'bottom 0.2s ease-out',
         }}
