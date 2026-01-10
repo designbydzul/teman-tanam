@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LocationSettings } from '@/components/modals';
+import { GlobalOfflineBanner } from '@/components/shared';
 import { useLocations } from '@/hooks/useLocations';
 import { Drop, Leaf, ArrowCounterClockwise, ArrowLeft, Trash } from '@phosphor-icons/react';
 import { createDebugger } from '@/lib/debug';
@@ -263,6 +264,9 @@ const EditPlant: React.FC<EditPlantProps> = ({ plant, onClose, onSave, onDelete 
           overflow: 'hidden',
         }}
       >
+        {/* Global Offline Banner */}
+        <GlobalOfflineBanner />
+
         {/* Fixed Header - Same styling as Tanya Tanam */}
         <div
           style={{

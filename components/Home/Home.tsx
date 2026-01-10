@@ -23,14 +23,22 @@ import {
   MagnifyingGlass,
 } from '@phosphor-icons/react';
 import { AddPlant, AddPlantForm, AddPlantSuccess, PlantDetail, EditPlant, type AddPlantSpecies } from '@/components/plant';
-import { ProfileModal, LocationSettings, BulkWateringModal, BulkFertilizeModal, BulkPruningModal, BulkOtherActionModal } from '@/components/modals';
+import { ProfileModal, LocationSettings, BulkWateringModal, BulkFertilizeModal, BulkPruningModal, BulkOtherActionModal, OfflineModal } from '@/components/modals';
 import { EditProfile, OfflineIndicator } from '@/components/shared';
 import { TanyaTanam } from '@/components/chat';
 import { usePlants } from '@/hooks/usePlants';
 import { useLocations } from '@/hooks/useLocations';
 import { useAuth } from '@/hooks/useAuth';
 import { colors, radius, typography } from '@/styles/theme';
+import { supabase } from '@/lib/supabase';
+import { SPECIES_EMOJI_MAP } from '@/lib/constants';
+import { createDebugger } from '@/lib/debug';
 import type { Plant as PlantType, PlantSpecies, Location, Profile } from '@/types';
+
+const debug = createDebugger('Home');
+
+// Cache key for species (same as AddPlant)
+const SPECIES_CACHE_KEY = 'teman-tanam-species-cache';
 
 // Component Props
 interface HomeProps {
@@ -178,6 +186,8 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
 
   // Edit Profile state
   const [showEditProfile, setShowEditProfile] = useState<boolean>(false);
+  const [showOfflineModal, setShowOfflineModal] = useState<boolean>(false);
+  const [offlineFeatureName, setOfflineFeatureName] = useState<string>('');
   const [userEmail, setUserEmail] = useState<string>('');
   const [currentUserName, setCurrentUserName] = useState<string>(userName || '');
   const [userPhoto, setUserPhoto] = useState<string | null>(null);
@@ -322,6 +332,64 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
         clearTimeout(reconnectingTimer.current);
       }
     };
+  }, []);
+
+  // Background cache species data for offline use
+  // This runs silently when the app loads so users can add plants offline
+  useEffect(() => {
+    const cacheSpeciesData = async () => {
+      // Only cache if online
+      if (!navigator.onLine) return;
+
+      // Check if already cached
+      try {
+        const cached = localStorage.getItem(SPECIES_CACHE_KEY);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed && parsed.length > 0) {
+            debug.log(`[Cache] Species already cached: ${parsed.length} items`);
+            return;
+          }
+        }
+      } catch {
+        // Continue to fetch if cache read fails
+      }
+
+      // Fetch and cache species data
+      try {
+        debug.log('[Cache] Fetching species data for offline cache...');
+        const { data, error } = await supabase
+          .from('plant_species')
+          .select('id, common_name, latin_name, category, image_url')
+          .order('common_name', { ascending: true });
+
+        if (error) {
+          debug.warn('[Cache] Failed to fetch species:', error.message);
+          return;
+        }
+
+        if (data && data.length > 0) {
+          // Transform to same format as AddPlant
+          const transformed = data.map(s => ({
+            id: s.id,
+            name: s.common_name,
+            scientific: s.latin_name,
+            category: s.category,
+            imageUrl: s.image_url,
+            emoji: SPECIES_EMOJI_MAP[s.common_name.toLowerCase()] || '🌱',
+          }));
+
+          localStorage.setItem(SPECIES_CACHE_KEY, JSON.stringify(transformed));
+          debug.log(`[Cache] Species data cached for offline use: ${transformed.length} items`);
+        }
+      } catch (err) {
+        debug.warn('[Cache] Error caching species:', err);
+      }
+    };
+
+    // Run after a short delay to not block initial render
+    const timer = setTimeout(cacheSpeciesData, 2000);
+    return () => clearTimeout(timer);
   }, []);
 
   // Reload locations when returning from LocationSettings
@@ -989,6 +1057,12 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
     if (action === 'location-settings') {
       setShowLocationSettings(true);
     } else if (action === 'edit-profile') {
+      // Check if online before allowing edit profile
+      if (!isOnline) {
+        setOfflineFeatureName('Edit Profil');
+        setShowOfflineModal(true);
+        return;
+      }
       setShowEditProfile(true);
     }
     // TODO: Add other navigation actions (help-community, tutorial, logout)
@@ -2100,6 +2174,13 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
           }}
         />
       )}
+
+      {/* Offline Modal - for features that require internet */}
+      <OfflineModal
+        isOpen={showOfflineModal}
+        onClose={() => setShowOfflineModal(false)}
+        featureName={offlineFeatureName}
+      />
 
       {/* Edit Plant Modal from menu */}
       {showEditPlantModal && menuPlant && (

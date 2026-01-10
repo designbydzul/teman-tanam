@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, MagnifyingGlass, X } from '@phosphor-icons/react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { GlobalOfflineBanner } from '@/components/shared';
 import { SPECIES_EMOJI_MAP } from '@/lib/constants';
 import { createDebugger } from '@/lib/debug';
@@ -38,6 +39,7 @@ const CATEGORIES = [
 const SPECIES_CACHE_KEY = 'teman-tanam-species-cache';
 
 const AddPlant: React.FC<AddPlantProps> = ({ onClose, onSelectSpecies }) => {
+  const { isOnline } = useOnlineStatus();
   const [searchQuery, setSearchQuery] = useState('');
   const [speciesList, setSpeciesList] = useState<AddPlantSpecies[]>([]);
   const [loading, setLoading] = useState(true);
@@ -232,12 +234,16 @@ const AddPlant: React.FC<AddPlantProps> = ({ onClose, onSelectSpecies }) => {
     }
   };
 
+  // Use instant animations when offline for snappier feel
+  const instantTransition = !isOnline;
+
   return (
     <motion.div
       className="ios-fixed-container"
-      initial={{ opacity: 0 }}
+      initial={instantTransition ? false : { opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
+      transition={{ duration: instantTransition ? 0 : 0.2 }}
       style={{
         backgroundColor: '#FFFFFF',
         zIndex: 1000,
@@ -433,7 +439,10 @@ const AddPlant: React.FC<AddPlantProps> = ({ onClose, onSelectSpecies }) => {
       <div
         style={{
           position: 'absolute',
-          top: isSearchExpanded ? '220px' : '160px',
+          // Add 42px for offline banner height when offline
+          top: isSearchExpanded
+            ? (isOnline ? '220px' : '262px')
+            : (isOnline ? '160px' : '202px'),
           left: 0,
           right: 0,
           bottom: 0,
@@ -460,8 +469,9 @@ const AddPlant: React.FC<AddPlantProps> = ({ onClose, onSelectSpecies }) => {
           filteredPlants.map((plant) => (
             <motion.div
               key={plant.id}
-              initial={{ opacity: 0, scale: 0.9 }}
+              initial={instantTransition ? false : { opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
+              transition={instantTransition ? { duration: 0 } : undefined}
               whileTap={{ scale: 0.95 }}
               onClick={() => onSelectSpecies(plant)}
               style={{
@@ -558,8 +568,9 @@ const AddPlant: React.FC<AddPlantProps> = ({ onClose, onSelectSpecies }) => {
           ))
         ) : (
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={instantTransition ? false : { opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
+            transition={instantTransition ? { duration: 0 } : undefined}
             style={{
               gridColumn: '1 / -1',
               display: 'flex',

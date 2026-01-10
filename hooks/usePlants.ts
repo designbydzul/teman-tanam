@@ -560,34 +560,96 @@ export function usePlants(): UsePlantsReturn {
 
   // Update a plant
   const updatePlant = async (plantId: string, updates: UpdatePlantData) => {
+    const updateData: Record<string, unknown> = {
+      updated_at: new Date().toISOString(),
+    };
+
+    if (updates.customName !== undefined || updates.name !== undefined) {
+      updateData.name = updates.customName || updates.name;
+    }
+    if (updates.locationId !== undefined) {
+      updateData.location_id = updates.locationId;
+    }
+    if (updates.photoUrl !== undefined) {
+      updateData.photo_url = updates.photoUrl;
+    }
+    if (updates.notes !== undefined) {
+      updateData.notes = updates.notes;
+    }
+    if (updates.status !== undefined) {
+      updateData.status = updates.status;
+    }
+    // Custom care frequencies (null to reset to species default)
+    if (updates.customWateringDays !== undefined) {
+      updateData.custom_watering_days = updates.customWateringDays;
+    }
+    if (updates.customFertilizingDays !== undefined) {
+      updateData.custom_fertilizing_days = updates.customFertilizingDays;
+    }
+
+    // OFFLINE MODE
+    if (!isOnline) {
+      try {
+        debug.log('OFFLINE: Updating plant locally', { plantId });
+
+        // Add to sync queue
+        addToSyncQueue({
+          type: 'plant',
+          action: 'update',
+          data: {
+            id: plantId,
+            ...updateData,
+          },
+        });
+
+        // Update local state
+        setPlants(prev => prev.map(p => {
+          if (p.id === plantId) {
+            return {
+              ...p,
+              customName: updates.customName ?? updates.name ?? p.customName,
+              name: updates.customName || updates.name || p.name,
+              image: updates.photoUrl ?? p.image,
+              notes: updates.notes ?? p.notes,
+              customWateringDays: updates.customWateringDays ?? p.customWateringDays,
+              customFertilizingDays: updates.customFertilizingDays ?? p.customFertilizingDays,
+            };
+          }
+          return p;
+        }));
+
+        // Update cache
+        const cached = getFromCache<Plant[]>(CACHE_KEYS.PLANTS);
+        if (cached?.data) {
+          const updatedPlants = cached.data.map(p => {
+            if (p.id === plantId) {
+              return {
+                ...p,
+                customName: updates.customName ?? updates.name ?? p.customName,
+                name: updates.customName || updates.name || p.name,
+                image: updates.photoUrl ?? p.image,
+                notes: updates.notes ?? p.notes,
+                customWateringDays: updates.customWateringDays ?? p.customWateringDays,
+                customFertilizingDays: updates.customFertilizingDays ?? p.customFertilizingDays,
+              };
+            }
+            return p;
+          });
+          saveToCache(CACHE_KEYS.PLANTS, updatedPlants);
+        }
+
+        setPendingCount(getSyncQueueCount());
+
+        return { success: true, offline: true };
+      } catch (err) {
+        const error = err as Error;
+        debug.error('OFFLINE updatePlant error:', error);
+        return { success: false, error: error.message };
+      }
+    }
+
+    // ONLINE MODE
     try {
-      const updateData: Record<string, unknown> = {
-        updated_at: new Date().toISOString(),
-      };
-
-      if (updates.customName !== undefined || updates.name !== undefined) {
-        updateData.name = updates.customName || updates.name;
-      }
-      if (updates.locationId !== undefined) {
-        updateData.location_id = updates.locationId;
-      }
-      if (updates.photoUrl !== undefined) {
-        updateData.photo_url = updates.photoUrl;
-      }
-      if (updates.notes !== undefined) {
-        updateData.notes = updates.notes;
-      }
-      if (updates.status !== undefined) {
-        updateData.status = updates.status;
-      }
-      // Custom care frequencies (null to reset to species default)
-      if (updates.customWateringDays !== undefined) {
-        updateData.custom_watering_days = updates.customWateringDays;
-      }
-      if (updates.customFertilizingDays !== undefined) {
-        updateData.custom_fertilizing_days = updates.customFertilizingDays;
-      }
-
       const { data, error } = await supabase
         .from('plants')
         .update(updateData)
@@ -608,6 +670,41 @@ export function usePlants(): UsePlantsReturn {
 
   // Delete a plant
   const deletePlant = async (plantId: string) => {
+    // OFFLINE MODE
+    if (!isOnline) {
+      try {
+        debug.log('OFFLINE: Deleting plant locally', { plantId });
+
+        // Only queue for sync if it's a real UUID (not a temp ID)
+        if (isValidUUID(plantId)) {
+          addToSyncQueue({
+            type: 'plant',
+            action: 'delete',
+            data: { id: plantId },
+          });
+        }
+
+        // Remove from local state
+        setPlants(prev => prev.filter(p => p.id !== plantId));
+
+        // Remove from cache
+        const cached = getFromCache<Plant[]>(CACHE_KEYS.PLANTS);
+        if (cached?.data) {
+          const updatedPlants = cached.data.filter(p => p.id !== plantId);
+          saveToCache(CACHE_KEYS.PLANTS, updatedPlants);
+        }
+
+        setPendingCount(getSyncQueueCount());
+
+        return { success: true, offline: true };
+      } catch (err) {
+        const error = err as Error;
+        debug.error('OFFLINE deletePlant error:', error);
+        return { success: false, error: error.message };
+      }
+    }
+
+    // ONLINE MODE
     try {
       const { error } = await supabase
         .from('plants')

@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 
 interface PlantSpecies {
   emoji: string;
@@ -26,11 +27,17 @@ interface AddPlantSuccessProps {
 }
 
 const AddPlantSuccess: React.FC<AddPlantSuccessProps> = ({ plantData, onViewDetails, onAddNew, onBackHome }) => {
+  const { isOnline } = useOnlineStatus();
+
+  // Use instant animations when offline for snappier feel
+  const instantTransition = !isOnline;
+
   return (
     <motion.div
       className="ios-fixed-container"
-      initial={{ opacity: 0 }}
+      initial={instantTransition ? false : { opacity: 0 }}
       animate={{ opacity: 1 }}
+      transition={{ duration: instantTransition ? 0 : 0.2 }}
       style={{
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
         zIndex: 1002,
@@ -41,9 +48,9 @@ const AddPlantSuccess: React.FC<AddPlantSuccessProps> = ({ plantData, onViewDeta
       }}
     >
       <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
+        initial={instantTransition ? false : { opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+        transition={instantTransition ? { duration: 0 } : { type: 'spring', damping: 25, stiffness: 300 }}
         style={{
           maxWidth: '400px',
           width: '100%',
@@ -56,9 +63,9 @@ const AddPlantSuccess: React.FC<AddPlantSuccessProps> = ({ plantData, onViewDeta
       >
         {/* Plant Photo */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={instantTransition ? false : { opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
+          transition={instantTransition ? { duration: 0 } : { delay: 0.2 }}
           style={{
             width: '160px',
             height: '160px',
@@ -99,9 +106,9 @@ const AddPlantSuccess: React.FC<AddPlantSuccessProps> = ({ plantData, onViewDeta
 
         {/* Success Message */}
         <motion.h2
-          initial={{ opacity: 0, y: 20 }}
+          initial={instantTransition ? false : { opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
+          transition={instantTransition ? { duration: 0 } : { delay: 0.3 }}
           style={{
             fontFamily: "'Inter', sans-serif",
             fontSize: '20px',
@@ -115,9 +122,9 @@ const AddPlantSuccess: React.FC<AddPlantSuccessProps> = ({ plantData, onViewDeta
 
         {/* Plant Summary */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={instantTransition ? false : { opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
+          transition={instantTransition ? { duration: 0 } : { delay: 0.4 }}
           style={{ marginBottom: '32px' }}
         >
           <h3
@@ -148,9 +155,9 @@ const AddPlantSuccess: React.FC<AddPlantSuccessProps> = ({ plantData, onViewDeta
 
         {/* Buttons */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={instantTransition ? false : { opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
+          transition={instantTransition ? { duration: 0 } : { delay: 0.5 }}
           style={{
             display: 'flex',
             flexDirection: 'column',
@@ -212,9 +219,9 @@ const AddPlantSuccess: React.FC<AddPlantSuccessProps> = ({ plantData, onViewDeta
 
         {/* Back to Home Link */}
         <motion.button
-          initial={{ opacity: 0 }}
+          initial={instantTransition ? false : { opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.6 }}
+          transition={instantTransition ? { duration: 0 } : { delay: 0.6 }}
           onClick={onBackHome}
           style={{
             marginTop: '16px',

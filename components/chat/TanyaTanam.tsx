@@ -17,6 +17,7 @@ import {
 } from '@/lib/plantContextBuilder';
 import useOnlineStatus from '@/hooks/useOnlineStatus';
 import { OfflineModal } from '@/components/modals';
+import { GlobalOfflineBanner } from '@/components/shared';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
 import ReactMarkdown from 'react-markdown';
@@ -1304,7 +1305,11 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
         willChange: 'transform',
         backfaceVisibility: 'hidden',
         paddingTop: 'env(safe-area-inset-top, 0px)',
+        display: 'flex',
+        flexDirection: 'column',
       }}>
+        {/* Global Offline Banner */}
+        <GlobalOfflineBanner />
         {/* Header Row - Always visible */}
         <div
           style={{

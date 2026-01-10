@@ -7,6 +7,7 @@ import { LocationSettings } from '@/components/modals';
 import { GlobalOfflineBanner } from '@/components/shared';
 import { compressImage } from '@/lib/imageUtils';
 import { useLocations } from '@/hooks/useLocations';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { generatePlantName } from '@/lib/plantNameGenerator';
 import { createDebugger } from '@/lib/debug';
 
@@ -47,6 +48,7 @@ interface AddPlantFormProps {
 }
 
 const AddPlantForm: React.FC<AddPlantFormProps> = ({ species, onClose, onSubmit, existingPlantCount = 0 }) => {
+  const { isOnline } = useOnlineStatus();
   const [formData, setFormData] = useState<FormData>({
     customName: '',
     location: '',
@@ -193,14 +195,18 @@ const AddPlantForm: React.FC<AddPlantFormProps> = ({ species, onClose, onSubmit,
     }
   };
 
+  // Use instant animations when offline for snappier feel
+  const instantTransition = !isOnline;
+
   return (
     <AnimatePresence>
       <motion.div
         key="add-plant-form-backdrop"
         className="ios-fixed-container"
-        initial={{ opacity: 0 }}
+        initial={instantTransition ? false : { opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
+        transition={{ duration: instantTransition ? 0 : 0.2 }}
         onClick={onClose}
         style={{
           position: 'fixed',
@@ -215,10 +221,10 @@ const AddPlantForm: React.FC<AddPlantFormProps> = ({ species, onClose, onSubmit,
         }}
       >
         <motion.div
-          initial={{ y: '100%' }}
+          initial={instantTransition ? false : { y: '100%' }}
           animate={{ y: 0 }}
           exit={{ y: '100%' }}
-          transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+          transition={instantTransition ? { duration: 0 } : { type: 'spring', damping: 30, stiffness: 300 }}
           onClick={(e) => e.stopPropagation()}
           style={{
             width: '100%',
