@@ -1,5 +1,6 @@
 export { default as ProfileModal } from './ProfileModal';
 export { default as LocationSettings } from './LocationSettings';
+export { default as LocationSettingsSkeleton } from './LocationSettingsSkeleton';
 export { default as OfflineModal } from './OfflineModal';
 export { default as BulkWateringModal } from './BulkWateringModal';
 export { default as BulkFertilizeModal } from './BulkFertilizeModal';

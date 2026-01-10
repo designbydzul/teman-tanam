@@ -479,9 +479,49 @@ const AddPlant: React.FC<AddPlantProps> = ({ onClose, onSelectSpecies }) => {
           }}
         >
         {loading ? (
-          <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px' }}>
-            <p style={{ color: '#757575', fontFamily: "'Inter', sans-serif" }}>Memuat daftar tanaman...</p>
-          </div>
+          /* Show skeleton grid when loading */
+          [1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => (
+            <div
+              key={`skeleton-${i}`}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '8px',
+              }}
+            >
+              {/* Skeleton Image */}
+              <div
+                className="skeleton-pulse"
+                style={{
+                  width: '100%',
+                  aspectRatio: '1',
+                  borderRadius: '24px',
+                  backgroundColor: '#E8E8E8',
+                }}
+              />
+              {/* Skeleton Name */}
+              <div
+                className="skeleton-pulse"
+                style={{
+                  width: '80%',
+                  height: '14px',
+                  borderRadius: '4px',
+                  backgroundColor: '#E8E8E8',
+                }}
+              />
+              {/* Skeleton Scientific Name */}
+              <div
+                className="skeleton-pulse"
+                style={{
+                  width: '60%',
+                  height: '12px',
+                  borderRadius: '4px',
+                  backgroundColor: '#E8E8E8',
+                }}
+              />
+            </div>
+          ))
         ) : filteredPlants.length > 0 ? (
           filteredPlants.map((plant) => (
             <motion.div

@@ -1574,48 +1574,38 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
               >
                 {/* Skeleton Image */}
                 <div
+                  className="skeleton-pulse"
                   style={{
                     width: '100%',
                     aspectRatio: '1',
                     borderRadius: radius.xl,
-                    backgroundColor: colors.gray100,
+                    backgroundColor: '#E8E8E8',
                     marginBottom: '8px',
-                    animation: 'pulse 1.5s ease-in-out infinite',
                   }}
                 />
                 {/* Skeleton Name */}
                 <div
+                  className="skeleton-pulse"
                   style={{
                     width: '80%',
                     height: '16px',
                     borderRadius: radius.md,
-                    backgroundColor: colors.gray200,
+                    backgroundColor: '#E8E8E8',
                     marginBottom: '4px',
-                    animation: 'pulse 1.5s ease-in-out infinite',
                   }}
                 />
                 {/* Skeleton Status */}
                 <div
+                  className="skeleton-pulse"
                   style={{
                     width: '60%',
                     height: '14px',
                     borderRadius: radius.md,
-                    backgroundColor: colors.gray100,
-                    animation: 'pulse 1.5s ease-in-out infinite',
+                    backgroundColor: '#E8E8E8',
                   }}
                 />
               </div>
             ))}
-            <style jsx>{`
-              @keyframes pulse {
-                0%, 100% {
-                  opacity: 1;
-                }
-                50% {
-                  opacity: 0.5;
-                }
-              }
-            `}</style>
           </>
         ) : showEmptyState ? (
           /* Empty State */

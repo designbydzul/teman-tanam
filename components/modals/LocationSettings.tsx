@@ -447,12 +447,65 @@ const LocationSettings: React.FC<LocationSettingsProps> = ({
 
       {/* Content */}
       <div style={{ padding: '24px', paddingBottom: '100px', minHeight: 'calc(100vh - 100px)' }}>
-        {/* Loading State */}
+        {/* Loading State - Skeleton Cards */}
         {loading && (
-          <div style={{ textAlign: 'center', padding: '40px' }}>
-            <p style={{ color: '#757575', fontFamily: "'Inter', sans-serif" }}>
-              Memuat lokasi...
-            </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {[1, 2, 3, 4].map((i) => (
+              <div
+                key={`skeleton-${i}`}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '16px',
+                  padding: '16px',
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '12px',
+                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)',
+                }}
+              >
+                {/* Drag Handle Skeleton */}
+                <div
+                  className="skeleton-pulse"
+                  style={{
+                    width: '24px',
+                    height: '24px',
+                    borderRadius: '4px',
+                    backgroundColor: '#E8E8E8',
+                  }}
+                />
+                {/* Location Info Skeleton */}
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <div
+                    className="skeleton-pulse"
+                    style={{
+                      width: '120px',
+                      height: '16px',
+                      borderRadius: '4px',
+                      backgroundColor: '#E8E8E8',
+                    }}
+                  />
+                  <div
+                    className="skeleton-pulse"
+                    style={{
+                      width: '80px',
+                      height: '14px',
+                      borderRadius: '4px',
+                      backgroundColor: '#E8E8E8',
+                    }}
+                  />
+                </div>
+                {/* Delete Button Skeleton */}
+                <div
+                  className="skeleton-pulse"
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '50%',
+                    backgroundColor: '#E8E8E8',
+                  }}
+                />
+              </div>
+            ))}
           </div>
         )}
 
