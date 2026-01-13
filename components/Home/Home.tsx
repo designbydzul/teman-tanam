@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -25,6 +26,7 @@ import {
 import { AddPlant, AddPlantForm, AddPlantSuccess, PlantDetail, EditPlant, type AddPlantSpecies } from '@/components/plant';
 import { ProfileModal, LocationSettings, BulkWateringModal, BulkFertilizeModal, BulkPruningModal, BulkOtherActionModal, OfflineModal } from '@/components/modals';
 import { EditProfile, OfflineIndicator } from '@/components/shared';
+import { WhatsAppSetup } from '@/components/auth';
 import { TanyaTanam } from '@/components/chat';
 import { usePlants } from '@/hooks/usePlants';
 import { useLocations } from '@/hooks/useLocations';
@@ -82,6 +84,9 @@ interface NewPlantData {
 }
 
 const Home: React.FC<HomeProps> = ({ userName }) => {
+  // URL search params for toast messages from other pages
+  const searchParams = useSearchParams();
+
   // Auth hook - get profile from Supabase
   const { user, profile, updateShowStatistics } = useAuth();
 
@@ -127,6 +132,10 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
   const [selectedSpecies, setSelectedSpecies] = useState<AddPlantSpecies | null>(null);
   const [showSuccess, setShowSuccess] = useState<boolean>(false);
   const [newPlantData, setNewPlantData] = useState<NewPlantData | null>(null);
+
+  // WhatsApp setup state (shown after first plant is added)
+  const [showWhatsAppSetup, setShowWhatsAppSetup] = useState<boolean>(false);
+  const [wasFirstPlant, setWasFirstPlant] = useState<boolean>(false);
 
   // Plant Detail state
   const [selectedPlant, setSelectedPlant] = useState<PlantType | null>(null);
@@ -333,6 +342,20 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
       }
     };
   }, []);
+
+  // Handle toast messages from URL params (e.g., from notifikasi page)
+  useEffect(() => {
+    const toastParam = searchParams.get('toast');
+    if (toastParam === 'notifikasi-saved') {
+      // Show success toast for notification settings
+      setToastMessage({ title: 'Tersimpan', message: 'Pengaturan notifikasi berhasil disimpan' });
+      setShowNetworkToast(true);
+      setTimeout(() => setShowNetworkToast(false), 3000);
+
+      // Clear the URL param without causing a re-render/navigation
+      window.history.replaceState({}, '', '/');
+    }
+  }, [searchParams]);
 
   // Background cache species data for offline use
   // This runs silently when the app loads so users can add plants offline
@@ -834,6 +857,10 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
     console.log('[Home] addSupabasePlant result:', result);
 
     if (result.success) {
+      // Track if this was the user's first plant (for WhatsApp setup prompt)
+      const isFirstPlant = plants.length === 0;
+      setWasFirstPlant(isFirstPlant);
+
       setNewPlantData(dataWithPhoto);
       setShowAddPlantForm(false);
       setShowSuccess(true);
@@ -842,6 +869,24 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
       console.error('[Home] Failed to add plant:', result.error);
       alert(`Gagal menambah tanaman: ${result.error}`);
     }
+  };
+
+  // Check if should show WhatsApp setup (first plant and not shown/skipped before)
+  const shouldShowWhatsAppSetup = (): boolean => {
+    if (!wasFirstPlant) return false;
+    if (typeof window === 'undefined') return false;
+
+    // Check if user has already seen/skipped WhatsApp setup
+    const hasSeenSetup = localStorage.getItem('whatsapp_setup_shown');
+    return !hasSeenSetup;
+  };
+
+  // Handle closing WhatsApp setup (complete or skip)
+  const handleWhatsAppSetupDone = (): void => {
+    // Mark as shown so we don't show again
+    localStorage.setItem('whatsapp_setup_shown', 'true');
+    setShowWhatsAppSetup(false);
+    setWasFirstPlant(false);
   };
 
   const handleViewDetails = (): void => {
@@ -867,20 +912,37 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
     setShowAddPlant(false);
     setSelectedSpecies(null);
     setNewPlantData(null);
+
+    // Check if should show WhatsApp setup after viewing details
+    if (shouldShowWhatsAppSetup()) {
+      setShowWhatsAppSetup(true);
+    }
   };
 
   const handleAddNew = (): void => {
-    setShowSuccess(false);
-    setShowAddPlant(true);
-    setSelectedSpecies(null);
-    setNewPlantData(null);
+    // Check if should show WhatsApp setup before adding another plant
+    if (shouldShowWhatsAppSetup()) {
+      setShowSuccess(false);
+      setShowWhatsAppSetup(true);
+    } else {
+      setShowSuccess(false);
+      setShowAddPlant(true);
+      setSelectedSpecies(null);
+      setNewPlantData(null);
+    }
   };
 
   const handleBackHome = (): void => {
-    setShowSuccess(false);
-    setShowAddPlant(false);
-    setSelectedSpecies(null);
-    setNewPlantData(null);
+    // Check if should show WhatsApp setup before going home
+    if (shouldShowWhatsAppSetup()) {
+      setShowSuccess(false);
+      setShowWhatsAppSetup(true);
+    } else {
+      setShowSuccess(false);
+      setShowAddPlant(false);
+      setSelectedSpecies(null);
+      setNewPlantData(null);
+    }
   };
 
   // Long press handlers for plant cards
@@ -1065,7 +1127,7 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
       }
       setShowEditProfile(true);
     }
-    // TODO: Add other navigation actions (help-community, tutorial, logout)
+    // Note: notification-settings is handled directly by ProfileModal with router.push
   };
 
   // Handle stats toggle from ProfileModal - save to database and localStorage
@@ -2148,6 +2210,14 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
             // Refetch plants from Supabase after location changes
             refetchPlants();
           }}
+        />
+      )}
+
+      {/* WhatsApp Setup (shown after first plant) */}
+      {showWhatsAppSetup && (
+        <WhatsAppSetup
+          onComplete={handleWhatsAppSetupDone}
+          onSkip={handleWhatsAppSetupDone}
         />
       )}
 

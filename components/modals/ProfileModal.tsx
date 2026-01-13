@@ -1,14 +1,15 @@
 'use client';
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, ChartBar, X, PencilSimple, MapPin, Question, Info, SignOut } from '@phosphor-icons/react';
+import { User, ChartBar, X, PencilSimple, MapPin, Question, Info, SignOut, Bell } from '@phosphor-icons/react';
 import { auth } from '@/lib/supabase';
 import { createDebugger } from '@/lib/debug';
 
 const debug = createDebugger('ProfileModal');
 
-type MenuAction = 'edit-profile' | 'location-settings' | 'help-community' | 'about' | 'logout';
+type MenuAction = 'edit-profile' | 'location-settings' | 'notification-settings' | 'help-community' | 'about' | 'logout';
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -33,10 +34,18 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   showStats,
   onToggleStats,
 }) => {
+  const router = useRouter();
   debug.log('render - userPhoto:', !!userPhoto);
 
   const handleMenuAction = async (action: MenuAction) => {
     debug.log('Menu action:', action);
+
+    // Navigate to dedicated notifikasi page
+    if (action === 'notification-settings') {
+      onClose();
+      router.push('/notifikasi');
+      return;
+    }
 
     if (action === 'logout') {
       onClose();
@@ -124,7 +133,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                 backgroundColor: '#FFFFFF',
                 borderRadius: '12px 12px 0 0',
                 padding: '24px',
-                maxHeight: '85vh',
+                maxHeight: '90vh',
                 overflowY: 'auto',
                 display: 'flex',
                 flexDirection: 'column',
@@ -157,10 +166,10 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
             {/* Profile Picture */}
             <div
               style={{
-                width: '96px',
-                height: '96px',
-                borderRadius: '24px',
-                backgroundColor: userPhoto ? 'transparent' : '#F5F5F5',
+                width: '100px',
+                height: '100px',
+                borderRadius: '16px',
+                backgroundColor: '#F5F5F5',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -179,7 +188,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                   }}
                 />
               ) : (
-                <User size={48} weight="regular" color="#CCCCCC" />
+                <User size={56} weight="light" color="#BDBDBD" />
               )}
             </div>
 
@@ -290,7 +299,49 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                     color: '#2C2C2C',
                   }}
                 >
-                  Pengaturan Lokasi Tanam
+                  Lokasi Tanam
+                </span>
+              </motion.button>
+
+              {/* Notifikasi */}
+              <motion.button
+                whileTap={{ scale: 0.98 }}
+                onClick={() => handleMenuAction('notification-settings')}
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  backgroundColor: '#FFFFFF',
+                  border: '1px solid #E4E4E7',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  cursor: 'pointer',
+                }}
+              >
+                <div
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '50%',
+                    backgroundColor: '#FAFAFA',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  <Bell size={20} weight="regular" color="#757575" />
+                </div>
+                <span
+                  style={{
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: '1rem',
+                    fontWeight: 500,
+                    color: '#2C2C2C',
+                  }}
+                >
+                  Notifikasi
                 </span>
               </motion.button>
 

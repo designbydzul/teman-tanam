@@ -10,7 +10,13 @@ import { createDebugger } from '@/lib/debug';
 const debug = createDebugger('Page');
 
 export default function Page() {
-  const [showSplash, setShowSplash] = useState(true);
+  // Only show splash on first visit in this session
+  const [showSplash, setShowSplash] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return !sessionStorage.getItem('splashShown');
+    }
+    return true;
+  });
   const [authScreen, setAuthScreen] = useState<'login' | 'forgot-password'>('login');
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
   const [isResettingPassword, setIsResettingPassword] = useState(false);
@@ -66,6 +72,7 @@ export default function Page() {
   // Handle splash screen completion
   const handleSplashComplete = () => {
     debug.log('Splash complete');
+    sessionStorage.setItem('splashShown', 'true');
     setShowSplash(false);
   };
 
