@@ -303,6 +303,20 @@ const EditProfile: React.FC<EditProfileProps> = ({
       // User profile
       await supabase.from('user_profiles').delete().eq('user_id', user.id);
 
+      // Delete the auth user account via API
+      const response = await fetch('/api/delete-account', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId: user.id }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete account');
+      }
+
       // Sign out and clear local storage
       await supabase.auth.signOut();
       localStorage.clear();
