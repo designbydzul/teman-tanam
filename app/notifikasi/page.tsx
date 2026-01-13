@@ -16,6 +16,8 @@ export default function NotifikasiPage() {
 
   const [enabled, setEnabled] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [reminderTime, setReminderTime] = useState('07:00');
+  const [focusedInput, setFocusedInput] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [phoneError, setPhoneError] = useState<string | null>(null);
 
@@ -53,6 +55,11 @@ export default function NotifikasiPage() {
           : settings.whatsapp_number;
         setPhoneNumber(displayNumber);
       }
+      // Set reminder time (convert from HH:MM:SS to HH:MM)
+      if (settings.reminder_time) {
+        const timeOnly = settings.reminder_time.substring(0, 5); // Get HH:MM
+        setReminderTime(timeOnly);
+      }
     }
   }, [settings]);
 
@@ -85,7 +92,11 @@ export default function NotifikasiPage() {
 
     setIsSaving(true);
 
-    const result = await updateSettings(enabled, enabled ? phoneNumber : null);
+    const result = await updateSettings(
+      enabled,
+      enabled ? phoneNumber : null,
+      reminderTime + ':00' // Convert HH:MM to HH:MM:SS for database
+    );
 
     if (result.success) {
       // Navigate back to home with success toast
@@ -280,8 +291,13 @@ export default function NotifikasiPage() {
                       alignItems: 'center',
                       backgroundColor: '#FAFAFA',
                       borderRadius: '12px',
-                      border: phoneError ? '2px solid #F44336' : '2px solid transparent',
+                      border: phoneError
+                        ? '2px solid #F44336'
+                        : focusedInput === 'phone'
+                        ? '2px solid #7CB342'
+                        : '2px solid transparent',
                       overflow: 'hidden',
+                      transition: 'border-color 200ms',
                     }}
                   >
                     <div
@@ -304,6 +320,8 @@ export default function NotifikasiPage() {
                       type="tel"
                       value={phoneNumber}
                       onChange={(e) => handlePhoneChange(e.target.value)}
+                      onFocus={() => setFocusedInput('phone')}
+                      onBlur={() => setFocusedInput(null)}
                       placeholder="81234567890"
                       style={{
                         flex: 1,
@@ -341,54 +359,41 @@ export default function NotifikasiPage() {
                     </p>
                   )}
 
-                  {/* Time Display */}
-                  <div
-                    style={{
-                      marginTop: '16px',
-                      backgroundColor: '#FAFAFA',
-                      borderRadius: '12px',
-                      padding: '16px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                    }}
-                  >
-                    <div
+                  {/* Time Picker - Native Time Input */}
+                  <div style={{ marginTop: '16px' }}>
+                    <label
                       style={{
-                        width: '40px',
-                        height: '40px',
-                        borderRadius: '10px',
-                        backgroundColor: 'rgba(124, 179, 66, 0.1)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
+                        display: 'block',
+                        fontFamily: "'Inter', sans-serif",
+                        fontSize: '14px',
+                        color: '#757575',
+                        marginBottom: '8px',
                       }}
                     >
-                      <Clock size={24} weight="regular" color="#7CB342" />
-                    </div>
-                    <div>
-                      <p
-                        style={{
-                          margin: 0,
-                          fontFamily: "'Inter', sans-serif",
-                          fontSize: '0.875rem',
-                          color: '#757575',
-                        }}
-                      >
-                        Waktu Reminder
-                      </p>
-                      <p
-                        style={{
-                          margin: '4px 0 0 0',
-                          fontFamily: "'Inter', sans-serif",
-                          fontSize: '1rem',
-                          fontWeight: 500,
-                          color: '#2C2C2C',
-                        }}
-                      >
-                        07:00 WIB (setiap hari)
-                      </p>
-                    </div>
+                      Waktu Reminder
+                    </label>
+                    <input
+                      type="time"
+                      value={reminderTime}
+                      onChange={(e) => setReminderTime(e.target.value)}
+                      onFocus={() => setFocusedInput('time')}
+                      onBlur={() => setFocusedInput(null)}
+                      style={{
+                        width: '100%',
+                        boxSizing: 'border-box',
+                        padding: '16px',
+                        fontSize: '1rem',
+                        fontFamily: "'Inter', sans-serif",
+                        color: '#2C2C2C',
+                        backgroundColor: '#FAFAFA',
+                        border: focusedInput === 'time' ? '2px solid #7CB342' : '2px solid transparent',
+                        borderRadius: '12px',
+                        outline: 'none',
+                        transition: 'border-color 200ms',
+                        WebkitAppearance: 'none',
+                        appearance: 'none',
+                      }}
+                    />
                   </div>
                 </motion.div>
               )}

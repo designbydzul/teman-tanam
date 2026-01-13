@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { ArrowLeft, UploadSimple, CircleNotch } from '@phosphor-icons/react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowLeft, UploadSimple, CircleNotch, Trash } from '@phosphor-icons/react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
 import { GlobalOfflineBanner } from '@/components/shared';
@@ -53,6 +54,11 @@ const EditProfile: React.FC<EditProfileProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [isProcessingPhoto, setIsProcessingPhoto] = useState(false);
   const [photoError, setPhotoError] = useState<string | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirmName, setDeleteConfirmName] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleteInputFocused, setDeleteInputFocused] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Compress and resize image for profile photo
@@ -258,6 +264,58 @@ const EditProfile: React.FC<EditProfileProps> = ({
     }
   };
 
+  const handleDeleteAccount = async () => {
+    // Validate name matches
+    if (deleteConfirmName.trim() !== name.trim()) {
+      setDeleteError('Nama tidak sesuai');
+      return;
+    }
+
+    setIsDeleting(true);
+    setDeleteError(null);
+
+    try {
+      if (!user?.id) {
+        setDeleteError('User not authenticated');
+        setIsDeleting(false);
+        return;
+      }
+
+      // Delete user's avatar from storage
+      if (userPhoto) {
+        const fileName = `${user.id}/avatar.jpg`;
+        await supabase.storage.from('avatars').remove([fileName]);
+      }
+
+      // Delete all user data from tables
+      // Plants
+      await supabase.from('plants').delete().eq('user_id', user.id);
+
+      // Locations
+      await supabase.from('locations').delete().eq('user_id', user.id);
+
+      // Notification settings
+      await supabase.from('notification_settings').delete().eq('user_id', user.id);
+
+      // Notification logs
+      await supabase.from('notification_logs').delete().eq('user_id', user.id);
+
+      // User profile
+      await supabase.from('user_profiles').delete().eq('user_id', user.id);
+
+      // Sign out and clear local storage
+      await supabase.auth.signOut();
+      localStorage.clear();
+
+      // Redirect to home
+      window.location.href = '/';
+    } catch (err) {
+      debug.error('Error deleting account:', err);
+      setDeleteError('Terjadi kesalahan. Coba lagi.');
+      setIsDeleting(false);
+    }
+  };
+
   const isValid = name.trim().length >= 2;
 
   return (
@@ -283,6 +341,7 @@ const EditProfile: React.FC<EditProfileProps> = ({
         style={{
           padding: '24px',
           backgroundColor: '#FFFFFF',
+          borderBottom: '1px solid #F5F5F5',
           flexShrink: 0,
         }}
       >
@@ -319,6 +378,26 @@ const EditProfile: React.FC<EditProfileProps> = ({
           >
             Edit Profil
           </h1>
+
+          {/* Delete Account Button */}
+          <button
+            onClick={() => setShowDeleteModal(true)}
+            style={{
+              position: 'absolute',
+              right: 0,
+              width: '40px',
+              height: '40px',
+              borderRadius: '50%',
+              backgroundColor: '#FEE2E2',
+              border: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+            }}
+          >
+            <Trash size={20} weight="bold" color="#DC2626" />
+          </button>
         </div>
       </div>
 
@@ -568,6 +647,204 @@ const EditProfile: React.FC<EditProfileProps> = ({
           {isSaving ? 'Menyimpan...' : 'Simpan Perubahan'}
         </button>
       </div>
+
+      {/* Delete Account Confirmation Modal */}
+      <AnimatePresence>
+        {showDeleteModal && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => !isDeleting && setShowDeleteModal(false)}
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                zIndex: 4000,
+              }}
+            />
+
+            {/* Modal Container */}
+            <div
+              style={{
+                position: 'fixed',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                width: 'calc(100% - 48px)',
+                maxWidth: '400px',
+                zIndex: 4001,
+              }}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '20px',
+                  padding: '24px',
+                  boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+                }}
+              >
+                {/* Icon */}
+                <div
+                  style={{
+                    width: '64px',
+                    height: '64px',
+                    borderRadius: '16px',
+                    backgroundColor: '#FEE2E2',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    margin: '0 auto 20px auto',
+                  }}
+                >
+                  <Trash size={32} weight="fill" color="#DC2626" />
+                </div>
+
+                {/* Title */}
+                <h2
+                  style={{
+                    fontFamily: "'Caveat', cursive",
+                    fontSize: '1.75rem',
+                    fontWeight: 600,
+                    color: '#2D5016',
+                    textAlign: 'center',
+                    margin: '0 0 12px 0',
+                  }}
+                >
+                  Hapus Akun?
+                </h2>
+
+                {/* Description */}
+                <p
+                  style={{
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: '0.9375rem',
+                    color: '#757575',
+                    textAlign: 'center',
+                    margin: '0 0 24px 0',
+                    lineHeight: 1.6,
+                  }}
+                >
+                  Semua data kamu akan dihapus permanen dan tidak bisa dikembalikan. Ketik nama kamu untuk konfirmasi.
+                </p>
+
+                {/* Name Confirmation Input */}
+                <div style={{ marginBottom: '20px' }}>
+                  <label
+                    style={{
+                      display: 'block',
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: '0.875rem',
+                      color: '#757575',
+                      marginBottom: '8px',
+                    }}
+                  >
+                    Nama Kamu: <strong>{name}</strong>
+                  </label>
+                  <input
+                    type="text"
+                    value={deleteConfirmName}
+                    onChange={(e) => {
+                      setDeleteConfirmName(e.target.value);
+                      setDeleteError(null);
+                    }}
+                    onFocus={() => setDeleteInputFocused(true)}
+                    onBlur={() => setDeleteInputFocused(false)}
+                    placeholder="Ketik nama kamu"
+                    disabled={isDeleting}
+                    style={{
+                      width: '100%',
+                      padding: '14px',
+                      fontSize: '0.9375rem',
+                      fontFamily: "'Inter', sans-serif",
+                      color: '#2C2C2C',
+                      backgroundColor: '#FAFAFA',
+                      border: deleteError
+                        ? '2px solid #DC2626'
+                        : deleteInputFocused
+                          ? '2px solid #7CB342'
+                          : '2px solid transparent',
+                      borderRadius: '12px',
+                      outline: 'none',
+                      transition: 'border-color 200ms',
+                      opacity: isDeleting ? 0.5 : 1,
+                    }}
+                  />
+                  {deleteError && (
+                    <p
+                      style={{
+                        margin: '8px 0 0 0',
+                        fontSize: '0.75rem',
+                        color: '#DC2626',
+                        fontFamily: "'Inter', sans-serif",
+                      }}
+                    >
+                      {deleteError}
+                    </p>
+                  )}
+                </div>
+
+                {/* Buttons */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {/* Delete Button */}
+                  <button
+                    type="button"
+                    onClick={handleDeleteAccount}
+                    disabled={isDeleting}
+                    style={{
+                      width: '100%',
+                      padding: '14px',
+                      borderRadius: '12px',
+                      border: 'none',
+                      backgroundColor: isDeleting ? '#E0E0E0' : '#DC2626',
+                      color: '#FFFFFF',
+                      fontSize: '1rem',
+                      fontWeight: 600,
+                      fontFamily: "'Inter', sans-serif",
+                      cursor: isDeleting ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    {isDeleting ? 'Menghapus...' : 'Ya, Hapus Akun Saya'}
+                  </button>
+
+                  {/* Cancel Button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowDeleteModal(false);
+                      setDeleteConfirmName('');
+                      setDeleteError(null);
+                      setDeleteInputFocused(false);
+                    }}
+                    disabled={isDeleting}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      background: 'transparent',
+                      border: 'none',
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: '0.9375rem',
+                      color: '#757575',
+                      cursor: isDeleting ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    Batal
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

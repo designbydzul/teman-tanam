@@ -13,6 +13,7 @@ export interface NotificationSettings {
   user_id: string;
   whatsapp_enabled: boolean;
   whatsapp_number: string | null;
+  reminder_time: string; // Format: "HH:MM:SS" from database TIME type
   created_at: string;
   updated_at: string;
 }
@@ -34,7 +35,7 @@ export interface UseNotificationSettingsReturn {
   loading: boolean;
   logsLoading: boolean;
   error: string | null;
-  updateSettings: (enabled: boolean, phoneNumber: string | null) => Promise<{ success: boolean; error?: string }>;
+  updateSettings: (enabled: boolean, phoneNumber: string | null, reminderTime?: string) => Promise<{ success: boolean; error?: string }>;
   refetch: () => Promise<void>;
   fetchLogs: (limit?: number) => Promise<void>;
 }
@@ -165,14 +166,15 @@ export function useNotificationSettings(): UseNotificationSettingsReturn {
   // Update settings
   const updateSettings = async (
     enabled: boolean,
-    phoneNumber: string | null
+    phoneNumber: string | null,
+    reminderTime?: string
   ): Promise<{ success: boolean; error?: string }> => {
     if (!user?.id) {
       return { success: false, error: 'User not authenticated' };
     }
 
     try {
-      debug.log('Updating notification settings:', { enabled, phoneNumber });
+      debug.log('Updating notification settings:', { enabled, phoneNumber, reminderTime });
 
       // Format phone number if provided
       const formattedNumber = phoneNumber ? formatWhatsAppNumber(phoneNumber) : null;
@@ -182,12 +184,17 @@ export function useNotificationSettings(): UseNotificationSettingsReturn {
         return { success: false, error: 'Format nomor gak valid. Contoh: 81234567890' };
       }
 
-      const updateData = {
+      const updateData: Record<string, unknown> = {
         user_id: user.id,
         whatsapp_enabled: enabled,
         whatsapp_number: formattedNumber,
         updated_at: new Date().toISOString(),
       };
+
+      // Add reminder_time if provided
+      if (reminderTime) {
+        updateData.reminder_time = reminderTime;
+      }
 
       // Use upsert to create or update
       const { data, error: upsertError } = await supabase

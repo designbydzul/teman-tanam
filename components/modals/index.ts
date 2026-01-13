@@ -6,3 +6,4 @@ export { default as BulkWateringModal } from './BulkWateringModal';
 export { default as BulkFertilizeModal } from './BulkFertilizeModal';
 export { default as BulkPruningModal } from './BulkPruningModal';
 export { default as BulkOtherActionModal } from './BulkOtherActionModal';
+export { default as NotificationReminderModal } from './NotificationReminderModal';

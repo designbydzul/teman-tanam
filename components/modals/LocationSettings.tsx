@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   DndContext,
@@ -29,6 +29,7 @@ import {
   Plus,
   MapPin,
   X,
+  PencilSimple,
 } from '@phosphor-icons/react';
 import { useLocations } from '@/hooks/useLocations';
 import { GlobalOfflineBanner } from '@/components/shared';
@@ -48,6 +49,7 @@ interface SortableLocationCardProps {
   location: Location;
   plantCount: number;
   onDelete: (location: Location) => void;
+  onEdit: (location: Location) => void;
   isDeleting: boolean;
 }
 
@@ -55,6 +57,7 @@ const SortableLocationCard: React.FC<SortableLocationCardProps> = ({
   location,
   plantCount,
   onDelete,
+  onEdit,
   isDeleting,
 }) => {
   const {
@@ -140,6 +143,27 @@ const SortableLocationCard: React.FC<SortableLocationCardProps> = ({
           )}
         </div>
 
+        {/* Edit Button */}
+        <button
+          onClick={() => onEdit(location)}
+          disabled={isDeleting}
+          style={{
+            width: '40px',
+            height: '40px',
+            borderRadius: '50%',
+            backgroundColor: '#F5F5F5',
+            border: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: isDeleting ? 'not-allowed' : 'pointer',
+            opacity: isDeleting ? 0.5 : 1,
+            marginRight: '4px',
+          }}
+        >
+          <PencilSimple size={20} weight="bold" color="#757575" />
+        </button>
+
         {/* Delete Button */}
         <button
           onClick={() => onDelete(location)}
@@ -170,6 +194,7 @@ interface LocationSettingsProps {
   onLocationAdded?: (locationName: string) => void;
   plants?: Plant[];
   onPlantsUpdated?: (plants: Plant[]) => void;
+  isNested?: boolean; // If true, just calls onBack instead of navigating to home with toast
 }
 
 const LocationSettings: React.FC<LocationSettingsProps> = ({
@@ -178,6 +203,7 @@ const LocationSettings: React.FC<LocationSettingsProps> = ({
   onLocationAdded,
   plants = [],
   onPlantsUpdated,
+  isNested = false,
 }) => {
   // Use Supabase locations hook
   const {
@@ -186,6 +212,7 @@ const LocationSettings: React.FC<LocationSettingsProps> = ({
     error: locationsError,
     isOnline,
     addLocation,
+    updateLocation,
     deleteLocation,
     reorderLocations,
     refetch,
@@ -194,14 +221,21 @@ const LocationSettings: React.FC<LocationSettingsProps> = ({
   const [showAddModal, setShowAddModal] = useState(false);
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
   const [showMovePlantsModal, setShowMovePlantsModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [newLocationName, setNewLocationName] = useState('');
+  const [locationToEdit, setLocationToEdit] = useState<Location | null>(null);
+  const [editLocationName, setEditLocationName] = useState('');
   const [locationToDelete, setLocationToDelete] = useState<Location | null>(null);
   const [moveToLocation, setMoveToLocation] = useState('');
   const [inputFocused, setInputFocused] = useState(false);
+  const [editInputFocused, setEditInputFocused] = useState(false);
   const [error, setError] = useState('');
+  const [editError, setEditError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const addLocationInputRef = useRef<HTMLInputElement>(null);
+  const editLocationInputRef = useRef<HTMLInputElement>(null);
 
   // Calculate plant count for a location from actual plants data
   const getPlantCountForLocation = (locationName: string): number => {
@@ -213,6 +247,26 @@ const LocationSettings: React.FC<LocationSettingsProps> = ({
     const trimmedName = name.trim().toLowerCase();
     return (locations as Location[]).some((loc) => loc.name.toLowerCase() === trimmedName);
   };
+
+  // Auto-focus input when add modal opens
+  useEffect(() => {
+    if (showAddModal && addLocationInputRef.current) {
+      // Small delay to ensure modal is fully rendered
+      setTimeout(() => {
+        addLocationInputRef.current?.focus();
+      }, 100);
+    }
+  }, [showAddModal]);
+
+  // Auto-focus input when edit modal opens
+  useEffect(() => {
+    if (showEditModal && editLocationInputRef.current) {
+      // Small delay to ensure modal is fully rendered
+      setTimeout(() => {
+        editLocationInputRef.current?.focus();
+      }, 100);
+    }
+  }, [showEditModal]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -306,6 +360,64 @@ const LocationSettings: React.FC<LocationSettingsProps> = ({
   };
 
   const isValidNewLocation = newLocationName.trim().length >= 2 && !checkDuplicate(newLocationName);
+
+  // Handle edit location
+  const handleEdit = (location: Location) => {
+    setLocationToEdit(location);
+    setEditLocationName(location.name);
+    setEditError('');
+    setShowEditModal(true);
+  };
+
+  const handleEditNameChange = (value: string) => {
+    setEditLocationName(value);
+    // Clear error when user starts typing
+    if (editError) {
+      setEditError('');
+    }
+  };
+
+  const handleUpdateLocation = async () => {
+    if (!locationToEdit) return;
+
+    const trimmedName = editLocationName.trim();
+
+    // Validate
+    if (trimmedName.length < 2) {
+      setEditError('Minimal 2 karakter');
+      return;
+    }
+
+    // Check for duplicates (excluding current location)
+    const isDuplicate = locations.some(
+      (loc) => loc.id !== locationToEdit.id && loc.name.toLowerCase() === trimmedName.toLowerCase()
+    );
+
+    if (isDuplicate) {
+      setEditError('Lokasi sudah ada');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    // Update in Supabase
+    const result = await updateLocation(locationToEdit.id, { name: trimmedName });
+
+    if (result.success) {
+      setShowEditModal(false);
+      setLocationToEdit(null);
+      setEditLocationName('');
+
+      // Callback to show toast
+      if (onLocationAdded) {
+        onLocationAdded(trimmedName);
+      }
+    } else {
+      setEditError(result.error || 'Gagal mengubah lokasi');
+    }
+
+    setIsSubmitting(false);
+  };
 
   const handleDeleteLocation = (location: Location) => {
     setLocationToDelete(location);
@@ -442,6 +554,26 @@ const LocationSettings: React.FC<LocationSettingsProps> = ({
           >
             Atur Lokasi Tanam
           </h1>
+
+          {/* Add Location Button - Plus Icon */}
+          <button
+            onClick={() => setShowAddModal(true)}
+            style={{
+              position: 'absolute',
+              right: 0,
+              width: '40px',
+              height: '40px',
+              borderRadius: '50%',
+              backgroundColor: '#7CB342',
+              border: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+            }}
+          >
+            <Plus size={20} weight="bold" color="#FFFFFF" />
+          </button>
         </div>
       </div>
 
@@ -601,6 +733,7 @@ const LocationSettings: React.FC<LocationSettingsProps> = ({
                   location={location}
                   plantCount={getPlantCountForLocation(location.name)}
                   onDelete={handleDeleteLocation}
+                  onEdit={handleEdit}
                   isDeleting={isDeleting}
                 />
               ))}
@@ -653,7 +786,7 @@ const LocationSettings: React.FC<LocationSettingsProps> = ({
 
       </div>
 
-      {/* Add New Location Button - Fixed at bottom */}
+      {/* Save Button - Fixed at bottom */}
       {!loading && (
         <div
           style={{
@@ -669,31 +802,29 @@ const LocationSettings: React.FC<LocationSettingsProps> = ({
           }}
         >
           <button
-            onClick={() => setShowAddModal(true)}
+            onClick={() => {
+              if (isNested) {
+                // If nested (e.g., from AddPlantForm), just close the modal
+                onBack();
+              } else {
+                // If standalone page, navigate back with success toast
+                window.location.href = '/?toast=lokasi-saved';
+              }
+            }}
             style={{
               width: '100%',
-              padding: '14px 24px',
-              backgroundColor: '#FFFFFF',
-              border: '1.5px solid #2D5016',
+              padding: '14px',
               borderRadius: '12px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
+              border: 'none',
+              backgroundColor: '#7CB342',
+              color: '#FFFFFF',
+              fontSize: '1rem',
+              fontWeight: 600,
+              fontFamily: "'Inter', sans-serif",
               cursor: 'pointer',
             }}
           >
-            <Plus size={20} weight="bold" color="#2D5016" />
-            <span
-              style={{
-                fontFamily: "'Inter', sans-serif",
-                fontSize: '1rem',
-                fontWeight: 600,
-                color: '#2D5016',
-              }}
-            >
-              Tambah Lokasi Baru
-            </span>
+            Simpan
           </button>
         </div>
       )}
@@ -776,6 +907,7 @@ const LocationSettings: React.FC<LocationSettingsProps> = ({
 
               {/* Input */}
               <input
+                ref={addLocationInputRef}
                 type="text"
                 placeholder="Nama lokasi (min. 2 karakter)"
                 value={newLocationName}
@@ -830,6 +962,149 @@ const LocationSettings: React.FC<LocationSettingsProps> = ({
                   border: 'none',
                   borderRadius: '12px',
                   cursor: isValidNewLocation && !isSubmitting ? 'pointer' : 'not-allowed',
+                }}
+              >
+                {isSubmitting ? 'Menyimpan...' : 'Simpan'}
+              </button>
+            </motion.div>
+            </div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Edit Location Modal */}
+      <AnimatePresence>
+        {showEditModal && (
+          <>
+            <motion.div
+              className="ios-fixed-container"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => !isSubmitting && setShowEditModal(false)}
+              style={{
+                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                zIndex: 1000,
+              }}
+            />
+
+            {/* Modal Container - for centering */}
+            <div
+              style={{
+                position: 'fixed',
+                bottom: 0,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '100%',
+                maxWidth: 'var(--app-max-width)',
+                zIndex: 1001,
+              }}
+            >
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              style={{
+                backgroundColor: '#FFFFFF',
+                borderRadius: '12px 12px 0 0',
+                padding: '24px',
+              }}
+            >
+              {/* Close Button */}
+              <button
+                onClick={() => !isSubmitting && setShowEditModal(false)}
+                disabled={isSubmitting}
+                aria-label="Tutup"
+                style={{
+                  position: 'absolute',
+                  top: '20px',
+                  right: '20px',
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  backgroundColor: '#F5F5F5',
+                  border: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                  opacity: isSubmitting ? 0.5 : 1,
+                }}
+              >
+                <X size={20} weight="regular" color="#757575" />
+              </button>
+
+              {/* Edit Location Modal Title */}
+              <h2
+                style={{
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '1.25rem',
+                  fontWeight: 600,
+                  color: '#2C2C2C',
+                  margin: '0 0 16px 0',
+                }}
+              >
+                Edit Lokasi
+              </h2>
+
+              {/* Input */}
+              <input
+                ref={editLocationInputRef}
+                type="text"
+                placeholder="Nama lokasi (min. 2 karakter)"
+                value={editLocationName}
+                onChange={(e) => handleEditNameChange(e.target.value)}
+                onFocus={() => setEditInputFocused(true)}
+                onBlur={() => setEditInputFocused(false)}
+                disabled={isSubmitting}
+                style={{
+                  width: '100%',
+                  padding: '16px',
+                  fontSize: '1rem',
+                  fontFamily: "'Inter', sans-serif",
+                  color: '#2C2C2C',
+                  backgroundColor: '#FAFAFA',
+                  border: editError
+                    ? '2px solid #EF4444'
+                    : editInputFocused
+                      ? '2px solid #7CB342'
+                      : '2px solid transparent',
+                  borderRadius: '12px',
+                  outline: 'none',
+                  marginBottom: editError ? '8px' : '16px',
+                  transition: 'border-color 200ms',
+                  opacity: isSubmitting ? 0.5 : 1,
+                }}
+              />
+              {editError && (
+                <p
+                  style={{
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: '12px',
+                    color: '#EF4444',
+                    margin: '0 0 16px 0',
+                  }}
+                >
+                  {editError}
+                </p>
+              )}
+
+              {/* Submit Button */}
+              <button
+                onClick={handleUpdateLocation}
+                disabled={editLocationName.trim().length < 2 || isSubmitting}
+                style={{
+                  width: '100%',
+                  padding: '14px',
+                  fontSize: '1rem',
+                  fontFamily: "'Inter', sans-serif",
+                  fontWeight: 600,
+                  color: '#FFFFFF',
+                  backgroundColor: editLocationName.trim().length >= 2 && !isSubmitting ? '#7CB342' : '#E0E0E0',
+                  border: 'none',
+                  borderRadius: '12px',
+                  cursor: editLocationName.trim().length >= 2 && !isSubmitting ? 'pointer' : 'not-allowed',
                 }}
               >
                 {isSubmitting ? 'Menyimpan...' : 'Simpan'}

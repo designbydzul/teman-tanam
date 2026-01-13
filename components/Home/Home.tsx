@@ -24,9 +24,8 @@ import {
   MagnifyingGlass,
 } from '@phosphor-icons/react';
 import { AddPlant, AddPlantForm, AddPlantSuccess, PlantDetail, EditPlant, type AddPlantSpecies } from '@/components/plant';
-import { ProfileModal, LocationSettings, BulkWateringModal, BulkFertilizeModal, BulkPruningModal, BulkOtherActionModal, OfflineModal } from '@/components/modals';
+import { ProfileModal, LocationSettings, BulkWateringModal, BulkFertilizeModal, BulkPruningModal, BulkOtherActionModal, OfflineModal, NotificationReminderModal } from '@/components/modals';
 import { EditProfile, OfflineIndicator } from '@/components/shared';
-import { WhatsAppSetup } from '@/components/auth';
 import { TanyaTanam } from '@/components/chat';
 import { usePlants } from '@/hooks/usePlants';
 import { useLocations } from '@/hooks/useLocations';
@@ -348,7 +347,15 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
     const toastParam = searchParams.get('toast');
     if (toastParam === 'notifikasi-saved') {
       // Show success toast for notification settings
-      setToastMessage({ title: 'Tersimpan', message: 'Pengaturan notifikasi berhasil disimpan' });
+      setToastMessage({ title: 'Pengaturan notifikasi berhasil disimpan', message: '' });
+      setShowNetworkToast(true);
+      setTimeout(() => setShowNetworkToast(false), 3000);
+
+      // Clear the URL param without causing a re-render/navigation
+      window.history.replaceState({}, '', '/');
+    } else if (toastParam === 'lokasi-saved') {
+      // Show success toast for location settings
+      setToastMessage({ title: 'Lokasi berhasil disimpan', message: '' });
       setShowNetworkToast(true);
       setTimeout(() => setShowNetworkToast(false), 3000);
 
@@ -2213,13 +2220,15 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
         />
       )}
 
-      {/* WhatsApp Setup (shown after first plant) */}
-      {showWhatsAppSetup && (
-        <WhatsAppSetup
-          onComplete={handleWhatsAppSetupDone}
-          onSkip={handleWhatsAppSetupDone}
-        />
-      )}
+      {/* Notification Reminder Modal (shown after first plant) */}
+      <NotificationReminderModal
+        isOpen={showWhatsAppSetup}
+        onClose={handleWhatsAppSetupDone}
+        onSuccess={() => {
+          // Show success toast
+          showActionToastWithMessage('Reminder berhasil diaktifkan!');
+        }}
+      />
 
       {/* Edit Profile */}
       {showEditProfile && (
