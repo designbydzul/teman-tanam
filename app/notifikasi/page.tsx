@@ -8,6 +8,7 @@ import {
   useNotificationSettings,
   isValidIndonesianNumber,
 } from '@/hooks/useNotificationSettings';
+import { supabase } from '@/lib/supabase/client';
 
 export default function NotifikasiPage() {
   const router = useRouter();
@@ -19,6 +20,7 @@ export default function NotifikasiPage() {
   const [reminderTime, setReminderTime] = useState('07:00');
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSendingTest, setIsSendingTest] = useState(false);
   const [phoneError, setPhoneError] = useState<string | null>(null);
 
   // Toast state (matching Home.tsx style)
@@ -113,6 +115,57 @@ export default function NotifikasiPage() {
   // Handle back navigation
   const handleBack = () => {
     router.back();
+  };
+
+  // Handle send test notification
+  const handleSendTest = async () => {
+    // Validate phone number
+    if (!phoneNumber.trim()) {
+      setPhoneError('Masukkan nomor WhatsApp');
+      return;
+    }
+
+    if (!isValidIndonesianNumber(phoneNumber)) {
+      setPhoneError('Format nomor gak valid. Contoh: 81234567890');
+      return;
+    }
+
+    setIsSendingTest(true);
+
+    try {
+      // Format phone number to 628xxx format
+      const formattedPhone = '62' + phoneNumber;
+
+      // Get the session token to send with the request
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        showToastMessage('Sesi kamu habis. Silakan login lagi.');
+        return;
+      }
+
+      const response = await fetch('/api/notifications/test', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ phone_number: formattedPhone }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        showToastMessage(data.message || 'Pesan test berhasil dikirim! 🎉');
+      } else {
+        showToastMessage(data.error || 'Gagal kirim pesan test. Coba lagi ya!');
+      }
+    } catch (error) {
+      console.error('Test notification error:', error);
+      showToastMessage('Gagal kirim pesan test. Coba lagi ya!');
+    } finally {
+      setIsSendingTest(false);
+    }
   };
 
   return (
@@ -394,6 +447,34 @@ export default function NotifikasiPage() {
                         appearance: 'none',
                       }}
                     />
+                  </div>
+
+                  {/* Test Button */}
+                  <div style={{ marginTop: '16px' }}>
+                    <button
+                      onClick={handleSendTest}
+                      disabled={isSendingTest || !phoneNumber}
+                      style={{
+                        width: '100%',
+                        padding: '14px',
+                        borderRadius: '12px',
+                        border: '2px solid #7CB342',
+                        backgroundColor: '#FFFFFF',
+                        color: '#7CB342',
+                        fontSize: '1rem',
+                        fontWeight: 600,
+                        fontFamily: "'Inter', sans-serif",
+                        cursor: isSendingTest || !phoneNumber ? 'not-allowed' : 'pointer',
+                        opacity: isSendingTest || !phoneNumber ? 0.5 : 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                      }}
+                    >
+                      <WhatsappLogo size={20} weight="fill" />
+                      {isSendingTest ? 'Mengirim...' : 'Kirim Test Notifikasi'}
+                    </button>
                   </div>
                 </motion.div>
               )}

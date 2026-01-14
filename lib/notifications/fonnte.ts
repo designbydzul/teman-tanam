@@ -71,6 +71,8 @@ export async function sendWhatsAppMessage(
 
     const data: FonnteSendResponse = await response.json();
 
+    console.log('[fonnte] API response:', JSON.stringify(data));
+
     if (data.status) {
       console.log(`[fonnte] Message sent successfully, ID: ${data.id}`);
       return {
@@ -78,10 +80,12 @@ export async function sendWhatsAppMessage(
         messageId: data.id,
       };
     } else {
-      console.error('[fonnte] API error:', data.detail);
+      const errorMsg = (data as any).reason || data.detail || 'Unknown error from Fonnte API';
+      console.error('[fonnte] API error:', errorMsg);
+      console.error('[fonnte] Full response:', JSON.stringify(data));
       return {
         success: false,
-        error: data.detail || 'Unknown error from Fonnte API',
+        error: errorMsg,
       };
     }
   } catch (error) {
