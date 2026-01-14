@@ -17,7 +17,7 @@ export default function NotifikasiPage() {
 
   const [enabled, setEnabled] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [reminderTime, setReminderTime] = useState('07:00');
+  const [reminderHour, setReminderHour] = useState('07');
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isSendingTest, setIsSendingTest] = useState(false);
@@ -57,10 +57,10 @@ export default function NotifikasiPage() {
           : settings.whatsapp_number;
         setPhoneNumber(displayNumber);
       }
-      // Set reminder time (convert from HH:MM:SS to HH:MM)
+      // Set reminder hour (extract just the hour from HH:MM:SS)
       if (settings.reminder_time) {
-        const timeOnly = settings.reminder_time.substring(0, 5); // Get HH:MM
-        setReminderTime(timeOnly);
+        const hour = settings.reminder_time.substring(0, 2); // Get HH
+        setReminderHour(hour);
       }
     }
   }, [settings]);
@@ -97,7 +97,7 @@ export default function NotifikasiPage() {
     const result = await updateSettings(
       enabled,
       enabled ? phoneNumber : null,
-      reminderTime + ':00' // Convert HH:MM to HH:MM:SS for database
+      reminderHour + ':00:00' // Convert HH to HH:00:00 for database
     );
 
     if (result.success) {
@@ -412,7 +412,7 @@ export default function NotifikasiPage() {
                     </p>
                   )}
 
-                  {/* Time Picker - Native Time Input */}
+                  {/* Hour Picker - Dropdown */}
                   <div style={{ marginTop: '16px' }}>
                     <label
                       style={{
@@ -425,28 +425,68 @@ export default function NotifikasiPage() {
                     >
                       Waktu Reminder
                     </label>
-                    <input
-                      type="time"
-                      value={reminderTime}
-                      onChange={(e) => setReminderTime(e.target.value)}
-                      onFocus={() => setFocusedInput('time')}
-                      onBlur={() => setFocusedInput(null)}
+                    <div
                       style={{
-                        width: '100%',
-                        boxSizing: 'border-box',
-                        padding: '16px',
-                        fontSize: '1rem',
-                        fontFamily: "'Inter', sans-serif",
-                        color: '#2C2C2C',
+                        position: 'relative',
+                        display: 'flex',
+                        alignItems: 'center',
                         backgroundColor: '#FAFAFA',
-                        border: focusedInput === 'time' ? '2px solid #7CB342' : '2px solid transparent',
                         borderRadius: '12px',
-                        outline: 'none',
+                        border: focusedInput === 'time' ? '2px solid #7CB342' : '2px solid transparent',
                         transition: 'border-color 200ms',
-                        WebkitAppearance: 'none',
-                        appearance: 'none',
                       }}
-                    />
+                    >
+                      <Clock
+                        size={20}
+                        weight="regular"
+                        color="#757575"
+                        style={{ marginLeft: '16px' }}
+                      />
+                      <select
+                        value={reminderHour}
+                        onChange={(e) => setReminderHour(e.target.value)}
+                        onFocus={() => setFocusedInput('time')}
+                        onBlur={() => setFocusedInput(null)}
+                        style={{
+                          flex: 1,
+                          padding: '16px',
+                          paddingLeft: '12px',
+                          fontSize: '1rem',
+                          fontFamily: "'Inter', sans-serif",
+                          color: '#2C2C2C',
+                          backgroundColor: 'transparent',
+                          border: 'none',
+                          outline: 'none',
+                          cursor: 'pointer',
+                          WebkitAppearance: 'none',
+                          appearance: 'none',
+                        }}
+                      >
+                        {Array.from({ length: 24 }, (_, i) => {
+                          const hour = i.toString().padStart(2, '0');
+                          return (
+                            <option key={hour} value={hour}>
+                              {hour}:00
+                            </option>
+                          );
+                        })}
+                      </select>
+                      <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 20 20"
+                        fill="none"
+                        style={{ marginRight: '16px', pointerEvents: 'none' }}
+                      >
+                        <path
+                          d="M5 7.5L10 12.5L15 7.5"
+                          stroke="#757575"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </div>
                   </div>
 
                   {/* Test Button */}

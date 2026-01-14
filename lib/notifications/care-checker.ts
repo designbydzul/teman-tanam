@@ -205,16 +205,26 @@ interface NotificationSettingsRecord {
 }
 
 /**
- * Get all users who need notification today
+ * Get all users who need notification at the current hour
  */
 export async function getAllUsersNeedingNotification(): Promise<UserCareDigest[]> {
   try {
-    // 1. Get all users with WhatsApp notifications enabled
+    // Get current hour in WIB (UTC+7)
+    const now = new Date();
+    const wibOffset = 7 * 60; // WIB is UTC+7
+    const wibTime = new Date(now.getTime() + wibOffset * 60 * 1000);
+    const currentHour = wibTime.getUTCHours().toString().padStart(2, '0');
+    const currentHourTime = `${currentHour}:00:00`;
+
+    console.log(`[care-checker] Current WIB hour: ${currentHour}:00`);
+
+    // 1. Get all users with WhatsApp notifications enabled for this hour
     const { data: usersData, error: usersError } = await supabaseAdmin
       .from('notification_settings')
-      .select('user_id, whatsapp_number')
+      .select('user_id, whatsapp_number, reminder_time')
       .eq('whatsapp_enabled', true)
-      .not('whatsapp_number', 'is', null);
+      .not('whatsapp_number', 'is', null)
+      .eq('reminder_time', currentHourTime);
 
     if (usersError) {
       console.error('[care-checker] Error fetching users with notifications:', usersError);
@@ -222,12 +232,12 @@ export async function getAllUsersNeedingNotification(): Promise<UserCareDigest[]
     }
 
     if (!usersData || usersData.length === 0) {
-      console.log('[care-checker] No users with WhatsApp notifications enabled');
+      console.log('[care-checker] No users scheduled for this hour');
       return [];
     }
 
     const users = usersData as NotificationSettingsRecord[];
-    console.log(`[care-checker] Found ${users.length} users with WhatsApp notifications enabled`);
+    console.log(`[care-checker] Found ${users.length} users scheduled for ${currentHour}:00`);
 
     // 2. Calculate care needs for each user
     const usersNeedingNotification: UserCareDigest[] = [];
@@ -239,7 +249,7 @@ export async function getAllUsersNeedingNotification(): Promise<UserCareDigest[]
       }
     }
 
-    console.log(`[care-checker] ${usersNeedingNotification.length} users need notifications`);
+    console.log(`[care-checker] ${usersNeedingNotification.length} users need notifications at ${currentHour}:00`);
     return usersNeedingNotification;
   } catch (error) {
     console.error('[care-checker] Error getting users needing notification:', error);

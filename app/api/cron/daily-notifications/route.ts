@@ -1,8 +1,9 @@
 /**
- * Daily Notifications Cron Job
+ * Hourly Notifications Cron Job
  *
- * This endpoint is called by Vercel Cron at 00:00 UTC (07:00 WIB) daily.
- * It sends WhatsApp reminders to users whose plants need care.
+ * This endpoint is called by Vercel Cron every hour.
+ * It sends WhatsApp reminders to users whose reminder_time matches the current hour (in WIB)
+ * and whose plants need care.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
