@@ -24,7 +24,7 @@ import {
   MagnifyingGlass,
 } from '@phosphor-icons/react';
 import { AddPlant, AddPlantForm, AddPlantSuccess, PlantDetail, EditPlant, type AddPlantSpecies } from '@/components/plant';
-import { ProfileModal, LocationSettings, BulkWateringModal, BulkFertilizeModal, BulkPruningModal, BulkOtherActionModal, OfflineModal, NotificationReminderModal } from '@/components/modals';
+import { ProfileModal, LocationSettings, NotificationSettings, BulkWateringModal, BulkFertilizeModal, BulkPruningModal, BulkOtherActionModal, OfflineModal, NotificationReminderModal } from '@/components/modals';
 import { EditProfile, OfflineIndicator } from '@/components/shared';
 import { TanyaTanam } from '@/components/chat';
 import { usePlants } from '@/hooks/usePlants';
@@ -191,6 +191,9 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
 
   // Location Settings state
   const [showLocationSettings, setShowLocationSettings] = useState<boolean>(false);
+
+  // Notification Settings state
+  const [showNotificationSettings, setShowNotificationSettings] = useState<boolean>(false);
 
   // Edit Profile state
   const [showEditProfile, setShowEditProfile] = useState<boolean>(false);
@@ -431,6 +434,11 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
     if (!supabaseLocationNames.includes(selectedLocation)) {
       setSelectedLocation('Semua');
     }
+  };
+
+  // Close NotificationSettings
+  const handleNotificationSettingsClose = (): void => {
+    setShowNotificationSettings(false);
   };
 
   // Status filter options
@@ -1125,6 +1133,8 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
   const handleProfileNavigation = (action: string): void => {
     if (action === 'location-settings') {
       setShowLocationSettings(true);
+    } else if (action === 'notification-settings') {
+      setShowNotificationSettings(true);
     } else if (action === 'edit-profile') {
       // Check if online before allowing edit profile
       if (!isOnline) {
@@ -1134,7 +1144,6 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
       }
       setShowEditProfile(true);
     }
-    // Note: notification-settings is handled directly by ProfileModal with router.push
   };
 
   // Handle stats toggle from ProfileModal - save to database and localStorage
@@ -2216,6 +2225,16 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
           onPlantsUpdated={() => {
             // Refetch plants from Supabase after location changes
             refetchPlants();
+          }}
+        />
+      )}
+
+      {/* Notification Settings */}
+      {showNotificationSettings && (
+        <NotificationSettings
+          onBack={handleNotificationSettingsClose}
+          onSuccess={(message: string) => {
+            showActionToastWithMessage(message);
           }}
         />
       )}
