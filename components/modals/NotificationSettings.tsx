@@ -378,7 +378,7 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                   <div
                     style={{
                       display: 'flex',
-                      alignItems: 'center',
+                      alignItems: 'stretch',
                       backgroundColor: '#FFFFFF',
                       borderRadius: '12px',
                       border: phoneError
@@ -387,6 +387,7 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                         ? '2px solid #7CB342'
                         : '2px solid #E0E0E0',
                       transition: 'border-color 200ms',
+                      overflow: 'hidden',
                     }}
                   >
                     <div
@@ -415,6 +416,7 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                       style={{
                         flex: 1,
                         padding: '14px',
+                        paddingRight: '8px',
                         fontSize: '0.9375rem',
                         fontFamily: "'Inter', sans-serif",
                         color: '#2C2C2C',
@@ -427,7 +429,7 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                     {isPhoneVerified ? (
                       <div
                         style={{
-                          padding: '6px 12px',
+                          padding: '10px 12px',
                           display: 'flex',
                           alignItems: 'center',
                           gap: '4px',
@@ -436,8 +438,6 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                           fontSize: '0.6875rem',
                           fontWeight: 600,
                           fontFamily: "'Inter', sans-serif",
-                          marginRight: '8px',
-                          borderRadius: '6px',
                           whiteSpace: 'nowrap',
                           flexShrink: 0,
                         }}
@@ -450,13 +450,11 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                         onClick={handleSendOtp}
                         disabled={isSendingOtp || !phoneNumber}
                         style={{
-                          padding: '8px 12px',
-                          marginRight: '8px',
-                          borderRadius: '8px',
+                          padding: '10px 14px',
                           border: 'none',
                           backgroundColor: isSendingOtp || !phoneNumber ? '#E0E0E0' : '#7CB342',
                           color: '#FFFFFF',
-                          fontSize: '0.6875rem',
+                          fontSize: '0.75rem',
                           fontWeight: 600,
                           fontFamily: "'Inter', sans-serif",
                           cursor: isSendingOtp || !phoneNumber ? 'not-allowed' : 'pointer',
@@ -628,30 +626,25 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
               style={{
                 backgroundColor: 'rgba(0, 0, 0, 0.5)',
                 zIndex: 4000,
-              }}
-            />
-
-            {/* Modal Container - for centering */}
-            <div
-              style={{
-                position: 'fixed',
-                bottom: 0,
-                left: '50%',
-                transform: 'translateX(-50%)',
-                width: '100%',
-                maxWidth: 'var(--app-max-width)',
-                zIndex: 4001,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '24px',
               }}
             >
               <motion.div
-                initial={{ y: '100%' }}
-                animate={{ y: 0 }}
-                exit={{ y: '100%' }}
-                transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                onClick={(e) => e.stopPropagation()}
                 style={{
                   backgroundColor: '#FFFFFF',
-                  borderRadius: '12px 12px 0 0',
+                  borderRadius: '16px',
                   padding: '24px',
+                  maxWidth: '400px',
+                  width: '100%',
+                  position: 'relative',
                 }}
               >
                 {/* Close Button */}
@@ -763,7 +756,7 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                   {isVerifyingOtp ? 'Memverifikasi...' : 'Verifikasi'}
                 </button>
               </motion.div>
-            </div>
+            </motion.div>
           </>
         )}
       </AnimatePresence>
