@@ -702,34 +702,72 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                   Masukkan kode OTP yang sudah dikirim ke nomor WhatsApp +62{phoneNumber}
                 </p>
 
-                {/* OTP Input */}
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={6}
-                  value={otpCode}
-                  onChange={(e) => {
-                    setOtpCode(e.target.value.replace(/\D/g, ''));
-                    if (otpError) setOtpError(null);
-                  }}
-                  placeholder="Masukkan 6 digit kode OTP"
-                  disabled={isVerifyingOtp}
+                {/* OTP Input - 6 Individual Boxes */}
+                <div
                   style={{
-                    width: '100%',
-                    padding: '16px',
-                    fontSize: '1.25rem',
-                    fontFamily: "'Inter', sans-serif",
-                    color: '#2C2C2C',
-                    backgroundColor: '#FAFAFA',
-                    border: otpError ? '2px solid #F44336' : '2px solid #E0E0E0',
-                    borderRadius: '12px',
-                    outline: 'none',
+                    display: 'flex',
+                    gap: '8px',
+                    justifyContent: 'center',
                     marginBottom: otpError ? '8px' : '16px',
-                    textAlign: 'center',
-                    letterSpacing: '4px',
-                    opacity: isVerifyingOtp ? 0.5 : 1,
                   }}
-                />
+                >
+                  {[0, 1, 2, 3, 4, 5].map((index) => (
+                    <input
+                      key={index}
+                      id={`otp-${index}`}
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={1}
+                      value={otpCode[index] || ''}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '');
+                        if (value.length <= 1) {
+                          const newOtp = otpCode.split('');
+                          newOtp[index] = value;
+                          setOtpCode(newOtp.join(''));
+                          if (otpError) setOtpError(null);
+
+                          // Auto-focus next input
+                          if (value && index < 5) {
+                            const nextInput = document.getElementById(`otp-${index + 1}`);
+                            nextInput?.focus();
+                          }
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        // Handle backspace
+                        if (e.key === 'Backspace' && !otpCode[index] && index > 0) {
+                          const prevInput = document.getElementById(`otp-${index - 1}`);
+                          prevInput?.focus();
+                        }
+                      }}
+                      disabled={isVerifyingOtp}
+                      style={{
+                        width: '48px',
+                        height: '56px',
+                        fontSize: '1.5rem',
+                        fontFamily: "'Inter', sans-serif",
+                        fontWeight: 600,
+                        color: '#2C2C2C',
+                        backgroundColor: '#FAFAFA',
+                        border: otpError ? '2px solid #F44336' : '2px solid #E0E0E0',
+                        borderRadius: '12px',
+                        outline: 'none',
+                        textAlign: 'center',
+                        opacity: isVerifyingOtp ? 0.5 : 1,
+                        transition: 'border-color 200ms',
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = '#7CB342';
+                      }}
+                      onBlur={(e) => {
+                        if (!otpError) {
+                          e.target.style.borderColor = '#E0E0E0';
+                        }
+                      }}
+                    />
+                  ))}
+                </div>
                 {otpError && (
                   <p
                     style={{
