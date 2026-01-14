@@ -40,12 +40,10 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   const handleMenuAction = async (action: MenuAction) => {
     debug.log('Menu action:', action);
 
-    // Open notification settings modal
+    // Navigate to dedicated notifikasi page
     if (action === 'notification-settings') {
       onClose();
-      if (onNavigate) {
-        onNavigate(action);
-      }
+      router.push('/notifikasi');
       return;
     }
 

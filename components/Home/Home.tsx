@@ -132,9 +132,8 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
   const [showSuccess, setShowSuccess] = useState<boolean>(false);
   const [newPlantData, setNewPlantData] = useState<NewPlantData | null>(null);
 
-  // WhatsApp/Notification state
+  // WhatsApp setup state (shown after first plant is added)
   const [showWhatsAppSetup, setShowWhatsAppSetup] = useState<boolean>(false);
-  const [showNotificationSettings, setShowNotificationSettings] = useState<boolean>(false);
   const [wasFirstPlant, setWasFirstPlant] = useState<boolean>(false);
 
   // Plant Detail state
@@ -1134,9 +1133,8 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
         return;
       }
       setShowEditProfile(true);
-    } else if (action === 'notification-settings') {
-      setShowNotificationSettings(true);
     }
+    // Note: notification-settings is handled directly by ProfileModal with router.push
   };
 
   // Handle stats toggle from ProfileModal - save to database and localStorage
@@ -2229,16 +2227,6 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
         onSuccess={() => {
           // Show success toast
           showActionToastWithMessage('Reminder berhasil diaktifkan!');
-        }}
-      />
-
-      {/* Notification Settings Modal (opened from profile menu) */}
-      <NotificationReminderModal
-        isOpen={showNotificationSettings}
-        onClose={() => setShowNotificationSettings(false)}
-        onSuccess={() => {
-          // Show success toast
-          showActionToastWithMessage('Pengaturan notifikasi berhasil disimpan');
         }}
       />
 
