@@ -375,101 +375,102 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                   >
                     Nomor WhatsApp
                   </label>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: '12px',
+                      border: phoneError
+                        ? '2px solid #F44336'
+                        : focusedInput === 'phone'
+                        ? '2px solid #7CB342'
+                        : '2px solid #E0E0E0',
+                      transition: 'border-color 200ms',
+                      overflow: 'hidden',
+                      gap: '8px',
+                      paddingRight: '8px',
+                    }}
+                  >
                     <div
                       style={{
+                        padding: '14px',
+                        backgroundColor: '#F0F0F0',
+                        fontFamily: "'Inter', sans-serif",
+                        fontSize: '0.9375rem',
+                        color: '#757575',
+                        borderRight: '1px solid #E0E0E0',
                         display: 'flex',
                         alignItems: 'center',
-                        backgroundColor: '#FFFFFF',
-                        borderRadius: '12px',
-                        border: phoneError
-                          ? '2px solid #F44336'
-                          : focusedInput === 'phone'
-                          ? '2px solid #7CB342'
-                          : '2px solid #E0E0E0',
-                        transition: 'border-color 200ms',
-                        overflow: 'hidden',
+                        gap: '6px',
                       }}
                     >
-                      <div
-                        style={{
-                          padding: '14px',
-                          backgroundColor: '#F0F0F0',
-                          fontFamily: "'Inter', sans-serif",
-                          fontSize: '0.9375rem',
-                          color: '#757575',
-                          borderRight: '1px solid #E0E0E0',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                        }}
-                      >
-                        <WhatsappLogo size={18} weight="fill" color="#25D366" />
-                        +62
-                      </div>
-                      <input
-                        type="tel"
-                        value={phoneNumber}
-                        onChange={(e) => handlePhoneChange(e.target.value)}
-                        onFocus={() => setFocusedInput('phone')}
-                        onBlur={() => setFocusedInput(null)}
-                        placeholder="81234567890"
-                        style={{
-                          flex: 1,
-                          padding: '14px',
-                          fontSize: '0.9375rem',
-                          fontFamily: "'Inter', sans-serif",
-                          color: '#2C2C2C',
-                          backgroundColor: 'transparent',
-                          border: 'none',
-                          outline: 'none',
-                        }}
-                      />
+                      <WhatsappLogo size={18} weight="fill" color="#25D366" />
+                      +62
                     </div>
+                    <input
+                      type="tel"
+                      value={phoneNumber}
+                      onChange={(e) => handlePhoneChange(e.target.value)}
+                      onFocus={() => setFocusedInput('phone')}
+                      onBlur={() => setFocusedInput(null)}
+                      placeholder="81234567890"
+                      style={{
+                        flex: 1,
+                        padding: '14px',
+                        paddingRight: '8px',
+                        fontSize: '0.9375rem',
+                        fontFamily: "'Inter', sans-serif",
+                        color: '#2C2C2C',
+                        backgroundColor: 'transparent',
+                        border: 'none',
+                        outline: 'none',
+                      }}
+                    />
 
-                    {/* OTP Button or Verified Badge - Below input */}
+                    {/* OTP Button or Verified Badge - Inside input on right */}
                     {phoneNumber && (
-                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                        {isPhoneVerified ? (
-                          <div
-                            style={{
-                              padding: '6px 12px',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                              backgroundColor: '#E8F5E9',
-                              color: '#7CB342',
-                              fontSize: '0.75rem',
-                              fontWeight: 600,
-                              fontFamily: "'Inter', sans-serif",
-                              borderRadius: '20px',
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
-                            <Check size={14} weight="bold" />
-                            Terverifikasi
-                          </div>
-                        ) : (
-                          <button
-                            onClick={handleSendOtp}
-                            disabled={isSendingOtp || !phoneNumber}
-                            style={{
-                              padding: '6px 14px',
-                              borderRadius: '20px',
-                              border: 'none',
-                              backgroundColor: isSendingOtp || !phoneNumber ? '#E0E0E0' : '#7CB342',
-                              color: '#FFFFFF',
-                              fontSize: '0.75rem',
-                              fontWeight: 600,
-                              fontFamily: "'Inter', sans-serif",
-                              cursor: isSendingOtp || !phoneNumber ? 'not-allowed' : 'pointer',
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
-                            {isSendingOtp ? 'Mengirim...' : 'Kirim OTP'}
-                          </button>
-                        )}
-                      </div>
+                      isPhoneVerified ? (
+                        <div
+                          style={{
+                            padding: '6px 12px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            backgroundColor: '#E8F5E9',
+                            color: '#7CB342',
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            fontFamily: "'Inter', sans-serif",
+                            borderRadius: '20px',
+                            whiteSpace: 'nowrap',
+                            flexShrink: 0,
+                          }}
+                        >
+                          <Check size={14} weight="bold" />
+                          Terverifikasi
+                        </div>
+                      ) : (
+                        <button
+                          onClick={handleSendOtp}
+                          disabled={isSendingOtp || !phoneNumber}
+                          style={{
+                            padding: '6px 14px',
+                            borderRadius: '20px',
+                            border: 'none',
+                            backgroundColor: isSendingOtp || !phoneNumber ? '#E0E0E0' : '#7CB342',
+                            color: '#FFFFFF',
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            fontFamily: "'Inter', sans-serif",
+                            cursor: isSendingOtp || !phoneNumber ? 'not-allowed' : 'pointer',
+                            whiteSpace: 'nowrap',
+                            flexShrink: 0,
+                          }}
+                        >
+                          {isSendingOtp ? 'Mengirim...' : 'Kirim OTP'}
+                        </button>
+                      )
                     )}
                   </div>
                   {phoneError ? (
