@@ -417,14 +417,14 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                       placeholder="81234567890"
                       style={{
                         flex: 1,
-                        padding: '14px',
-                        paddingRight: '8px',
+                        padding: '14px 8px',
                         fontSize: '0.9375rem',
                         fontFamily: "'Inter', sans-serif",
                         color: '#2C2C2C',
                         backgroundColor: 'transparent',
                         border: 'none',
                         outline: 'none',
+                        minWidth: '0',
                       }}
                     />
 
