@@ -4,12 +4,12 @@
  * Notification Settings Full Page
  *
  * A full-page overlay (like LocationSettings) for managing WhatsApp notifications.
- * Displays as overlay without changing URL.
+ * Includes OTP verification for phone numbers to avoid excessive API calls.
  */
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Bell, WhatsappLogo, Clock, Check } from '@phosphor-icons/react';
+import { ArrowLeft, WhatsappLogo, Clock, Check, X } from '@phosphor-icons/react';
 import { useNotificationSettings, isValidIndonesianNumber } from '@/hooks/useNotificationSettings';
 import { GlobalOfflineBanner } from '@/components/shared';
 import { createDebugger } from '@/lib/debug';
@@ -32,8 +32,16 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
   const [reminderHour, setReminderHour] = useState('07');
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [isSendingTest, setIsSendingTest] = useState(false);
   const [phoneError, setPhoneError] = useState<string | null>(null);
+
+  // OTP verification state
+  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [otpError, setOtpError] = useState<string | null>(null);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [generatedOtp, setGeneratedOtp] = useState<string | null>(null);
 
   // Toast state
   const [showToast, setShowToast] = useState(false);
@@ -55,6 +63,8 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
           ? settings.whatsapp_number.substring(2)
           : settings.whatsapp_number;
         setPhoneNumber(displayNumber);
+        // If there's an existing number, consider it verified
+        setIsPhoneVerified(true);
       }
       // Set reminder hour (extract just the hour from HH:MM:SS)
       if (settings.reminder_time) {
@@ -69,6 +79,11 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
     // Only allow digits
     const digitsOnly = value.replace(/\D/g, '');
     setPhoneNumber(digitsOnly);
+
+    // Reset verification when phone number changes
+    if (digitsOnly !== phoneNumber) {
+      setIsPhoneVerified(false);
+    }
 
     // Clear error when user starts typing
     if (phoneError) {
@@ -85,9 +100,90 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
     }
   };
 
+  // Send OTP to WhatsApp
+  const handleSendOtp = async () => {
+    debug.log('handleSendOtp called', { phoneNumber });
+
+    // Validate phone number
+    if (!phoneNumber.trim()) {
+      setPhoneError('Masukkan nomor WhatsApp dulu');
+      return;
+    }
+
+    if (!isValidIndonesianNumber(phoneNumber)) {
+      setPhoneError('Format nomor gak valid. Contoh: 81234567890');
+      return;
+    }
+
+    setIsSendingOtp(true);
+
+    try {
+      // Generate 6-digit OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      setGeneratedOtp(otp);
+
+      // Send OTP via WhatsApp
+      const response = await fetch('/api/notifications/send-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          whatsapp_number: phoneNumber,
+          otp_code: otp,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Show OTP modal
+        setShowOtpModal(true);
+        showToastMessage('Kode OTP sudah dikirim ke WhatsApp!');
+      } else {
+        setPhoneError(data.error || 'Gagal kirim OTP');
+      }
+    } catch (error) {
+      debug.error('Error sending OTP:', error);
+      setPhoneError('Gagal kirim OTP');
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
+  // Verify OTP
+  const handleVerifyOtp = async () => {
+    debug.log('handleVerifyOtp called', { otpCode });
+
+    if (!otpCode.trim()) {
+      setOtpError('Masukkan kode OTP');
+      return;
+    }
+
+    if (otpCode.length !== 6) {
+      setOtpError('Kode OTP harus 6 digit');
+      return;
+    }
+
+    setIsVerifyingOtp(true);
+
+    // Verify OTP matches
+    if (otpCode === generatedOtp) {
+      setIsPhoneVerified(true);
+      setShowOtpModal(false);
+      setOtpCode('');
+      setOtpError(null);
+      showToastMessage('Nomor WhatsApp berhasil diverifikasi!');
+    } else {
+      setOtpError('Kode OTP salah. Coba lagi ya!');
+    }
+
+    setIsVerifyingOtp(false);
+  };
+
   // Handle save
   const handleSave = async () => {
-    debug.log('handleSave called', { enabled, phoneNumber, reminderHour });
+    debug.log('handleSave called', { enabled, phoneNumber, reminderHour, isPhoneVerified });
 
     // Validate if enabled
     if (enabled) {
@@ -98,6 +194,11 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
 
       if (!isValidIndonesianNumber(phoneNumber)) {
         setPhoneError('Format nomor gak valid. Contoh: 81234567890');
+        return;
+      }
+
+      if (!isPhoneVerified) {
+        setPhoneError('Verifikasi nomor WhatsApp dulu');
         return;
       }
     }
@@ -124,47 +225,6 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
     }
 
     setIsSaving(false);
-  };
-
-  // Handle send test notification
-  const handleSendTest = async () => {
-    debug.log('handleSendTest called', { phoneNumber });
-
-    // Validate phone number
-    if (!phoneNumber.trim()) {
-      setPhoneError('Masukkan nomor WhatsApp dulu');
-      return;
-    }
-
-    if (!isValidIndonesianNumber(phoneNumber)) {
-      setPhoneError('Format nomor gak valid. Contoh: 81234567890');
-      return;
-    }
-
-    setIsSendingTest(true);
-
-    try {
-      const response = await fetch('/api/notifications/test', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ whatsapp_number: phoneNumber }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        showToastMessage('Pesan test sudah dikirim ke WhatsApp!');
-      } else {
-        showToastMessage(data.error || 'Gagal kirim pesan test');
-      }
-    } catch (error) {
-      debug.error('Error sending test:', error);
-      showToastMessage('Gagal kirim pesan test');
-    } finally {
-      setIsSendingTest(false);
-    }
   };
 
   return (
@@ -239,300 +299,278 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
           </div>
         ) : (
           <>
-            {/* Icon */}
+            {/* Enable Toggle */}
             <div
               style={{
-                width: '80px',
-                height: '80px',
-                borderRadius: '16px',
-                backgroundColor: 'rgba(37, 211, 102, 0.1)',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 20px auto',
+                justifyContent: 'space-between',
+                marginBottom: enabled ? '24px' : '0',
               }}
             >
-              <Bell size={40} weight="fill" color="#25D366" />
-            </div>
-
-            {/* Description */}
-            <p
-              style={{
-                fontFamily: "'Inter', sans-serif",
-                fontSize: '0.9375rem',
-                color: '#757575',
-                textAlign: 'center',
-                margin: '0 0 32px 0',
-                lineHeight: 1.6,
-              }}
-            >
-              Aktifkan reminder harian via WhatsApp untuk tanaman yang butuh perhatian
-            </p>
-
-            {/* Settings Section */}
-            <div
-              style={{
-                backgroundColor: '#FAFAFA',
-                borderRadius: '16px',
-                padding: '20px',
-                marginBottom: '24px',
-              }}
-            >
-              {/* Enable Toggle */}
-              <div
+              <div>
+                <h3
+                  style={{
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: '1rem',
+                    fontWeight: 600,
+                    color: '#2C2C2C',
+                    margin: '0 0 4px 0',
+                  }}
+                >
+                  Aktifkan Reminder WhatsApp
+                </h3>
+                <p
+                  style={{
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: '0.875rem',
+                    color: '#757575',
+                    margin: 0,
+                  }}
+                >
+                  Notifikasi harian via WhatsApp
+                </p>
+              </div>
+              <button
+                onClick={() => handleToggleChange(!enabled)}
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  marginBottom: enabled ? '24px' : '0',
+                  position: 'relative',
+                  width: '56px',
+                  height: '32px',
+                  borderRadius: '16px',
+                  border: 'none',
+                  backgroundColor: enabled ? '#7CB342' : '#E0E0E0',
+                  cursor: 'pointer',
+                  transition: 'background-color 0.2s',
                 }}
               >
-                <div>
-                  <h3
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '4px',
+                    left: enabled ? '28px' : '4px',
+                    width: '24px',
+                    height: '24px',
+                    borderRadius: '50%',
+                    backgroundColor: '#FFFFFF',
+                    transition: 'left 0.2s',
+                  }}
+                />
+              </button>
+            </div>
+
+            {/* Settings - only show if enabled */}
+            {enabled && (
+              <>
+                {/* Nomor WhatsApp */}
+                <div style={{ marginBottom: '16px' }}>
+                  <label
                     style={{
-                      fontFamily: "'Inter', sans-serif",
-                      fontSize: '1rem',
-                      fontWeight: 600,
-                      color: '#2C2C2C',
-                      margin: '0 0 4px 0',
-                    }}
-                  >
-                    Aktifkan Reminder WhatsApp
-                  </h3>
-                  <p
-                    style={{
+                      display: 'block',
                       fontFamily: "'Inter', sans-serif",
                       fontSize: '0.875rem',
                       color: '#757575',
-                      margin: 0,
+                      marginBottom: '8px',
                     }}
                   >
-                    Notifikasi harian via WhatsApp
-                  </p>
-                </div>
-                <button
-                  onClick={() => handleToggleChange(!enabled)}
-                  style={{
-                    position: 'relative',
-                    width: '56px',
-                    height: '32px',
-                    borderRadius: '16px',
-                    border: 'none',
-                    backgroundColor: enabled ? '#7CB342' : '#E0E0E0',
-                    cursor: 'pointer',
-                    transition: 'background-color 0.2s',
-                  }}
-                >
+                    Nomor WhatsApp
+                  </label>
                   <div
                     style={{
-                      position: 'absolute',
-                      top: '4px',
-                      left: enabled ? '28px' : '4px',
-                      width: '24px',
-                      height: '24px',
-                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
                       backgroundColor: '#FFFFFF',
-                      transition: 'left 0.2s',
+                      borderRadius: '12px',
+                      border: phoneError
+                        ? '2px solid #F44336'
+                        : focusedInput === 'phone'
+                        ? '2px solid #7CB342'
+                        : '2px solid #E0E0E0',
+                      overflow: 'hidden',
+                      transition: 'border-color 200ms',
                     }}
-                  />
-                </button>
-              </div>
-
-              {/* Phone Number Input - only show if enabled */}
-              {enabled && (
-                <>
-                  <div style={{ marginBottom: '16px' }}>
-                    <label
-                      style={{
-                        display: 'block',
-                        fontFamily: "'Inter', sans-serif",
-                        fontSize: '0.875rem',
-                        color: '#757575',
-                        marginBottom: '8px',
-                      }}
-                    >
-                      Nomor WhatsApp
-                    </label>
+                  >
                     <div
                       style={{
+                        padding: '14px',
+                        backgroundColor: '#F0F0F0',
+                        fontFamily: "'Inter', sans-serif",
+                        fontSize: '0.9375rem',
+                        color: '#757575',
+                        borderRight: '1px solid #E0E0E0',
                         display: 'flex',
                         alignItems: 'center',
-                        backgroundColor: '#FFFFFF',
-                        borderRadius: '12px',
-                        border: phoneError
-                          ? '2px solid #F44336'
-                          : focusedInput === 'phone'
-                          ? '2px solid #7CB342'
-                          : '2px solid transparent',
-                        overflow: 'hidden',
-                        transition: 'border-color 200ms',
+                        gap: '6px',
                       }}
                     >
+                      <WhatsappLogo size={18} weight="fill" color="#25D366" />
+                      +62
+                    </div>
+                    <input
+                      type="tel"
+                      value={phoneNumber}
+                      onChange={(e) => handlePhoneChange(e.target.value)}
+                      onFocus={() => setFocusedInput('phone')}
+                      onBlur={() => setFocusedInput(null)}
+                      placeholder="81234567890"
+                      disabled={isPhoneVerified}
+                      style={{
+                        flex: 1,
+                        padding: '14px',
+                        fontSize: '0.9375rem',
+                        fontFamily: "'Inter', sans-serif",
+                        color: '#2C2C2C',
+                        backgroundColor: 'transparent',
+                        border: 'none',
+                        outline: 'none',
+                        opacity: isPhoneVerified ? 0.6 : 1,
+                      }}
+                    />
+                    {/* OTP Button or Verified Badge */}
+                    {isPhoneVerified ? (
                       <div
                         style={{
-                          padding: '14px',
-                          backgroundColor: '#F0F0F0',
-                          fontFamily: "'Inter', sans-serif",
-                          fontSize: '0.9375rem',
-                          color: '#757575',
-                          borderRight: '1px solid #E0E0E0',
+                          padding: '8px 16px',
                           display: 'flex',
                           alignItems: 'center',
                           gap: '6px',
+                          backgroundColor: '#E8F5E9',
+                          color: '#7CB342',
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          fontFamily: "'Inter', sans-serif",
+                          marginRight: '8px',
+                          borderRadius: '8px',
                         }}
                       >
-                        <WhatsappLogo size={18} weight="fill" color="#25D366" />
-                        +62
+                        <Check size={16} weight="bold" />
+                        Terverifikasi
                       </div>
-                      <input
-                        type="tel"
-                        value={phoneNumber}
-                        onChange={(e) => handlePhoneChange(e.target.value)}
-                        onFocus={() => setFocusedInput('phone')}
-                        onBlur={() => setFocusedInput(null)}
-                        placeholder="81234567890"
-                        style={{
-                          flex: 1,
-                          padding: '14px',
-                          fontSize: '0.9375rem',
-                          fontFamily: "'Inter', sans-serif",
-                          color: '#2C2C2C',
-                          backgroundColor: 'transparent',
-                          border: 'none',
-                          outline: 'none',
-                        }}
-                      />
-                    </div>
-                    {phoneError ? (
-                      <p
-                        style={{
-                          margin: '8px 0 0 0',
-                          fontSize: '0.75rem',
-                          color: '#F44336',
-                          fontFamily: "'Inter', sans-serif",
-                        }}
-                      >
-                        {phoneError}
-                      </p>
                     ) : (
-                      <p
+                      <button
+                        onClick={handleSendOtp}
+                        disabled={isSendingOtp || !phoneNumber}
                         style={{
-                          margin: '8px 0 0 0',
+                          padding: '8px 16px',
+                          marginRight: '8px',
+                          borderRadius: '8px',
+                          border: 'none',
+                          backgroundColor: isSendingOtp || !phoneNumber ? '#E0E0E0' : '#7CB342',
+                          color: '#FFFFFF',
                           fontSize: '0.75rem',
-                          color: '#999999',
+                          fontWeight: 600,
                           fontFamily: "'Inter', sans-serif",
+                          cursor: isSendingOtp || !phoneNumber ? 'not-allowed' : 'pointer',
+                          whiteSpace: 'nowrap',
                         }}
                       >
-                        Contoh: 81234567890 (tanpa 0 di depan)
-                      </p>
+                        {isSendingOtp ? 'Mengirim...' : 'Kirim OTP'}
+                      </button>
                     )}
                   </div>
-
-                  {/* Hour Picker - Dropdown */}
-                  <div style={{ marginBottom: '16px' }}>
-                    <label
+                  {phoneError ? (
+                    <p
                       style={{
-                        display: 'block',
+                        margin: '8px 0 0 0',
+                        fontSize: '0.75rem',
+                        color: '#F44336',
                         fontFamily: "'Inter', sans-serif",
-                        fontSize: '0.875rem',
-                        color: '#757575',
-                        marginBottom: '8px',
                       }}
                     >
-                      Waktu Reminder
-                    </label>
-                    <div
+                      {phoneError}
+                    </p>
+                  ) : (
+                    <p
                       style={{
-                        position: 'relative',
-                        display: 'flex',
-                        alignItems: 'center',
-                        backgroundColor: '#FFFFFF',
-                        borderRadius: '12px',
-                        border: focusedInput === 'time' ? '2px solid #7CB342' : '2px solid transparent',
-                        transition: 'border-color 200ms',
+                        margin: '8px 0 0 0',
+                        fontSize: '0.75rem',
+                        color: '#999999',
+                        fontFamily: "'Inter', sans-serif",
                       }}
                     >
-                      <Clock
-                        size={20}
-                        weight="regular"
-                        color="#757575"
-                        style={{ marginLeft: '16px' }}
-                      />
-                      <select
-                        value={reminderHour}
-                        onChange={(e) => setReminderHour(e.target.value)}
-                        onFocus={() => setFocusedInput('time')}
-                        onBlur={() => setFocusedInput(null)}
-                        style={{
-                          flex: 1,
-                          padding: '16px',
-                          paddingLeft: '12px',
-                          fontSize: '1rem',
-                          fontFamily: "'Inter', sans-serif",
-                          color: '#2C2C2C',
-                          backgroundColor: 'transparent',
-                          border: 'none',
-                          outline: 'none',
-                          cursor: 'pointer',
-                          WebkitAppearance: 'none',
-                          appearance: 'none',
-                        }}
-                      >
-                        {Array.from({ length: 24 }, (_, i) => {
-                          const hour = i.toString().padStart(2, '0');
-                          return (
-                            <option key={hour} value={hour}>
-                              {hour}:00
-                            </option>
-                          );
-                        })}
-                      </select>
-                      <svg
-                        width="20"
-                        height="20"
-                        viewBox="0 0 20 20"
-                        fill="none"
-                        style={{ marginRight: '16px', pointerEvents: 'none' }}
-                      >
-                        <path
-                          d="M5 7.5L10 12.5L15 7.5"
-                          stroke="#757575"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    </div>
-                  </div>
+                      Contoh: 81234567890 (tanpa 0 di depan)
+                    </p>
+                  )}
+                </div>
 
-                  {/* Test Button */}
-                  <button
-                    onClick={handleSendTest}
-                    disabled={isSendingTest || !phoneNumber}
+                {/* Waktu Reminder */}
+                <div style={{ marginBottom: '16px' }}>
+                  <label
                     style={{
-                      width: '100%',
-                      padding: '12px',
-                      borderRadius: '12px',
-                      border: '1px solid #7CB342',
-                      backgroundColor: '#FFFFFF',
-                      color: '#7CB342',
-                      fontSize: '0.9375rem',
-                      fontWeight: 600,
+                      display: 'block',
                       fontFamily: "'Inter', sans-serif",
-                      cursor: isSendingTest || !phoneNumber ? 'not-allowed' : 'pointer',
-                      opacity: isSendingTest || !phoneNumber ? 0.5 : 1,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '8px',
+                      fontSize: '0.875rem',
+                      color: '#757575',
+                      marginBottom: '8px',
                     }}
                   >
-                    <WhatsappLogo size={20} weight="fill" />
-                    {isSendingTest ? 'Mengirim...' : 'Kirim Pesan Test'}
-                  </button>
-                </>
-              )}
-            </div>
+                    Waktu Reminder
+                  </label>
+                  <div
+                    style={{
+                      position: 'relative',
+                      display: 'flex',
+                      alignItems: 'center',
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: '12px',
+                      border: focusedInput === 'time' ? '2px solid #7CB342' : '2px solid #E0E0E0',
+                      transition: 'border-color 200ms',
+                    }}
+                  >
+                    <Clock
+                      size={20}
+                      weight="regular"
+                      color="#757575"
+                      style={{ marginLeft: '16px' }}
+                    />
+                    <select
+                      value={reminderHour}
+                      onChange={(e) => setReminderHour(e.target.value)}
+                      onFocus={() => setFocusedInput('time')}
+                      onBlur={() => setFocusedInput(null)}
+                      style={{
+                        flex: 1,
+                        padding: '16px',
+                        paddingLeft: '12px',
+                        fontSize: '1rem',
+                        fontFamily: "'Inter', sans-serif",
+                        color: '#2C2C2C',
+                        backgroundColor: 'transparent',
+                        border: 'none',
+                        outline: 'none',
+                        cursor: 'pointer',
+                        WebkitAppearance: 'none',
+                        appearance: 'none',
+                      }}
+                    >
+                      {Array.from({ length: 24 }, (_, i) => {
+                        const hour = i.toString().padStart(2, '0');
+                        return (
+                          <option key={hour} value={hour}>
+                            {hour}:00
+                          </option>
+                        );
+                      })}
+                    </select>
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 20 20"
+                      fill="none"
+                      style={{ marginRight: '16px', pointerEvents: 'none' }}
+                    >
+                      <path
+                        d="M5 7.5L10 12.5L15 7.5"
+                        stroke="#757575"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </div>
+                </div>
+              </>
+            )}
           </>
         )}
       </div>
@@ -576,6 +614,159 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
           </button>
         </div>
       )}
+
+      {/* OTP Verification Modal */}
+      <AnimatePresence>
+        {showOtpModal && (
+          <>
+            <motion.div
+              className="ios-fixed-container"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => !isVerifyingOtp && setShowOtpModal(false)}
+              style={{
+                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                zIndex: 4000,
+              }}
+            />
+
+            {/* Modal Container - for centering */}
+            <div
+              style={{
+                position: 'fixed',
+                bottom: 0,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '100%',
+                maxWidth: 'var(--app-max-width)',
+                zIndex: 4001,
+              }}
+            >
+              <motion.div
+                initial={{ y: '100%' }}
+                animate={{ y: 0 }}
+                exit={{ y: '100%' }}
+                transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+                style={{
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '12px 12px 0 0',
+                  padding: '24px',
+                }}
+              >
+                {/* Close Button */}
+                <button
+                  onClick={() => !isVerifyingOtp && setShowOtpModal(false)}
+                  disabled={isVerifyingOtp}
+                  aria-label="Tutup"
+                  style={{
+                    position: 'absolute',
+                    top: '20px',
+                    right: '20px',
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '50%',
+                    backgroundColor: '#F5F5F5',
+                    border: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: isVerifyingOtp ? 'not-allowed' : 'pointer',
+                    opacity: isVerifyingOtp ? 0.5 : 1,
+                  }}
+                >
+                  <X size={20} weight="regular" color="#757575" />
+                </button>
+
+                {/* Modal Title */}
+                <h2
+                  style={{
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: '1.25rem',
+                    fontWeight: 600,
+                    color: '#2C2C2C',
+                    margin: '0 0 8px 0',
+                  }}
+                >
+                  Verifikasi Nomor WhatsApp
+                </h2>
+
+                <p
+                  style={{
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: '0.875rem',
+                    color: '#757575',
+                    margin: '0 0 24px 0',
+                  }}
+                >
+                  Masukkan kode OTP yang sudah dikirim ke nomor WhatsApp +62{phoneNumber}
+                </p>
+
+                {/* OTP Input */}
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={otpCode}
+                  onChange={(e) => {
+                    setOtpCode(e.target.value.replace(/\D/g, ''));
+                    if (otpError) setOtpError(null);
+                  }}
+                  placeholder="Masukkan 6 digit kode OTP"
+                  disabled={isVerifyingOtp}
+                  style={{
+                    width: '100%',
+                    padding: '16px',
+                    fontSize: '1.25rem',
+                    fontFamily: "'Inter', sans-serif",
+                    color: '#2C2C2C',
+                    backgroundColor: '#FAFAFA',
+                    border: otpError ? '2px solid #F44336' : '2px solid #E0E0E0',
+                    borderRadius: '12px',
+                    outline: 'none',
+                    marginBottom: otpError ? '8px' : '16px',
+                    textAlign: 'center',
+                    letterSpacing: '4px',
+                    opacity: isVerifyingOtp ? 0.5 : 1,
+                  }}
+                />
+                {otpError && (
+                  <p
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: '0.75rem',
+                      color: '#F44336',
+                      margin: '0 0 16px 0',
+                    }}
+                  >
+                    {otpError}
+                  </p>
+                )}
+
+                {/* Verify Button */}
+                <button
+                  onClick={handleVerifyOtp}
+                  disabled={otpCode.length !== 6 || isVerifyingOtp}
+                  style={{
+                    width: '100%',
+                    padding: '14px',
+                    fontSize: '1rem',
+                    fontFamily: "'Inter', sans-serif",
+                    fontWeight: 600,
+                    color: '#FFFFFF',
+                    backgroundColor: otpCode.length === 6 && !isVerifyingOtp ? '#7CB342' : '#E0E0E0',
+                    border: 'none',
+                    borderRadius: '12px',
+                    cursor: otpCode.length === 6 && !isVerifyingOtp ? 'pointer' : 'not-allowed',
+                  }}
+                >
+                  {isVerifyingOtp ? 'Memverifikasi...' : 'Verifikasi'}
+                </button>
+              </motion.div>
+            </div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* Toast */}
       <AnimatePresence>
