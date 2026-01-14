@@ -386,7 +386,6 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                         : focusedInput === 'phone'
                         ? '2px solid #7CB342'
                         : '2px solid #E0E0E0',
-                      overflow: 'hidden',
                       transition: 'border-color 200ms',
                     }}
                   >
@@ -413,7 +412,6 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                       onFocus={() => setFocusedInput('phone')}
                       onBlur={() => setFocusedInput(null)}
                       placeholder="81234567890"
-                      disabled={isPhoneVerified}
                       style={{
                         flex: 1,
                         padding: '14px',
@@ -423,27 +421,28 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                         backgroundColor: 'transparent',
                         border: 'none',
                         outline: 'none',
-                        opacity: isPhoneVerified ? 0.6 : 1,
                       }}
                     />
                     {/* OTP Button or Verified Badge */}
                     {isPhoneVerified ? (
                       <div
                         style={{
-                          padding: '8px 16px',
+                          padding: '6px 12px',
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '6px',
+                          gap: '4px',
                           backgroundColor: '#E8F5E9',
                           color: '#7CB342',
-                          fontSize: '0.75rem',
+                          fontSize: '0.6875rem',
                           fontWeight: 600,
                           fontFamily: "'Inter', sans-serif",
                           marginRight: '8px',
-                          borderRadius: '8px',
+                          borderRadius: '6px',
+                          whiteSpace: 'nowrap',
+                          flexShrink: 0,
                         }}
                       >
-                        <Check size={16} weight="bold" />
+                        <Check size={14} weight="bold" />
                         Terverifikasi
                       </div>
                     ) : (
@@ -451,17 +450,18 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                         onClick={handleSendOtp}
                         disabled={isSendingOtp || !phoneNumber}
                         style={{
-                          padding: '8px 16px',
+                          padding: '8px 12px',
                           marginRight: '8px',
                           borderRadius: '8px',
                           border: 'none',
                           backgroundColor: isSendingOtp || !phoneNumber ? '#E0E0E0' : '#7CB342',
                           color: '#FFFFFF',
-                          fontSize: '0.75rem',
+                          fontSize: '0.6875rem',
                           fontWeight: 600,
                           fontFamily: "'Inter', sans-serif",
                           cursor: isSendingOtp || !phoneNumber ? 'not-allowed' : 'pointer',
                           whiteSpace: 'nowrap',
+                          flexShrink: 0,
                         }}
                       >
                         {isSendingOtp ? 'Mengirim...' : 'Kirim OTP'}
