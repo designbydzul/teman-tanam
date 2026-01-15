@@ -43,7 +43,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     // Show notification settings as full-page overlay (like location settings)
     if (action === 'notification-settings') {
       onClose();
-      onNavigate(action);
+      onNavigate?.(action);
       return;
     }
 
