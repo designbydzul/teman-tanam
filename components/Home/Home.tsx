@@ -2243,9 +2243,9 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
       <NotificationReminderModal
         isOpen={showWhatsAppSetup}
         onClose={handleWhatsAppSetupDone}
-        onSuccess={() => {
-          // Show success toast
-          showActionToastWithMessage('Reminder berhasil diaktifkan!');
+        onNavigateToSettings={() => {
+          // Navigate to notification settings page
+          setShowNotificationSettings(true);
         }}
       />
 
