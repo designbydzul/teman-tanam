@@ -29,7 +29,6 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
 
   const [enabled, setEnabled] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [reminderHour, setReminderHour] = useState('07');
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [phoneError, setPhoneError] = useState<string | null>(null);
@@ -65,11 +64,6 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
         setPhoneNumber(displayNumber);
         // If there's an existing number, consider it verified
         setIsPhoneVerified(true);
-      }
-      // Set reminder hour (extract just the hour from HH:MM:SS)
-      if (settings.reminder_time) {
-        const hour = settings.reminder_time.substring(0, 2); // Get HH
-        setReminderHour(hour);
       }
     }
   }, [settings, loading]);
@@ -183,7 +177,7 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
 
   // Handle save
   const handleSave = async () => {
-    debug.log('handleSave called', { enabled, phoneNumber, reminderHour, isPhoneVerified });
+    debug.log('handleSave called', { enabled, phoneNumber, isPhoneVerified });
 
     // Validate if enabled
     if (enabled) {
@@ -208,7 +202,7 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
     const result = await updateSettings(
       enabled,
       enabled ? phoneNumber : null,
-      reminderHour + ':00:00' // Convert HH to HH:00:00 for database
+      '07:00:00' // Fixed time: 7 AM UTC+7
     );
 
     if (result.success) {
@@ -498,81 +492,41 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                   )}
                 </div>
 
-                {/* Waktu Reminder */}
-                <div style={{ marginBottom: '16px' }}>
-                  <label
+                {/* Waktu Reminder - Info Only */}
+                <div
+                  style={{
+                    marginBottom: '16px',
+                    padding: '16px',
+                    backgroundColor: '#F0F4E8',
+                    borderRadius: '12px',
+                    border: '1px solid #E0E0E0',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                    <Clock size={20} weight="regular" color="#7CB342" />
+                    <h4
+                      style={{
+                        fontFamily: "'Inter', sans-serif",
+                        fontSize: '0.875rem',
+                        fontWeight: 600,
+                        color: '#2C2C2C',
+                        margin: 0,
+                      }}
+                    >
+                      Waktu Reminder
+                    </h4>
+                  </div>
+                  <p
                     style={{
-                      display: 'block',
                       fontFamily: "'Inter', sans-serif",
                       fontSize: '0.875rem',
                       color: '#757575',
-                      marginBottom: '8px',
+                      margin: 0,
+                      lineHeight: '1.5',
                     }}
                   >
-                    Waktu Reminder
-                  </label>
-                  <div
-                    style={{
-                      position: 'relative',
-                      display: 'flex',
-                      alignItems: 'center',
-                      backgroundColor: '#FFFFFF',
-                      borderRadius: '12px',
-                      border: focusedInput === 'time' ? '2px solid #7CB342' : '2px solid #E0E0E0',
-                      transition: 'border-color 200ms',
-                    }}
-                  >
-                    <Clock
-                      size={20}
-                      weight="regular"
-                      color="#757575"
-                      style={{ marginLeft: '16px' }}
-                    />
-                    <select
-                      value={reminderHour}
-                      onChange={(e) => setReminderHour(e.target.value)}
-                      onFocus={() => setFocusedInput('time')}
-                      onBlur={() => setFocusedInput(null)}
-                      style={{
-                        flex: 1,
-                        padding: '16px',
-                        paddingLeft: '12px',
-                        fontSize: '1rem',
-                        fontFamily: "'Inter', sans-serif",
-                        color: '#2C2C2C',
-                        backgroundColor: 'transparent',
-                        border: 'none',
-                        outline: 'none',
-                        cursor: 'pointer',
-                        WebkitAppearance: 'none',
-                        appearance: 'none',
-                      }}
-                    >
-                      {Array.from({ length: 24 }, (_, i) => {
-                        const hour = i.toString().padStart(2, '0');
-                        return (
-                          <option key={hour} value={hour}>
-                            {hour}:00
-                          </option>
-                        );
-                      })}
-                    </select>
-                    <svg
-                      width="20"
-                      height="20"
-                      viewBox="0 0 20 20"
-                      fill="none"
-                      style={{ marginRight: '16px', pointerEvents: 'none' }}
-                    >
-                      <path
-                        d="M5 7.5L10 12.5L15 7.5"
-                        stroke="#757575"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </div>
+                    Notifikasi akan dikirim setiap hari pukul <strong style={{ color: '#2C2C2C' }}>07:00 pagi (UTC+7)</strong> untuk mengingatkan kamu merawat tanaman.
+                  </p>
                 </div>
               </>
             )}
