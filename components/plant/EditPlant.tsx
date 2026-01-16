@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { LocationSettings } from '@/components/modals';
 import { GlobalOfflineBanner } from '@/components/shared';
 import { useLocations } from '@/hooks/useLocations';
-import { Drop, Leaf, ArrowCounterClockwise, ArrowLeft, Trash } from '@phosphor-icons/react';
+import { Drop, Leaf, ArrowCounterClockwise, ArrowLeft, Trash, X } from '@phosphor-icons/react';
 import { createDebugger } from '@/lib/debug';
 import { compressImage } from '@/lib/imageUtils';
 
@@ -74,11 +74,16 @@ const EditPlant: React.FC<EditPlantProps> = ({ plant, onClose, onSave, onDelete 
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
   const [showLocationSettings, setShowLocationSettings] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showAddLocationModal, setShowAddLocationModal] = useState(false);
+  const [newLocationName, setNewLocationName] = useState('');
+  const [locationError, setLocationError] = useState('');
+  const [isAddingLocation, setIsAddingLocation] = useState(false);
   const [isCompressing, setIsCompressing] = useState(false);
   const dateInputRef = useRef<HTMLInputElement>(null);
+  const locationInputRef = useRef<HTMLInputElement>(null);
 
   // Get locations from Supabase via useLocations hook
-  const { locations: supabaseLocations, refetch: refetchLocations } = useLocations();
+  const { locations: supabaseLocations, refetch: refetchLocations, addLocation } = useLocations();
   // Extract location names (exclude "Semua" option, filter out any undefined)
   const locationOptions = supabaseLocations
     .map((loc: { name: string }) => loc.name)
@@ -175,12 +180,59 @@ const EditPlant: React.FC<EditPlantProps> = ({ plant, onClose, onSave, onDelete 
 
   const handleLocationSelect = (location: string) => {
     if (location === 'Tambah Tempat') {
-      // Open LocationSettings page instead of inline input
-      setShowLocationSettings(true);
+      // Open simple add location modal
+      setShowAddLocationModal(true);
     } else {
       setShowLocationInput(false);
       setFormData({ ...formData, location, customLocation: '' });
     }
+  };
+
+  // Check for duplicate location name
+  const checkDuplicateLocation = (name: string): boolean => {
+    const trimmedName = name.trim().toLowerCase();
+    return supabaseLocations.some((loc: { name: string }) => loc.name.toLowerCase() === trimmedName);
+  };
+
+  // Auto-focus location input when modal opens
+  useEffect(() => {
+    if (showAddLocationModal && locationInputRef.current) {
+      // Small delay to ensure modal is fully rendered
+      setTimeout(() => {
+        locationInputRef.current?.focus();
+      }, 100);
+    }
+  }, [showAddLocationModal]);
+
+  // Handle adding new location
+  const handleAddLocation = async () => {
+    if (newLocationName.trim().length < 2) {
+      setLocationError('Nama lokasi minimal 2 karakter');
+      return;
+    }
+
+    if (checkDuplicateLocation(newLocationName)) {
+      setLocationError('Nama lokasi sudah ada');
+      return;
+    }
+
+    setIsAddingLocation(true);
+    const result = await addLocation(newLocationName.trim(), '📍');
+
+    if (result.success) {
+      // Refetch locations to get the new one
+      await refetchLocations();
+      // Close modal and reset state
+      setShowAddLocationModal(false);
+      setNewLocationName('');
+      setLocationError('');
+      // Auto-select the newly added location
+      setFormData({ ...formData, location: newLocationName.trim() });
+    } else {
+      setLocationError(result.error || 'Gagal menambahkan lokasi');
+    }
+
+    setIsAddingLocation(false);
   };
 
   // Handle back from LocationSettings - refetch locations and return to form
@@ -1007,6 +1059,151 @@ const EditPlant: React.FC<EditPlantProps> = ({ plant, onClose, onSave, onDelete 
                 </div>
               </motion.div>
             </motion.div>
+          </>
+        )}
+
+        {/* Add Location Modal */}
+        {showAddLocationModal && (
+          <>
+            <motion.div
+              className="ios-fixed-container"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => !isAddingLocation && setShowAddLocationModal(false)}
+              style={{
+                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                zIndex: 5000,
+              }}
+            />
+
+            {/* Modal Container - for centering */}
+            <div
+              style={{
+                position: 'fixed',
+                bottom: 0,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '100%',
+                maxWidth: 'var(--app-max-width)',
+                zIndex: 5001,
+              }}
+            >
+              <motion.div
+                initial={{ y: '100%' }}
+                animate={{ y: 0 }}
+                exit={{ y: '100%' }}
+                transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '12px 12px 0 0',
+                  padding: '24px',
+                }}
+              >
+                {/* Close Button */}
+                <button
+                  onClick={() => !isAddingLocation && setShowAddLocationModal(false)}
+                  disabled={isAddingLocation}
+                  aria-label="Tutup"
+                  style={{
+                    position: 'absolute',
+                    top: '20px',
+                    right: '20px',
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '50%',
+                    backgroundColor: '#F5F5F5',
+                    border: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: isAddingLocation ? 'not-allowed' : 'pointer',
+                    opacity: isAddingLocation ? 0.5 : 1,
+                  }}
+                >
+                  <X size={20} weight="regular" color="#757575" />
+                </button>
+
+                {/* Modal Title */}
+                <h2
+                  style={{
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: '1.25rem',
+                    fontWeight: 600,
+                    color: '#2C2C2C',
+                    margin: '0 0 16px 0',
+                  }}
+                >
+                  Tambah Lokasi Baru
+                </h2>
+
+                {/* Input */}
+                <input
+                  ref={locationInputRef}
+                  type="text"
+                  placeholder="Nama lokasi (min. 2 karakter)"
+                  value={newLocationName}
+                  onChange={(e) => {
+                    setNewLocationName(e.target.value);
+                    if (locationError) setLocationError('');
+                  }}
+                  onFocus={() => setFocusedInput('newLocation')}
+                  onBlur={() => setFocusedInput(null)}
+                  disabled={isAddingLocation}
+                  style={{
+                    width: '100%',
+                    padding: '16px',
+                    fontSize: '1rem',
+                    fontFamily: "'Inter', sans-serif",
+                    color: '#2C2C2C',
+                    backgroundColor: '#FAFAFA',
+                    border: locationError
+                      ? '2px solid #EF4444'
+                      : focusedInput === 'newLocation'
+                        ? '2px solid #7CB342'
+                        : '2px solid transparent',
+                    borderRadius: '12px',
+                    outline: 'none',
+                    marginBottom: locationError ? '8px' : '16px',
+                    transition: 'border-color 200ms',
+                    opacity: isAddingLocation ? 0.5 : 1,
+                  }}
+                />
+                {locationError && (
+                  <p
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: '12px',
+                      color: '#EF4444',
+                      margin: '0 0 16px 0',
+                    }}
+                  >
+                    {locationError}
+                  </p>
+                )}
+
+                {/* Submit Button */}
+                <button
+                  onClick={handleAddLocation}
+                  disabled={newLocationName.trim().length < 2 || isAddingLocation}
+                  style={{
+                    width: '100%',
+                    padding: '14px',
+                    fontSize: '1rem',
+                    fontFamily: "'Inter', sans-serif",
+                    fontWeight: 600,
+                    color: '#FFFFFF',
+                    backgroundColor: newLocationName.trim().length >= 2 && !isAddingLocation ? '#7CB342' : '#E0E0E0',
+                    border: 'none',
+                    borderRadius: '12px',
+                    cursor: newLocationName.trim().length >= 2 && !isAddingLocation ? 'pointer' : 'not-allowed',
+                  }}
+                >
+                  {isAddingLocation ? 'Menyimpan...' : 'Simpan'}
+                </button>
+              </motion.div>
+            </div>
           </>
         )}
       </AnimatePresence>

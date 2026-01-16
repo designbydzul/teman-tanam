@@ -365,8 +365,8 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
   // Filter messages based on search query
   const filteredMessages = searchQuery.trim()
     ? messages.filter(msg =>
-        msg.content.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+      msg.content.toLowerCase().includes(searchQuery.toLowerCase())
+    )
     : messages;
 
   // Lock body scroll when TanyaTanam is open
@@ -775,759 +775,759 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
             touchAction: 'pan-y',
           }}
         >
-        {/* Plant Selector Card */}
-        {plantData && (
-          <div style={{ marginBottom: '24px' }}>
-            {/* Dropdown Header */}
-            <button
-              onClick={() => setShowPlantDropdown(!showPlantDropdown)}
-              aria-expanded={showPlantDropdown}
-              aria-label="Pilih tanaman"
-              style={{
-                width: '100%',
-                padding: '16px',
-                backgroundColor: '#FFFFFF',
-                border: '1px solid #E0E0E0',
-                borderRadius: showPlantDropdown ? '16px 16px 0 0' : '16px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                cursor: 'pointer',
-              }}
-            >
-              <span
+          {/* Plant Selector Card */}
+          {plantData && (
+            <div style={{ marginBottom: '24px' }}>
+              {/* Dropdown Header */}
+              <button
+                onClick={() => setShowPlantDropdown(!showPlantDropdown)}
+                aria-expanded={showPlantDropdown}
+                aria-label="Pilih tanaman"
                 style={{
-                  fontFamily: "'Inter', sans-serif",
-                  fontSize: '1rem',
-                  fontWeight: 500,
-                  color: '#2C2C2C',
+                  width: '100%',
+                  padding: '16px',
+                  backgroundColor: '#FFFFFF',
+                  border: '1px solid #E0E0E0',
+                  borderRadius: showPlantDropdown ? '16px 16px 0 0' : '16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  cursor: 'pointer',
                 }}
               >
-                {plantData.name}
-              </span>
-              <motion.div
-                animate={{ rotate: showPlantDropdown ? 180 : 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                <CaretDown size={20} weight="regular" color="#757575" />
-              </motion.div>
-            </button>
-
-            {/* Dropdown Content */}
-            <AnimatePresence>
-              {showPlantDropdown && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
+                <span
                   style={{
-                    overflow: 'hidden',
-                    backgroundColor: '#FFFFFF',
-                    border: '1px solid #E0E0E0',
-                    borderTop: 'none',
-                    borderRadius: '0 0 16px 16px',
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: '1rem',
+                    fontWeight: 500,
+                    color: '#2C2C2C',
+                  }}
+                >
+                  {plantData.name}
+                </span>
+                <motion.div
+                  animate={{ rotate: showPlantDropdown ? 180 : 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <CaretDown size={20} weight="regular" color="#757575" />
+                </motion.div>
+              </button>
+
+              {/* Dropdown Content */}
+              <AnimatePresence>
+                {showPlantDropdown && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    style={{
+                      overflow: 'hidden',
+                      backgroundColor: '#FFFFFF',
+                      border: '1px solid #E0E0E0',
+                      borderTop: 'none',
+                      borderRadius: '0 0 16px 16px',
+                    }}
+                  >
+                    <div
+                      style={{
+                        padding: '16px',
+                        display: 'flex',
+                        gap: '12px',
+                        alignItems: 'center',
+                      }}
+                    >
+                      {plantData.coverPhotoUrl ? (
+                        <img
+                          src={plantData.coverPhotoUrl}
+                          alt={plantData.name}
+                          style={{
+                            width: '64px',
+                            height: '64px',
+                            borderRadius: '12px',
+                            objectFit: 'cover',
+                          }}
+                        />
+                      ) : (
+                        <div
+                          style={{
+                            width: '64px',
+                            height: '64px',
+                            borderRadius: '12px',
+                            backgroundColor: '#FAFAFA',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '2rem',
+                          }}
+                        >
+                          {plantData.speciesEmoji}
+                        </div>
+                      )}
+                      <div>
+                        <p
+                          style={{
+                            fontFamily: "'Inter', sans-serif",
+                            fontSize: '14px',
+                            color: '#757575',
+                            margin: '0 0 4px 0',
+                          }}
+                        >
+                          {plantData.species?.name || plantData.species?.scientific}
+                        </p>
+                        <p
+                          style={{
+                            fontFamily: "'Inter', sans-serif",
+                            fontSize: '14px',
+                            color: '#757575',
+                            margin: 0,
+                          }}
+                        >
+                          {[
+                            plantData.location,
+                            daysSinceStarted === 0 ? 'Baru mulai hari ini!' : (daysSinceStarted != null ? `${daysSinceStarted} hari merawat` : null)
+                          ].filter(Boolean).join(' • ') || 'Tanaman'}
+                        </p>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          )}
+
+          {/* Messages */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {/* Empty search results */}
+            {searchQuery && filteredMessages.length === 0 && (
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '48px 24px',
+                  textAlign: 'center',
+                }}
+              >
+                <MagnifyingGlass size={48} weight="light" color="#E0E0E0" />
+                <p
+                  style={{
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: '14px',
+                    color: '#9E9E9E',
+                    margin: '16px 0 0 0',
+                  }}
+                >
+                  Tidak ada pesan yang cocok dengan &quot;{searchQuery}&quot;
+                </p>
+              </div>
+            )}
+
+            {filteredMessages.map((message, index) => {
+              // Check if we need to show a date divider before this message
+              const showDateDivider = index === 0 ||
+                !isSameDay(new Date(filteredMessages[index - 1].timestamp), new Date(message.timestamp));
+
+              return (
+                <React.Fragment key={message.id}>
+                  {/* Date Divider */}
+                  {showDateDivider && <DateDivider date={new Date(message.timestamp)} />}
+
+                  {/* Message */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: message.role === 'user' ? 'flex-end' : 'flex-start',
+                      gap: '8px',
+                    }}
+                  >
+                    {/* Attached Images - Outside bubble */}
+                    {message.images && message.images.length > 0 && (
+                      <div
+                        style={{
+                          display: 'flex',
+                          gap: '8px',
+                          flexWrap: 'wrap',
+                          justifyContent: message.role === 'user' ? 'flex-end' : 'flex-start',
+                        }}
+                      >
+                        {message.images.map((img, idx) => (
+                          <img
+                            key={idx}
+                            src={img}
+                            alt={`Attachment ${idx + 1}`}
+                            onClick={() => setFullscreenImage(img)}
+                            style={{
+                              width: '120px',
+                              height: '120px',
+                              borderRadius: '12px',
+                              objectFit: 'cover',
+                              backgroundColor: '#F5F5F5',
+                              cursor: 'pointer',
+                            }}
+                          />
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Message Content - In bubble */}
+                    {message.content && (
+                      <div
+                        style={{
+                          maxWidth: '80%',
+                          padding: '12px 16px',
+                          backgroundColor: message.role === 'user' ? '#FFF9E6' : 'transparent',
+                          borderRadius: '16px',
+                          border: message.role === 'user' ? '1px solid #F5F0D0' : 'none',
+                        }}
+                      >
+                        {message.role === 'user' ? (
+                          <p
+                            style={{
+                              fontFamily: "'Inter', sans-serif",
+                              fontSize: '14px',
+                              lineHeight: 1.6,
+                              color: '#2C2C2C',
+                              margin: 0,
+                              whiteSpace: 'pre-wrap',
+                            }}
+                          >
+                            {message.content}
+                          </p>
+                        ) : (
+                          <div
+                            className="markdown-content"
+                            style={{
+                              fontFamily: "'Inter', sans-serif",
+                              fontSize: '14px',
+                              lineHeight: 1.6,
+                              color: '#2C2C2C',
+                            }}
+                          >
+                            <ReactMarkdown
+                              components={{
+                                p: ({ children }) => (
+                                  <p style={{ margin: '0 0 12px 0' }}>{children}</p>
+                                ),
+                                strong: ({ children }) => (
+                                  <strong style={{ fontWeight: 600 }}>{children}</strong>
+                                ),
+                                em: ({ children }) => (
+                                  <em style={{ fontStyle: 'italic' }}>{children}</em>
+                                ),
+                                ul: ({ children }) => (
+                                  <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>{children}</ul>
+                                ),
+                                ol: ({ children }) => (
+                                  <ol style={{ margin: '8px 0', paddingLeft: '20px' }}>{children}</ol>
+                                ),
+                                li: ({ children }) => (
+                                  <li style={{ marginBottom: '4px' }}>{children}</li>
+                                ),
+                              }}
+                            >
+                              {message.content}
+                            </ReactMarkdown>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </motion.div>
+                </React.Fragment>
+              );
+            })}
+
+            {/* Typing Indicator */}
+            <AnimatePresence>
+              {isLoading && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'flex-start',
                   }}
                 >
                   <div
                     style={{
                       padding: '16px',
                       display: 'flex',
-                      gap: '12px',
-                      alignItems: 'center',
+                      gap: '4px',
                     }}
                   >
-                    {plantData.coverPhotoUrl ? (
-                      <img
-                        src={plantData.coverPhotoUrl}
-                        alt={plantData.name}
+                    {[0, 1, 2].map((i) => (
+                      <motion.div
+                        key={i}
+                        animate={{
+                          y: [0, -6, 0],
+                        }}
+                        transition={{
+                          duration: 0.6,
+                          repeat: Infinity,
+                          delay: i * 0.15,
+                        }}
                         style={{
-                          width: '64px',
-                          height: '64px',
-                          borderRadius: '12px',
-                          objectFit: 'cover',
+                          width: '8px',
+                          height: '8px',
+                          borderRadius: '50%',
+                          backgroundColor: '#CCCCCC',
                         }}
                       />
-                    ) : (
-                      <div
-                        style={{
-                          width: '64px',
-                          height: '64px',
-                          borderRadius: '12px',
-                          backgroundColor: '#FAFAFA',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '2rem',
-                        }}
-                      >
-                        {plantData.speciesEmoji}
-                      </div>
-                    )}
-                    <div>
-                      <p
-                        style={{
-                          fontFamily: "'Inter', sans-serif",
-                          fontSize: '14px',
-                          color: '#757575',
-                          margin: '0 0 4px 0',
-                        }}
-                      >
-                        {plantData.species?.name || plantData.species?.scientific}
-                      </p>
-                      <p
-                        style={{
-                          fontFamily: "'Inter', sans-serif",
-                          fontSize: '14px',
-                          color: '#757575',
-                          margin: 0,
-                        }}
-                      >
-                        {[
-                          plantData.location,
-                          daysSinceStarted === 0 ? 'Baru mulai hari ini!' : (daysSinceStarted != null ? `${daysSinceStarted} hari merawat` : null)
-                        ].filter(Boolean).join(' • ') || 'Tanaman'}
-                      </p>
-                    </div>
+                    ))}
                   </div>
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
-        )}
 
-        {/* Messages */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {/* Empty search results */}
-          {searchQuery && filteredMessages.length === 0 && (
-            <div
+        </div>
+
+        {/* Image Error Toast */}
+        <AnimatePresence>
+          {imageError && (
+            <motion.div
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 50 }}
               style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '48px 24px',
+                position: 'fixed',
+                bottom: '140px',
+                left: '24px',
+                right: '24px',
+                backgroundColor: '#DC2626',
+                color: '#FFFFFF',
+                padding: '12px 16px',
+                borderRadius: '12px',
+                fontFamily: "'Inter', sans-serif",
+                fontSize: '14px',
                 textAlign: 'center',
+                zIndex: 10000,
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
               }}
             >
-              <MagnifyingGlass size={48} weight="light" color="#E0E0E0" />
-              <p
-                style={{
-                  fontFamily: "'Inter', sans-serif",
-                  fontSize: '14px',
-                  color: '#9E9E9E',
-                  margin: '16px 0 0 0',
-                }}
-              >
-                Tidak ada pesan yang cocok dengan &quot;{searchQuery}&quot;
-              </p>
-            </div>
+              {imageError}
+            </motion.div>
           )}
+        </AnimatePresence>
 
-          {filteredMessages.map((message, index) => {
-            // Check if we need to show a date divider before this message
-            const showDateDivider = index === 0 ||
-              !isSameDay(new Date(filteredMessages[index - 1].timestamp), new Date(message.timestamp));
-
-            return (
-              <React.Fragment key={message.id}>
-                {/* Date Divider */}
-                {showDateDivider && <DateDivider date={new Date(message.timestamp)} />}
-
-                {/* Message */}
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: message.role === 'user' ? 'flex-end' : 'flex-start',
-                    gap: '8px',
-                  }}
-                >
-                  {/* Attached Images - Outside bubble */}
-                  {message.images && message.images.length > 0 && (
-                    <div
-                      style={{
-                        display: 'flex',
-                        gap: '8px',
-                        flexWrap: 'wrap',
-                        justifyContent: message.role === 'user' ? 'flex-end' : 'flex-start',
-                      }}
-                    >
-                      {message.images.map((img, idx) => (
-                        <img
-                          key={idx}
-                          src={img}
-                          alt={`Attachment ${idx + 1}`}
-                          onClick={() => setFullscreenImage(img)}
-                          style={{
-                            width: '120px',
-                            height: '120px',
-                            borderRadius: '12px',
-                            objectFit: 'cover',
-                            backgroundColor: '#F5F5F5',
-                            cursor: 'pointer',
-                          }}
-                        />
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Message Content - In bubble */}
-                  {message.content && (
-                    <div
-                      style={{
-                        maxWidth: '80%',
-                        padding: '12px 16px',
-                        backgroundColor: message.role === 'user' ? '#FFF9E6' : 'transparent',
-                        borderRadius: '16px',
-                        border: message.role === 'user' ? '1px solid #F5F0D0' : 'none',
-                      }}
-                    >
-                      {message.role === 'user' ? (
-                        <p
-                          style={{
-                            fontFamily: "'Inter', sans-serif",
-                            fontSize: '14px',
-                            lineHeight: 1.6,
-                            color: '#2C2C2C',
-                            margin: 0,
-                            whiteSpace: 'pre-wrap',
-                          }}
-                        >
-                          {message.content}
-                        </p>
-                      ) : (
-                        <div
-                          className="markdown-content"
-                          style={{
-                            fontFamily: "'Inter', sans-serif",
-                            fontSize: '14px',
-                            lineHeight: 1.6,
-                            color: '#2C2C2C',
-                          }}
-                        >
-                          <ReactMarkdown
-                            components={{
-                              p: ({ children }) => (
-                                <p style={{ margin: '0 0 12px 0' }}>{children}</p>
-                              ),
-                              strong: ({ children }) => (
-                                <strong style={{ fontWeight: 600 }}>{children}</strong>
-                              ),
-                              em: ({ children }) => (
-                                <em style={{ fontStyle: 'italic' }}>{children}</em>
-                              ),
-                              ul: ({ children }) => (
-                                <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>{children}</ul>
-                              ),
-                              ol: ({ children }) => (
-                                <ol style={{ margin: '8px 0', paddingLeft: '20px' }}>{children}</ol>
-                              ),
-                              li: ({ children }) => (
-                                <li style={{ marginBottom: '4px' }}>{children}</li>
-                              ),
-                            }}
-                          >
-                            {message.content}
-                          </ReactMarkdown>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </motion.div>
-              </React.Fragment>
-            );
-          })}
-
-          {/* Typing Indicator */}
+        {/* Input Area - Floating Card */}
+        <div
+          className="chat-input-area"
+          data-keyboard-open={keyboardHeight > 0 ? "true" : "false"}
+          style={{
+            position: 'fixed',
+            // When keyboard is open, position just above keyboard
+            // When keyboard is closed: use platform-specific bottomOffset + safe area
+            // bottomOffset is set based on platform detection (desktop=16px, iOS Safari=70px, iOS Chrome=80px)
+            bottom: keyboardHeight > 0
+              ? `${keyboardHeight + 8}px`
+              : `calc(${bottomOffset}px + env(safe-area-inset-bottom, 0px))`,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: 'calc(100% - 32px)', // 16px margin on each side
+            maxWidth: 'calc(var(--app-max-width) - 32px)',
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #E0E0E0',
+            borderRadius: '20px',
+            padding: '12px 16px',
+            zIndex: 10001,
+            transition: 'bottom 0.2s ease-out',
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
+          }}
+        >
+          {/* Attached Images Preview */}
           <AnimatePresence>
-            {isLoading && (
+            {attachedImages.length > 0 && (
               <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
                 style={{
                   display: 'flex',
-                  justifyContent: 'flex-start',
+                  gap: '12px',
+                  marginBottom: '12px',
+                  overflowX: 'auto',
+                  overflowY: 'visible',
+                  padding: '8px 4px',
+                  margin: '-8px -4px 12px -4px',
                 }}
               >
-                <div
-                  style={{
-                    padding: '16px',
-                    display: 'flex',
-                    gap: '4px',
-                  }}
-                >
-                  {[0, 1, 2].map((i) => (
-                    <motion.div
-                      key={i}
-                      animate={{
-                        y: [0, -6, 0],
-                      }}
-                      transition={{
-                        duration: 0.6,
-                        repeat: Infinity,
-                        delay: i * 0.15,
-                      }}
+                {attachedImages.map((img, index) => (
+                  <div
+                    key={index}
+                    style={{
+                      position: 'relative',
+                      flexShrink: 0,
+                      width: '72px',
+                      height: '72px',
+                    }}
+                  >
+                    <img
+                      src={img.preview}
+                      alt={`Preview ${index + 1}`}
                       style={{
-                        width: '8px',
-                        height: '8px',
-                        borderRadius: '50%',
-                        backgroundColor: '#CCCCCC',
+                        width: '72px',
+                        height: '72px',
+                        borderRadius: '12px',
+                        objectFit: 'cover',
+                        border: '1px solid #E0E0E0',
                       }}
                     />
-                  ))}
+                    <button
+                      onClick={() => handleRemoveImage(index)}
+                      aria-label="Hapus foto"
+                      style={{
+                        position: 'absolute',
+                        top: '-4px',
+                        right: '-4px',
+                        width: '22px',
+                        height: '22px',
+                        borderRadius: '50%',
+                        backgroundColor: '#FF4444',
+                        border: '2px solid #FFFFFF',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                      }}
+                    >
+                      <X size={12} weight="bold" color="#FFFFFF" />
+                    </button>
+                  </div>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Input Row */}
+          <div
+            style={{
+              display: 'flex',
+              gap: '12px',
+              alignItems: 'center',
+            }}
+          >
+            {/* Camera Button */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/gif,image/webp"
+              multiple
+              onChange={handleAttachImage}
+              style={{ display: 'none' }}
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              aria-label="Lampirkan foto"
+              style={{
+                backgroundColor: 'transparent',
+                border: 'none',
+                padding: '8px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <Camera size={24} weight="regular" color="#757575" />
+            </button>
+
+            {/* Text Input - Expandable Textarea */}
+            <textarea
+              ref={inputRef}
+              placeholder="Tulis pertanyaan kamu disini"
+              value={inputText}
+              onChange={(e) => {
+                setInputText(e.target.value);
+                // Auto-resize textarea
+                e.target.style.height = 'auto';
+                e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+              }}
+              onKeyPress={handleKeyPress}
+              onFocus={() => setInputFocused(true)}
+              onBlur={() => setInputFocused(false)}
+              aria-label="Tulis pertanyaan"
+              rows={1}
+              style={{
+                flex: 1,
+                border: 'none',
+                outline: 'none',
+                fontFamily: "'Inter', sans-serif",
+                fontSize: '14px',
+                lineHeight: '1.5',
+                color: '#2C2C2C',
+                backgroundColor: 'transparent',
+                resize: 'none',
+                overflow: 'hidden',
+                minHeight: '24px',
+                maxHeight: '120px',
+                padding: '4px 0',
+              }}
+            />
+
+            {/* Send Button */}
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={handleSendMessage}
+              disabled={!hasInput}
+              aria-label="Kirim pesan"
+              style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '50%',
+                backgroundColor: hasInput ? '#7CB342' : '#F5F5F5',
+                border: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: hasInput ? 'pointer' : 'not-allowed',
+                flexShrink: 0,
+              }}
+            >
+              <PaperPlaneTilt
+                size={20}
+                weight="fill"
+                color={hasInput ? '#FFFFFF' : '#CCCCCC'}
+              />
+            </motion.button>
+          </div>
+        </div>
+
+        {/* Header - Fixed at top, rendered after main container for Safari iOS z-index fix */}
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: '100%',
+          maxWidth: 'var(--app-max-width)',
+          zIndex: 10000,
+          backgroundColor: '#FFFFFF',
+          WebkitTransform: 'translateX(-50%) translateZ(0)',
+          willChange: 'transform',
+          backfaceVisibility: 'hidden',
+          paddingTop: 'env(safe-area-inset-top, 0px)',
+          display: 'flex',
+          flexDirection: 'column',
+        }}>
+          {/* Global Offline Banner */}
+          <GlobalOfflineBanner />
+          {/* Header Row - Always visible */}
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '24px',
+              position: 'relative',
+              borderBottom: '1px solid #E0E0E0',
+            }}
+          >
+            {/* Back Button */}
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={onBack}
+              aria-label="Kembali"
+              style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '50%',
+                backgroundColor: '#FFFFFF',
+                border: '1px solid #E0E0E0',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+              }}
+            >
+              <ArrowLeft size={20} weight="regular" color="#2C2C2C" />
+            </motion.button>
+
+            {/* Title - Centered */}
+            <h1
+              style={{
+                fontFamily: "'Caveat', cursive",
+                fontSize: '1.75rem',
+                fontWeight: 600,
+                color: '#2D5016',
+                margin: 0,
+                position: 'absolute',
+                left: '50%',
+                transform: 'translateX(-50%)',
+              }}
+            >
+              Tanya Tanam
+            </h1>
+
+            {/* Search Button */}
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setIsSearchMode(!isSearchMode)}
+              aria-label="Cari pesan"
+              style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '50%',
+                backgroundColor: isSearchMode ? '#F0F7E6' : '#FFFFFF',
+                border: isSearchMode ? '1px solid #7CB342' : '1px solid #E0E0E0',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+              }}
+            >
+              <MagnifyingGlass size={20} weight="regular" color={isSearchMode ? '#7CB342' : '#2C2C2C'} />
+            </motion.button>
+          </div>
+
+          {/* Search Input Row - Below header border when active */}
+          <AnimatePresence>
+            {isSearchMode && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                style={{ overflow: 'hidden' }}
+              >
+                <div style={{ padding: '16px 24px' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      backgroundColor: '#FAFAFA',
+                      border: '2px solid #7CB342',
+                      borderRadius: '12px',
+                      padding: '0 8px 0 16px',
+                    }}
+                  >
+                    {/* Search Icon */}
+                    <MagnifyingGlass size={20} weight="regular" color="#757575" style={{ flexShrink: 0 }} />
+
+                    {/* Input */}
+                    <input
+                      ref={searchInputRef}
+                      type="text"
+                      placeholder="Cari pesan..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      autoFocus
+                      style={{
+                        flex: 1,
+                        padding: '14px 8px',
+                        fontSize: '1rem',
+                        fontFamily: "'Inter', sans-serif",
+                        color: '#2C2C2C',
+                        backgroundColor: 'transparent',
+                        border: 'none',
+                        outline: 'none',
+                      }}
+                    />
+
+                    {/* Clear Button */}
+                    <motion.button
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => {
+                        if (searchQuery) {
+                          setSearchQuery('');
+                        } else {
+                          setIsSearchMode(false);
+                        }
+                      }}
+                      style={{
+                        flexShrink: 0,
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '50%',
+                        backgroundColor: '#E0E0E0',
+                        border: 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <X size={16} weight="bold" color="#757575" />
+                    </motion.button>
+                  </div>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
         </div>
 
-      </div>
-
-      {/* Image Error Toast */}
-      <AnimatePresence>
-        {imageError && (
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 50 }}
-            style={{
-              position: 'fixed',
-              bottom: '140px',
-              left: '24px',
-              right: '24px',
-              backgroundColor: '#DC2626',
-              color: '#FFFFFF',
-              padding: '12px 16px',
-              borderRadius: '12px',
-              fontFamily: "'Inter', sans-serif",
-              fontSize: '14px',
-              textAlign: 'center',
-              zIndex: 10000,
-              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            }}
-          >
-            {imageError}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Input Area - Floating Card */}
-      <div
-        className="chat-input-area"
-        data-keyboard-open={keyboardHeight > 0 ? "true" : "false"}
-        style={{
-          position: 'fixed',
-          // When keyboard is open, position just above keyboard
-          // When keyboard is closed: use platform-specific bottomOffset + safe area
-          // bottomOffset is set based on platform detection (desktop=16px, iOS Safari=70px, iOS Chrome=80px)
-          bottom: keyboardHeight > 0
-            ? `${keyboardHeight + 8}px`
-            : `calc(${bottomOffset}px + env(safe-area-inset-bottom, 0px))`,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: 'calc(100% - 32px)', // 16px margin on each side
-          maxWidth: 'calc(var(--app-max-width) - 32px)',
-          backgroundColor: '#FFFFFF',
-          border: '1px solid #E0E0E0',
-          borderRadius: '20px',
-          padding: '12px 16px',
-          zIndex: 10001,
-          transition: 'bottom 0.2s ease-out',
-          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
-        }}
-      >
-        {/* Attached Images Preview */}
+        {/* Fullscreen Image Viewer */}
         <AnimatePresence>
-          {attachedImages.length > 0 && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              style={{
-                display: 'flex',
-                gap: '12px',
-                marginBottom: '12px',
-                overflowX: 'auto',
-                overflowY: 'visible',
-                padding: '8px 4px',
-                margin: '-8px -4px 12px -4px',
-              }}
-            >
-              {attachedImages.map((img, index) => (
-                <div
-                  key={index}
-                  style={{
-                    position: 'relative',
-                    flexShrink: 0,
-                    width: '72px',
-                    height: '72px',
-                  }}
-                >
-                  <img
-                    src={img.preview}
-                    alt={`Preview ${index + 1}`}
-                    style={{
-                      width: '72px',
-                      height: '72px',
-                      borderRadius: '12px',
-                      objectFit: 'cover',
-                      border: '1px solid #E0E0E0',
-                    }}
-                  />
-                  <button
-                    onClick={() => handleRemoveImage(index)}
-                    aria-label="Hapus foto"
-                    style={{
-                      position: 'absolute',
-                      top: '-4px',
-                      right: '-4px',
-                      width: '22px',
-                      height: '22px',
-                      borderRadius: '50%',
-                      backgroundColor: '#FF4444',
-                      border: '2px solid #FFFFFF',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-                    }}
-                  >
-                    <X size={12} weight="bold" color="#FFFFFF" />
-                  </button>
-                </div>
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Input Row */}
-        <div
-          style={{
-            display: 'flex',
-            gap: '12px',
-            alignItems: 'center',
-          }}
-        >
-          {/* Camera Button */}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/gif,image/webp"
-            multiple
-            onChange={handleAttachImage}
-            style={{ display: 'none' }}
-          />
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            aria-label="Lampirkan foto"
-            style={{
-              backgroundColor: 'transparent',
-              border: 'none',
-              padding: '8px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-            }}
-          >
-            <Camera size={24} weight="regular" color="#757575" />
-          </button>
-
-          {/* Text Input - Expandable Textarea */}
-          <textarea
-            ref={inputRef}
-            placeholder="Tulis pertanyaan kamu disini"
-            value={inputText}
-            onChange={(e) => {
-              setInputText(e.target.value);
-              // Auto-resize textarea
-              e.target.style.height = 'auto';
-              e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
-            }}
-            onKeyPress={handleKeyPress}
-            onFocus={() => setInputFocused(true)}
-            onBlur={() => setInputFocused(false)}
-            aria-label="Tulis pertanyaan"
-            rows={1}
-            style={{
-              flex: 1,
-              border: 'none',
-              outline: 'none',
-              fontFamily: "'Inter', sans-serif",
-              fontSize: '14px',
-              lineHeight: '1.5',
-              color: '#2C2C2C',
-              backgroundColor: 'transparent',
-              resize: 'none',
-              overflow: 'hidden',
-              minHeight: '24px',
-              maxHeight: '120px',
-              padding: '4px 0',
-            }}
-          />
-
-          {/* Send Button */}
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            onClick={handleSendMessage}
-            disabled={!hasInput}
-            aria-label="Kirim pesan"
-            style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '50%',
-              backgroundColor: hasInput ? '#7CB342' : '#F5F5F5',
-              border: 'none',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: hasInput ? 'pointer' : 'not-allowed',
-              flexShrink: 0,
-            }}
-          >
-            <PaperPlaneTilt
-              size={20}
-              weight="fill"
-              color={hasInput ? '#FFFFFF' : '#CCCCCC'}
-            />
-          </motion.button>
-        </div>
-      </div>
-
-      {/* Header - Fixed at top, rendered after main container for Safari iOS z-index fix */}
-      <div style={{
-        position: 'fixed',
-        top: 0,
-        left: '50%',
-        transform: 'translateX(-50%)',
-        width: '100%',
-        maxWidth: 'var(--app-max-width)',
-        zIndex: 10000,
-        backgroundColor: '#FFFFFF',
-        WebkitTransform: 'translateX(-50%) translateZ(0)',
-        willChange: 'transform',
-        backfaceVisibility: 'hidden',
-        paddingTop: 'env(safe-area-inset-top, 0px)',
-        display: 'flex',
-        flexDirection: 'column',
-      }}>
-        {/* Global Offline Banner */}
-        <GlobalOfflineBanner />
-        {/* Header Row - Always visible */}
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '24px',
-            position: 'relative',
-            borderBottom: '1px solid #E0E0E0',
-          }}
-        >
-          {/* Back Button */}
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            onClick={onBack}
-            aria-label="Kembali"
-            style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '50%',
-              backgroundColor: '#FFFFFF',
-              border: '1px solid #E0E0E0',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-            }}
-          >
-            <ArrowLeft size={20} weight="regular" color="#2C2C2C" />
-          </motion.button>
-
-          {/* Title - Centered */}
-          <h1
-            style={{
-              fontFamily: "'Caveat', cursive",
-              fontSize: '1.75rem',
-              fontWeight: 600,
-              color: '#2D5016',
-              margin: 0,
-              position: 'absolute',
-              left: '50%',
-              transform: 'translateX(-50%)',
-            }}
-          >
-            Tanya Tanam
-          </h1>
-
-          {/* Search Button */}
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setIsSearchMode(!isSearchMode)}
-            aria-label="Cari pesan"
-            style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '50%',
-              backgroundColor: isSearchMode ? '#F0F7E6' : '#FFFFFF',
-              border: isSearchMode ? '1px solid #7CB342' : '1px solid #E0E0E0',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-            }}
-          >
-            <MagnifyingGlass size={20} weight="regular" color={isSearchMode ? '#7CB342' : '#2C2C2C'} />
-          </motion.button>
-        </div>
-
-        {/* Search Input Row - Below header border when active */}
-        <AnimatePresence>
-          {isSearchMode && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              style={{ overflow: 'hidden' }}
-            >
-              <div style={{ padding: '16px 24px' }}>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    backgroundColor: '#FAFAFA',
-                    border: '2px solid #7CB342',
-                    borderRadius: '12px',
-                    padding: '0 8px 0 16px',
-                  }}
-                >
-                  {/* Search Icon */}
-                  <MagnifyingGlass size={20} weight="regular" color="#757575" style={{ flexShrink: 0 }} />
-
-                  {/* Input */}
-                  <input
-                    ref={searchInputRef}
-                    type="text"
-                    placeholder="Cari pesan..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    autoFocus
-                    style={{
-                      flex: 1,
-                      padding: '14px 8px',
-                      fontSize: '1rem',
-                      fontFamily: "'Inter', sans-serif",
-                      color: '#2C2C2C',
-                      backgroundColor: 'transparent',
-                      border: 'none',
-                      outline: 'none',
-                    }}
-                  />
-
-                  {/* Clear Button */}
-                  <motion.button
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => {
-                      if (searchQuery) {
-                        setSearchQuery('');
-                      } else {
-                        setIsSearchMode(false);
-                      }
-                    }}
-                    style={{
-                      flexShrink: 0,
-                      width: '32px',
-                      height: '32px',
-                      borderRadius: '50%',
-                      backgroundColor: '#E0E0E0',
-                      border: 'none',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <X size={16} weight="bold" color="#757575" />
-                  </motion.button>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
-      {/* Fullscreen Image Viewer */}
-      <AnimatePresence>
-        {fullscreenImage && (
-          <>
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setFullscreenImage(null)}
-              style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                backgroundColor: 'rgba(0, 0, 0, 0.95)',
-                zIndex: 5000,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              {/* Close Button */}
-              <button
+          {fullscreenImage && (
+            <>
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
                 onClick={() => setFullscreenImage(null)}
-                aria-label="Tutup"
                 style={{
-                  position: 'absolute',
-                  top: '20px',
-                  right: '20px',
-                  width: '40px',
-                  height: '40px',
-                  borderRadius: '50%',
-                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                  border: 'none',
+                  position: 'fixed',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundColor: 'rgba(0, 0, 0, 0.95)',
+                  zIndex: 20000,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  cursor: 'pointer',
-                  zIndex: 5001,
                 }}
               >
-                <X size={24} weight="bold" color="#FFFFFF" />
-              </button>
+                {/* Close Button */}
+                <button
+                  onClick={() => setFullscreenImage(null)}
+                  aria-label="Tutup"
+                  style={{
+                    position: 'absolute',
+                    top: 'calc(20px + env(safe-area-inset-top, 0px))',
+                    right: 'calc(20px + env(safe-area-inset-right, 0px))',
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '50%',
+                    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                    border: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    zIndex: 20001,
+                  }}
+                >
+                  <X size={24} weight="bold" color="#FFFFFF" />
+                </button>
 
-              {/* Image */}
-              <motion.img
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.8, opacity: 0 }}
-                src={fullscreenImage}
-                alt="Fullscreen view"
-                onClick={(e) => e.stopPropagation()}
-                style={{
-                  maxWidth: '95vw',
-                  maxHeight: '90vh',
-                  objectFit: 'contain',
-                  borderRadius: '8px',
-                }}
-              />
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+                {/* Image */}
+                <motion.img
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.8, opacity: 0 }}
+                  src={fullscreenImage}
+                  alt="Fullscreen view"
+                  onClick={(e) => e.stopPropagation()}
+                  style={{
+                    maxWidth: '95vw',
+                    maxHeight: '90vh',
+                    objectFit: 'contain',
+                    borderRadius: '8px',
+                  }}
+                />
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
 
         {/* Offline Modal */}
         <OfflineModal
