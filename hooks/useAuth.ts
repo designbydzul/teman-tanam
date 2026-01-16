@@ -446,18 +446,30 @@ export function useAuth(): UseAuthReturn {
 
       // 2. Insert locations into the locations table
       if (locationNames && locationNames.length > 0) {
-        const locationsToInsert = locationNames.map((name, index) => ({
-          user_id: user.id,
-          name: name,
-          order_index: index,
-        }));
-
-        const { error: locError } = await supabase
+        // Fetch existing locations first to prevent duplicates
+        const { data: existingLocations } = await supabase
           .from('locations')
-          .insert(locationsToInsert);
+          .select('name')
+          .eq('user_id', user.id);
 
-        if (locError) {
-          debug.error('Locations insert error:', locError);
+        const existingNames = new Set(existingLocations?.map(l => l.name.toLowerCase()) || []);
+
+        const locationsToInsert = locationNames
+          .filter(name => !existingNames.has(name.toLowerCase()))
+          .map((name, index) => ({
+            user_id: user.id,
+            name: name,
+            order_index: index,
+          }));
+
+        if (locationsToInsert.length > 0) {
+          const { error: locError } = await supabase
+            .from('locations')
+            .insert(locationsToInsert);
+
+          if (locError) {
+            debug.error('Locations insert error:', locError);
+          }
         }
       }
 

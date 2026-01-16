@@ -39,25 +39,32 @@ const Splash: React.FC<SplashProps> = ({ onComplete }) => {
         backgroundColor: '#F5F5DC', // Cream
       }}
     >
-      <motion.h1
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{
           duration: 0.8,
-          ease: [0.33, 1, 0.68, 1], // Custom ease-out
+          ease: [0.33, 1, 0.68, 1],
         }}
         style={{
-          fontFamily: "'Caveat', cursive",
-          fontSize: '4rem', // 64px
-          fontWeight: 500,
-          color: '#2D5016', // Green Forest
-          textAlign: 'center',
-          margin: 0,
-          lineHeight: 1.2,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
         }}
       >
-        Teman Tanam
-      </motion.h1>
+        <h1
+          style={{
+            fontFamily: "var(--font-caveat), cursive",
+            fontSize: '4rem',
+            fontWeight: 600,
+            color: '#2D5016',
+            margin: 0,
+            lineHeight: 1,
+          }}
+        >
+          Teman Tanam
+        </h1>
+      </motion.div>
     </div>
   );
 };

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Splash, ErrorBoundary, GlobalOfflineBanner } from '@/components/shared';
 import { AuthScreen, ForgotPassword, Onboarding } from '@/components/auth';
 import { Home } from '@/components/Home';
+import LandingPage from '@/components/LandingPage';
 import { useAuth } from '@/hooks/useAuth';
 import { createDebugger } from '@/lib/debug';
 
@@ -20,6 +21,17 @@ export default function Page() {
   const [authScreen, setAuthScreen] = useState<'login' | 'forgot-password'>('login');
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
   const [isResettingPassword, setIsResettingPassword] = useState(false);
+  // State for checking if we should show auth screen
+  const [showAuthScreen, setShowAuthScreen] = useState(false);
+
+  // Check URL params on client side only
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const searchParams = new URLSearchParams(window.location.search);
+      setShowAuthScreen(searchParams.get('auth') === 'true');
+    }
+  }, []);
+
   const {
     isAuthenticated,
     hasCompletedOnboarding,
@@ -106,13 +118,13 @@ export default function Page() {
   // Show splash/loading if still checking auth (after splash animation)
   if (isCheckingAuth) {
     debug.log('Still checking auth...');
-    return <Splash onComplete={() => {}} />;
+    return <Splash onComplete={() => { }} />;
   }
 
   // Show forgot password screen - keep showing even if authenticated (during password reset flow)
   if (authScreen === 'forgot-password' || isResettingPassword) {
     return (
-      <>
+      <div className="app-container">
         <GlobalOfflineBanner />
         <ErrorBoundary>
           <ForgotPassword
@@ -132,15 +144,22 @@ export default function Page() {
             }}
           />
         </ErrorBoundary>
-      </>
+      </div>
     );
   }
 
+
+
   // Show auth screen if not logged in
   if (!isAuthenticated) {
-    // Show login/signup screen
+    // Show landing page for first-time visitors
+    if (!showAuthScreen) {
+      return <LandingPage />;
+    }
+
+    // Show login/signup screen when coming from landing page
     return (
-      <>
+      <div className="app-container">
         <GlobalOfflineBanner />
         <ErrorBoundary>
           <AuthScreen
@@ -153,7 +172,7 @@ export default function Page() {
             }}
           />
         </ErrorBoundary>
-      </>
+      </div>
     );
   }
 
@@ -161,19 +180,21 @@ export default function Page() {
   // hasCompletedOnboarding is true only when profile has display_name
   if (!hasCompletedOnboarding) {
     return (
-      <>
+      <div className="app-container">
         <GlobalOfflineBanner />
         <ErrorBoundary>
           <Onboarding onComplete={handleOnboardingComplete} />
         </ErrorBoundary>
-      </>
+      </div>
     );
   }
 
   // Show the Home component (Home has its own detailed OfflineIndicator)
   return (
-    <ErrorBoundary>
-      <Home userName={userName || 'Teman'} />
-    </ErrorBoundary>
+    <div className="app-container">
+      <ErrorBoundary>
+        <Home userName={userName || 'Teman'} />
+      </ErrorBoundary>
+    </div>
   );
 }

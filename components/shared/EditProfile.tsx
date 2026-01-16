@@ -281,29 +281,8 @@ const EditProfile: React.FC<EditProfileProps> = ({
         return;
       }
 
-      // Delete user's avatar from storage
-      if (userPhoto) {
-        const fileName = `${user.id}/avatar.jpg`;
-        await supabase.storage.from('avatars').remove([fileName]);
-      }
-
-      // Delete all user data from tables
-      // Plants
-      await supabase.from('plants').delete().eq('user_id', user.id);
-
-      // Locations
-      await supabase.from('locations').delete().eq('user_id', user.id);
-
-      // Notification settings
-      await supabase.from('notification_settings').delete().eq('user_id', user.id);
-
-      // Notification logs
-      await supabase.from('notification_logs').delete().eq('user_id', user.id);
-
-      // User profile
-      await supabase.from('user_profiles').delete().eq('user_id', user.id);
-
-      // Delete the auth user account via API
+      // STEP 1: Delete the auth user account first via API
+      // This will cascade delete the profile automatically
       const response = await fetch('/api/delete-account', {
         method: 'POST',
         headers: {
@@ -317,7 +296,21 @@ const EditProfile: React.FC<EditProfileProps> = ({
         throw new Error(errorData.error || 'Failed to delete account');
       }
 
-      // Sign out and clear local storage
+      // STEP 2: Clean up user data from other tables
+      // Delete user's avatar from storage
+      if (userPhoto) {
+        const fileName = `${user.id}/avatar.jpg`;
+        await supabase.storage.from('avatars').remove([fileName]);
+      }
+
+      // Delete all user data from tables
+      await supabase.from('plants').delete().eq('user_id', user.id);
+      await supabase.from('locations').delete().eq('user_id', user.id);
+      await supabase.from('notification_settings').delete().eq('user_id', user.id);
+      await supabase.from('notification_logs').delete().eq('user_id', user.id);
+      // Note: profiles table is auto-deleted via cascade when auth user is deleted
+
+      // STEP 3: Sign out and clear local storage
       await supabase.auth.signOut();
       localStorage.clear();
 

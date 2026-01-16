@@ -7,8 +7,10 @@
  * before allowing access to main app
  */
 
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X } from '@phosphor-icons/react';
+import { useLocations } from '@/hooks/useLocations';
 import { createDebugger } from '@/lib/debug';
 
 const debug = createDebugger('Onboarding');
@@ -27,9 +29,32 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
   const [locations, setLocations] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const locationOptions = ['Balkon', 'Teras'];
+  // Add location modal state
+  const [showAddLocationModal, setShowAddLocationModal] = useState(false);
+  const [newLocationName, setNewLocationName] = useState('');
+  const [locationError, setLocationError] = useState('');
+  const [isAddingLocation, setIsAddingLocation] = useState(false);
+  const [isInputFocused, setIsInputFocused] = useState(false);
+  const locationInputRef = useRef<HTMLInputElement>(null);
+
+  // Get locations from Supabase via useLocations hook
+  const { locations: supabaseLocations, addLocation, refetch: refetchLocations } = useLocations();
+  // Extract location names (exclude "Semua" option, filter out any undefined)
+  // Extract location names (exclude "Semua" option, filter out any undefined)
+  const predefinedLocations = ['Balkon', 'Teras'];
+  const customLocations = supabaseLocations
+    .map((loc: { name: string }) => loc.name)
+    .filter((name: string) => name && name !== 'Semua' && !predefinedLocations.includes(name));
+
+  const locationOptions = [...predefinedLocations, ...customLocations];
 
   const toggleLocation = (location: string) => {
+    if (location === 'Tambah Lokasi') {
+      // Open add location modal
+      setShowAddLocationModal(true);
+      return;
+    }
+
     if (isSubmitting) return;
     debug.log('toggleLocation called:', { location, current: locations });
     setLocations((prev) => {
@@ -38,6 +63,53 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
         : [...prev, location];
       return newLocations;
     });
+  };
+
+  // Auto-focus location input when modal opens
+  useEffect(() => {
+    if (showAddLocationModal && locationInputRef.current) {
+      // Small delay to ensure modal is fully rendered
+      setTimeout(() => {
+        locationInputRef.current?.focus();
+      }, 100);
+    }
+  }, [showAddLocationModal]);
+
+  // Check for duplicate location name
+  const checkDuplicateLocation = (name: string): boolean => {
+    const trimmedName = name.trim().toLowerCase();
+    return supabaseLocations.some((loc: { name: string }) => loc.name.toLowerCase() === trimmedName);
+  };
+
+  // Handle adding new location
+  const handleAddLocation = async () => {
+    if (newLocationName.trim().length < 2) {
+      setLocationError('Nama lokasi minimal 2 karakter');
+      return;
+    }
+
+    if (checkDuplicateLocation(newLocationName)) {
+      setLocationError('Nama lokasi sudah ada');
+      return;
+    }
+
+    setIsAddingLocation(true);
+    const result = await addLocation(newLocationName.trim(), '📍');
+
+    if (result.success) {
+      // Refetch locations to get the new one
+      await refetchLocations();
+      // Close modal and reset state
+      setShowAddLocationModal(false);
+      setNewLocationName('');
+      setLocationError('');
+      // Auto-select the newly added location
+      setLocations((prev) => [...prev, newLocationName.trim()]);
+    } else {
+      setLocationError(result.error || 'Gagal menambahkan lokasi');
+    }
+
+    setIsAddingLocation(false);
   };
 
   const handleSubmit = async () => {
@@ -158,9 +230,8 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                 padding: '16px',
                 fontSize: '1rem',
                 fontFamily: "'Inter', sans-serif",
-                border: `2px solid ${
-                  name.trim() ? '#7CB342' : 'transparent'
-                }`,
+                border: `2px solid ${name.trim() ? '#7CB342' : 'transparent'
+                  }`,
                 outline: 'none',
                 transition: 'border-color 200ms',
                 color: '#2C2C2C',
@@ -204,7 +275,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                 flexWrap: 'wrap',
               }}
             >
-              {locationOptions.map((location) => {
+              {[...locationOptions, 'Tambah Lokasi'].map((location) => {
                 const isSelected = locations.includes(location);
                 return (
                   <motion.button
@@ -215,9 +286,8 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                     style={{
                       padding: '12px 32px',
                       borderRadius: '9999px', // Pill shape
-                      border: `2px solid ${
-                        isSelected ? '#7CB342' : '#E0E0E0'
-                      }`,
+                      border: `2px solid ${isSelected ? '#7CB342' : '#E0E0E0'
+                        }`,
                       backgroundColor: isSelected
                         ? 'rgba(124, 179, 66, 0.1)'
                         : '#FFFFFF',
@@ -301,6 +371,197 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
           {isSubmitting ? 'Menyimpan...' : 'Selanjutnya'}
         </motion.button>
       </div>
+
+      {/* Add Location Modal */}
+      <AnimatePresence>
+        {showAddLocationModal && (
+          <>
+            <motion.div
+              className="ios-fixed-container"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => !isAddingLocation && setShowAddLocationModal(false)}
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                zIndex: 5000,
+              }}
+            />
+
+            {/* Modal Container - for centering */}
+            <div
+              style={{
+                position: 'fixed',
+                bottom: 0,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '100%',
+                maxWidth: 'var(--app-max-width)',
+                zIndex: 5001,
+              }}
+            >
+              <motion.div
+                initial={{ y: '100%' }}
+                animate={{ y: 0 }}
+                exit={{ y: '100%' }}
+                transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '12px 12px 0 0',
+                  padding: '24px',
+                }}
+              >
+                {/* Close Button */}
+                <button
+                  onClick={() => !isAddingLocation && setShowAddLocationModal(false)}
+                  disabled={isAddingLocation}
+                  aria-label="Tutup"
+                  style={{
+                    position: 'absolute',
+                    top: '20px',
+                    right: '20px',
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '50%',
+                    backgroundColor: '#F5F5F5',
+                    border: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: isAddingLocation ? 'not-allowed' : 'pointer',
+                    opacity: isAddingLocation ? 0.5 : 1,
+                  }}
+                >
+                  <X size={20} weight="regular" color="#757575" />
+                </button>
+
+                {/* Modal Title */}
+                <h2
+                  style={{
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: '1.25rem',
+                    fontWeight: 600,
+                    color: '#2C2C2C',
+                    margin: '0 0 16px 0',
+                  }}
+                >
+                  Tambah Lokasi Baru
+                </h2>
+
+                {/* Input */}
+                <input
+                  ref={locationInputRef}
+                  type="text"
+                  placeholder="Nama lokasi (min. 2 karakter)"
+                  value={newLocationName}
+                  onChange={(e) => {
+                    setNewLocationName(e.target.value);
+                    if (locationError) setLocationError('');
+                  }}
+                  onFocus={() => setIsInputFocused(true)}
+                  onBlur={() => setIsInputFocused(false)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && newLocationName.trim().length >= 2) {
+                      handleAddLocation();
+                    }
+                  }}
+                  disabled={isAddingLocation}
+                  style={{
+                    width: '100%',
+                    padding: '16px',
+                    fontSize: '1rem',
+                    fontFamily: "'Inter', sans-serif",
+                    color: '#2C2C2C',
+                    backgroundColor: '#FAFAFA',
+                    border: locationError
+                      ? '2px solid #EF4444'
+                      : isInputFocused
+                        ? '2px solid #7CB342'
+                        : '2px solid transparent',
+                    borderRadius: '12px',
+                    outline: 'none',
+                    marginBottom: locationError ? '8px' : '16px',
+                    boxSizing: 'border-box',
+                    transition: 'border-color 200ms',
+                    opacity: isAddingLocation ? 0.5 : 1,
+                  }}
+                />
+                {locationError && (
+                  <p
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: '12px',
+                      color: '#EF4444',
+                      margin: '0 0 16px 0',
+                    }}
+                  >
+                    {locationError}
+                  </p>
+                )}
+
+                {/* Submit Button */}
+                <button
+                  onClick={handleAddLocation}
+                  disabled={newLocationName.trim().length < 2 || isAddingLocation}
+                  style={{
+                    width: '100%',
+                    padding: '14px',
+                    fontSize: '1rem',
+                    fontFamily: "'Inter', sans-serif",
+                    fontWeight: 600,
+                    color: '#FFFFFF',
+                    backgroundColor: newLocationName.trim().length >= 2 && !isAddingLocation ? '#7CB342' : '#E0E0E0',
+                    border: 'none',
+                    borderRadius: '12px',
+                    cursor: newLocationName.trim().length >= 2 && !isAddingLocation ? 'pointer' : 'not-allowed',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                  }}
+                >
+                  {isAddingLocation ? (
+                    <>
+                      <style>{`
+                        @keyframes spin {
+                          0% { transform: rotate(0deg); }
+                          100% { transform: rotate(360deg); }
+                        }
+                      `}</style>
+                      <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        style={{ animation: 'spin 1s linear infinite' }}
+                      >
+                        <circle
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="3"
+                          strokeLinecap="round"
+                          strokeDasharray="31.4 31.4"
+                        />
+                      </svg>
+                      Menyimpan...
+                    </>
+                  ) : (
+                    'Simpan'
+                  )}
+                </button>
+              </motion.div>
+            </div>
+          </>
+        )}
+      </AnimatePresence>
 
     </div>
   );

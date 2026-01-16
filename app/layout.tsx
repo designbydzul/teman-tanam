@@ -40,13 +40,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${inter.variable} ${caveat.variable} antialiased`}
       >
-        <div className="app-container">
-          {children}
-        </div>
+        {children}
         <Analytics />
         <SpeedInsights />
       </body>
