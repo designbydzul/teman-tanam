@@ -392,15 +392,15 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
 
     if (isStandalone) {
       // PWA mode: Use safe area inset (handled via CSS env())
-      setBottomOffset(16);
+      setBottomOffset(24);
     } else if (isIOS) {
       // iOS Safari/Chrome: Need space for browser toolbar
       // Chrome iOS has taller toolbar (~70px) than Safari (~50px)
       const isChrome = /crios/.test(ua);
-      setBottomOffset(isChrome ? 80 : 70);
+      setBottomOffset(isChrome ? 56 : 48);
     } else if (isMobile) {
       // Other mobile browsers: moderate offset
-      setBottomOffset(60);
+      setBottomOffset(48);
     } else {
       // Desktop: simple 16px from bottom
       setBottomOffset(16);
