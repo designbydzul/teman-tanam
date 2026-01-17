@@ -66,7 +66,7 @@ export async function calculateUserCareNeeds(
     // 1. Get user's active plants with their species info
     const { data: plantsData, error: plantsError } = await supabaseAdmin
       .from('plants')
-      .select(`
+      .select<string, PlantWithCareInfo>(`
         id,
         name,
         user_id,
@@ -90,15 +90,15 @@ export async function calculateUserCareNeeds(
       return null;
     }
 
-    const plants = plantsData as unknown as PlantWithCareInfo[];
+    const plants = plantsData;
     const plantIds = plants.map(p => p.id);
 
     // 2. Get last actions for each plant
+    // OPTIMIZATION: Use RPC to fetch only the latest action per plant per action_type
+    // This avoids fetching ALL historical actions when we only need the most recent
+    // See: supabase/migrations/20260117_add_get_latest_actions_function.sql
     const { data: actionsData, error: actionsError } = await supabaseAdmin
-      .from('actions')
-      .select('plant_id, action_type, action_date')
-      .in('plant_id', plantIds)
-      .order('action_date', { ascending: false });
+      .rpc('get_latest_actions_for_plants', { plant_ids: plantIds });
 
     if (actionsError) {
       console.error(`[care-checker] Error fetching actions for user ${userId}:`, actionsError);
@@ -106,15 +106,13 @@ export async function calculateUserCareNeeds(
     }
 
     // Build a map of last action dates per plant
+    // Each entry from RPC is already the latest for that action_type
     const lastActions: Record<string, Record<string, string>> = {};
     (actionsData as ActionRecord[] || []).forEach(action => {
       if (!lastActions[action.plant_id]) {
         lastActions[action.plant_id] = {};
       }
-      // Only keep the most recent action of each type
-      if (!lastActions[action.plant_id][action.action_type]) {
-        lastActions[action.plant_id][action.action_type] = action.action_date;
-      }
+      lastActions[action.plant_id][action.action_type] = action.action_date;
     });
 
     // 3. Calculate care status for each plant

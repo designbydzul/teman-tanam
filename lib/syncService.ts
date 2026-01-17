@@ -46,6 +46,19 @@ interface PhotoSyncData {
   bucket?: string;
 }
 
+// Type guard for PhotoSyncData to safely narrow from unknown data
+function isPhotoSyncData(data: unknown): data is PhotoSyncData {
+  if (typeof data !== 'object' || data === null) {
+    return false;
+  }
+  const obj = data as Record<string, unknown>;
+  return (
+    typeof obj.base64 === 'string' &&
+    typeof obj.path === 'string' &&
+    (obj.bucket === undefined || typeof obj.bucket === 'string')
+  );
+}
+
 interface PlantSyncData {
   id?: string;
   user_id?: string;
@@ -546,7 +559,11 @@ export async function syncAll(): Promise<SyncAllResult> {
             syncResult = await syncAction(item);
             break;
           case 'photo':
-            syncResult = await syncPhoto({ data: item.data as unknown as PhotoSyncData });
+            if (isPhotoSyncData(item.data)) {
+              syncResult = await syncPhoto({ data: item.data });
+            } else {
+              syncResult = { success: false, error: 'Invalid photo sync data' };
+            }
             break;
           default:
             syncResult = { success: false, error: `Unknown type: ${item.type}` };

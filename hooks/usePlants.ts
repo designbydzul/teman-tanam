@@ -327,23 +327,24 @@ export function usePlants(): UsePlantsReturn {
       const actionsMap: ActionsMap = {};
 
       if (plantIds.length > 0) {
+        // OPTIMIZATION: Use RPC to fetch only the latest action per plant per action_type
+        // This avoids the N+1 problem of fetching ALL actions then filtering in JS
+        // PostgreSQL's DISTINCT ON efficiently returns just what we need
+        // See: supabase/migrations/20260117_add_get_latest_actions_function.sql
         const { data: actionsData, error: actionsError } = await supabase
-          .from('actions')
-          .select('plant_id, action_type, action_date')
-          .in('plant_id', plantIds)
-          .order('action_date', { ascending: false });
+          .rpc('get_latest_actions_for_plants', { plant_ids: plantIds });
 
         if (actionsError) {
           debug.warn('Error fetching actions:', actionsError);
         } else if (actionsData) {
-          actionsData.forEach(action => {
-            if (!actionsMap[action.plant_id]) {
-              actionsMap[action.plant_id] = {};
-            }
-            if (!actionsMap[action.plant_id][action.action_type]) {
+          // Build the actions map - each entry is already the latest for that type
+          (actionsData as { plant_id: string; action_type: string; action_date: string }[])
+            .forEach(action => {
+              if (!actionsMap[action.plant_id]) {
+                actionsMap[action.plant_id] = {};
+              }
               actionsMap[action.plant_id][action.action_type] = action.action_date;
-            }
-          });
+            });
         }
       }
 
@@ -471,17 +472,20 @@ export function usePlants(): UsePlantsReturn {
           }
         }
 
-        const localPlant = {
+        const localPlant: PlantRaw = {
           id: tempId,
           user_id: user.id,
           species_id: plantData.speciesId || null,
           location_id: plantData.locationId || null,
-          name: plantData.customName || plantData.name,
+          name: plantData.customName || plantData.name || null,
           photo_url: offlinePhoto,
           started_date: plantData.startedDate || now.toISOString(),
           notes: notesWithSpecies || null,
           status: 'active',
           created_at: now.toISOString(),
+          updated_at: null,
+          custom_watering_days: null,
+          custom_fertilizing_days: null,
           isOffline: true,
           pendingSync: true,
         };
@@ -495,7 +499,7 @@ export function usePlants(): UsePlantsReturn {
           },
         });
 
-        const transformedPlant = transformPlantData([localPlant as unknown as PlantRaw])[0];
+        const transformedPlant = transformPlantData([localPlant])[0];
         setPlants(prev => [transformedPlant, ...prev]);
 
         const cached = getFromCache(CACHE_KEYS.PLANTS);

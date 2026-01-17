@@ -34,7 +34,7 @@ import { colors, radius, typography } from '@/styles/theme';
 import { supabase } from '@/lib/supabase';
 import { SPECIES_EMOJI_MAP } from '@/lib/constants';
 import { createDebugger } from '@/lib/debug';
-import type { Plant as PlantType, PlantSpecies, Location, Profile } from '@/types';
+import type { Plant as PlantType, PlantSpecies, Location, Profile, AddPlantFormSubmitData, EditPlantData, UpdatePlantData } from '@/types';
 
 const debug = createDebugger('Home');
 
@@ -80,6 +80,13 @@ interface NewPlantData {
   startedDate?: Date | string;
   photoPreview?: string | null;
   notes?: string;
+  // Additional fields from form submission
+  photo?: File | null;
+  compressedPhoto?: Blob | File | null;
+  photoBlob?: Blob | File | null;
+  customLocation?: string;
+  customDate?: string;
+  createdAt?: Date;
 }
 
 const Home: React.FC<HomeProps> = ({ userName }) => {
@@ -136,8 +143,8 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
   const [showWhatsAppSetup, setShowWhatsAppSetup] = useState<boolean>(false);
   const [wasFirstPlant, setWasFirstPlant] = useState<boolean>(false);
 
-  // Plant Detail state
-  const [selectedPlant, setSelectedPlant] = useState<PlantType | null>(null);
+  // Plant Detail state (Partial to allow newly created plants with incomplete data)
+  const [selectedPlant, setSelectedPlant] = useState<Partial<PlantType> | null>(null);
   const [showPlantDetail, setShowPlantDetail] = useState<boolean>(false);
 
   // Profile Modal state
@@ -596,7 +603,7 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
       setShowBulkFertilizeModal(true);
     } else if (actionType === 'pangkas') {
       // Check for plants already pruned today
-      const prunedToday = selectedPlants.filter(p => isToday((p as any).lastPruned));
+      const prunedToday = selectedPlants.filter(p => p.lastPruned && isToday(p.lastPruned));
       setAlreadyPrunedToday(prunedToday);
       // Open pruning modal instead of confirmation
       setBulkActionType(actionType);
@@ -825,7 +832,7 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
     // Keep showAddPlant true so it stays visible behind the form modal
   };
 
-  const handleFormSubmit = async (plantData: any): Promise<void> => {
+  const handleFormSubmit = async (plantData: AddPlantFormSubmitData): Promise<void> => {
     console.log('[Home] handleFormSubmit called with:', plantData);
 
     // Add photo preview to plant data
@@ -849,16 +856,16 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
 
     // Prepare data for Supabase
     // species_id is now the real UUID from Supabase plant_species table
-    const supabaseData = {
+    const supabaseData: import('@/types').AddPlantData = {
       customName: plantData.customName,
       name: plantData.customName || plantData.species?.name || 'Tanaman',
       speciesId: plantData.species?.id || null, // Real UUID from Supabase
-      speciesName: plantData.species?.name || null, // Store species name for emoji lookup
+      speciesName: plantData.species?.name, // Store species name for emoji lookup
       speciesEmoji: plantData.species?.emoji || '🌱', // Store emoji directly
       locationId: locationId,
       notes: plantData.notes || '',
       startedDate: plantData.customDate || new Date().toISOString(),
-      photoBlob: plantData.photoBlob || null, // Compressed photo blob for upload
+      photoBlob: plantData.photoBlob || undefined, // Compressed photo blob for upload
     };
 
     console.log('[Home] Calling addSupabasePlant with:', {
@@ -876,7 +883,7 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
       const isFirstPlant = plants.length === 0;
       setWasFirstPlant(isFirstPlant);
 
-      setNewPlantData(dataWithPhoto);
+      setNewPlantData(dataWithPhoto as NewPlantData);
       setShowAddPlantForm(false);
       setShowSuccess(true);
     } else {
@@ -908,15 +915,28 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
     // Find the newly created plant and show its details
     if (newPlantData) {
       // Create a plant object that matches what PlantDetail expects
-      const plantForDetail: any = {
+      // Map AddPlantSpecies to PlantType.species format
+      const speciesForDetail = newPlantData.species ? {
+        id: newPlantData.species.id,
+        name: newPlantData.species.name,
+        scientific: newPlantData.species.scientific,
+        category: newPlantData.species.category as PlantType['species']['category'],
+        imageUrl: newPlantData.species.imageUrl,
+        emoji: newPlantData.species.emoji,
+        wateringFrequencyDays: 7, // Default values for new plant
+        fertilizingFrequencyDays: 14,
+      } : undefined;
+
+      const plantForDetail: Partial<PlantType> = {
         id: newPlantData.id,
         name: newPlantData.customName,
         customName: newPlantData.customName,
-        species: newPlantData.species,
+        species: speciesForDetail,
         location: newPlantData.location,
-        startedDate: newPlantData.startedDate || new Date(),
+        startedDate: typeof newPlantData.startedDate === 'string'
+          ? new Date(newPlantData.startedDate)
+          : newPlantData.startedDate || new Date(),
         image: newPlantData.photoPreview || null,
-        photoUrl: newPlantData.photoPreview || null,
         notes: newPlantData.notes || '',
         status: 'Baik Baik Saja',
       };
@@ -2171,21 +2191,21 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
       {/* Plant Detail */}
       {showPlantDetail && selectedPlant && (
         <PlantDetail
-          plant={selectedPlant}
+          plant={selectedPlant as PlantType}
           onBack={handlePlantDetailBack}
           onEdit={handlePlantEdit}
           onDelete={handlePlantDelete}
           onRecordAction={recordAction}
-          onSavePlant={async (updatedPlant: any) => {
+          onSavePlant={async (updatedPlant: EditPlantData) => {
             // Find location_id from location name
             const locationObj = supabaseLocations.find(loc => loc.name === updatedPlant.location);
             const locationId = locationObj?.id;
 
             // Build update object
-            const updates: any = {
+            const updates: UpdatePlantData = {
               customName: updatedPlant.customName || updatedPlant.name,
               notes: updatedPlant.notes,
-              photoUrl: updatedPlant.photoUrl,
+              photoUrl: updatedPlant.photoUrl ?? undefined,
             };
 
             if (locationId) {
@@ -2193,7 +2213,7 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
             }
 
             // Save to Supabase
-            const result = await updateSupabasePlant(selectedPlant.id, updates);
+            const result = await updateSupabasePlant(selectedPlant.id!, updates);
             return result;
           }}
         />
@@ -2278,16 +2298,16 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
             setShowEditPlantModal(false);
             setMenuPlant(null);
           }}
-          onSave={async (updatedPlant: any) => {
+          onSave={async (updatedPlant: EditPlantData) => {
             // Find location_id from location name
             const locationObj = supabaseLocations.find(loc => loc.name === updatedPlant.location);
             const locationId = locationObj?.id;
 
             // Build update object
-            const updates: any = {
+            const updates: UpdatePlantData = {
               customName: updatedPlant.customName || updatedPlant.name,
               notes: updatedPlant.notes,
-              photoUrl: updatedPlant.photoUrl,
+              photoUrl: updatedPlant.photoUrl ?? undefined,
             };
 
             // Only include locationId if we found a valid one

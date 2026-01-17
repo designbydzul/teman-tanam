@@ -117,16 +117,41 @@ export async function POST(request: Request) {
     }
 
     // Parse and validate request body
-    const body = await request.json();
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      console.error('[tanya-tanam] Invalid JSON in request body');
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Waduh, ada masalah dengan request. Coba lagi ya!',
+          code: 'INVALID_JSON'
+        },
+        { status: 400 }
+      );
+    }
+
     const parseResult = RequestSchema.safeParse(body);
 
     if (!parseResult.success) {
-      const errorMessage = parseResult.error.issues
-        .map(e => `${e.path.join('.')}: ${e.message}`)
-        .join(', ');
+      const issues = parseResult.error.issues;
+      console.error('[tanya-tanam] Validation failed:', issues.map(e => `${e.path.join('.')}: ${e.message}`).join(', '));
+
+      // User-friendly error messages based on validation issue
+      let userMessage = 'Ada yang salah dengan request. Coba lagi ya!';
+      if (issues.some(e => e.path.includes('message') && e.message.includes('required'))) {
+        userMessage = 'Pertanyaan tidak boleh kosong';
+      } else if (issues.some(e => e.message.includes('Message or image is required'))) {
+        userMessage = 'Tulis pertanyaan atau kirim foto tanaman ya!';
+      } else if (issues.some(e => e.message.includes('too long') || e.message.includes('Maximum'))) {
+        userMessage = 'Pesan terlalu panjang. Coba disingkat ya!';
+      } else if (issues.some(e => e.path.includes('images'))) {
+        userMessage = 'Ada masalah dengan foto. Coba kirim ulang ya!';
+      }
 
       return NextResponse.json(
-        { success: false, error: `Invalid request: ${errorMessage}` },
+        { success: false, error: userMessage, code: 'VALIDATION_ERROR' },
         { status: 400 }
       );
     }
@@ -200,33 +225,102 @@ export async function POST(request: Request) {
       }
     ];
 
-    // Call Claude API
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 500,
-      system: SYSTEM_PROMPT,
-      messages: messages
-    });
+    // Call Claude API with timeout (30 seconds)
+    try {
+      const response = await anthropic.messages.create(
+        {
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 500,
+          system: SYSTEM_PROMPT,
+          messages: messages
+        },
+        {
+          timeout: 30000 // 30 seconds timeout
+        }
+      );
 
-    // Extract the text response
-    const aiMessage = response.content[0].type === 'text' ? response.content[0].text : '';
+      // Extract the text response
+      const aiMessage = response.content[0].type === 'text' ? response.content[0].text : '';
 
-    return NextResponse.json({
-      success: true,
-      message: aiMessage
-    });
+      return NextResponse.json({
+        success: true,
+        message: aiMessage
+      });
+    } catch (apiError) {
+      // Handle specific API errors
+      const error = apiError as Error & { status?: number; error?: { type?: string } };
+      console.error('[tanya-tanam] Claude API error:', error.message);
+
+      // Check for timeout/abort
+      if (error.name === 'AbortError' || error.message?.includes('aborted')) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Koneksi timeout. Cek internet kamu dan coba lagi',
+            code: 'TIMEOUT'
+          },
+          { status: 504 }
+        );
+      }
+
+      // Check for rate limiting from Anthropic
+      if (error.status === 429 || error.error?.type === 'rate_limit_error') {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Maaf, Tanya Tanam lagi sibuk. Coba lagi sebentar ya!',
+            code: 'RATE_LIMITED'
+          },
+          { status: 429 }
+        );
+      }
+
+      // Check for authentication errors
+      if (error.status === 401 || error.error?.type === 'authentication_error') {
+        console.error('[tanya-tanam] API authentication failed');
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Service temporarily unavailable',
+            code: 'AUTH_ERROR'
+          },
+          { status: 503 }
+        );
+      }
+
+      // Check for overloaded API
+      if (error.status === 529 || error.error?.type === 'overloaded_error') {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Maaf, Tanya Tanam lagi sibuk banget. Coba lagi dalam beberapa menit ya!',
+            code: 'API_OVERLOADED'
+          },
+          { status: 503 }
+        );
+      }
+
+      // Generic API error
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Maaf, ada masalah dengan Tanya Tanam. Coba lagi ya!',
+          code: 'API_ERROR'
+        },
+        { status: 500 }
+      );
+    }
 
   } catch (error) {
+    // Catch-all for unexpected errors
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error('[tanya-tanam] API Error:', errorMessage);
+    console.error('[tanya-tanam] Unexpected error:', errorMessage);
 
-    // Return user-friendly error in production, detailed in development
     return NextResponse.json(
       {
         success: false,
-        error: process.env.NODE_ENV === 'development'
-          ? `Error: ${errorMessage}`
-          : 'Waduh, ada masalah nih. Coba lagi ya!'
+        error: 'Waduh, ada masalah nih. Coba lagi ya!',
+        code: 'UNEXPECTED_ERROR'
       },
       { status: 500 }
     );

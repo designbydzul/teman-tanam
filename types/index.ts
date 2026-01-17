@@ -130,6 +130,7 @@ export interface Plant {
   startedDate: Date;
   lastWatered: Date | null;
   lastFertilized: Date | null;
+  lastPruned?: Date | null;
   wateringStatus: CareStatus;
   fertilizingStatus: CareStatus;
   harvestStatus: HarvestStatus;
@@ -233,4 +234,50 @@ export interface UseLocationsReturn {
   updateLocation: (id: string, name: string) => Promise<{ success: boolean; error?: string }>;
   deleteLocation: (id: string) => Promise<{ success: boolean; error?: string }>;
   reorderLocations: (orderedIds: string[]) => Promise<{ success: boolean; error?: string }>;
+}
+
+// Form submission data from AddPlantForm
+export interface AddPlantFormSubmitData {
+  id: string;
+  customName: string;
+  location: string;
+  customLocation: string;
+  startedDate: string;
+  customDate: string;
+  notes: string;
+  photo: File | null;
+  compressedPhoto: Blob | File | null;
+  species: {
+    id: string;
+    name: string;
+    category?: string;
+    imageUrl?: string | null;
+    emoji?: string;
+  };
+  createdAt: Date;
+  photoBlob: Blob | File | null;
+}
+
+// Plant data returned from EditPlant component
+export interface EditPlantData {
+  id: string;
+  name?: string;
+  customName?: string | null;
+  location?: string;
+  startedDate?: string | Date;
+  notes?: string;
+  photoUrl?: string | null;
+  photoPreview?: string | null;
+  image?: string | null;
+  species?: {
+    id?: string;
+    name?: string | null;
+    scientific?: string | null;
+    category?: string | null;
+    wateringFrequencyDays?: number;
+    fertilizingFrequencyDays?: number;
+    emoji?: string;
+  };
+  customWateringDays?: number | null;
+  customFertilizingDays?: number | null;
 }
