@@ -54,21 +54,30 @@ export default function LandingPage() {
 
 
             <h1 className="hero-title">
-              Jaga Tanamanmu <br />
-              Tetap <span className="highlight-text">Hidup & Subur</span>
+              Rawat Tanaman <br />
+              <span className="highlight-text">Tanpa Ribet</span>
             </h1>
 
             <p className="hero-subtitle">
-              Tidak ada lagi tanaman layu. Dapatkan jadwal penyiraman,
-              identifikasi penyakit, dan panduan perawatan dalam satu saku.
+              Catat perkembangan tanaman langsung dari browser.
+              Gak perlu download app, dan kamu bakal diingetin lewat WhatsApp.
             </p>
 
-            <div className="hero-cta-group">
+            <div className="cta-wrapper">
               <motion.button
-                className="btn-primary-lg"
                 onClick={handleGetStarted}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
+                style={{
+                  background: '#7CB342',
+                  color: 'white',
+                  padding: '16px 32px',
+                  borderRadius: '16px',
+                  fontSize: '1rem',
+                  fontWeight: 600,
+                  border: 'none',
+                  cursor: 'pointer',
+                }}
               >
                 Coba Sekarang
               </motion.button>
@@ -275,25 +284,26 @@ export default function LandingPage() {
           text-align: center;
         }
 
-        .hero-cta-group {
+        .cta-wrapper {
+          width: 100%;
           display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 1rem;
+          justify-content: center;
         }
 
         .btn-primary-lg {
-          background: #2D5016;
+          background: #7CB342;
           color: white;
-          padding: 1rem 2rem;
-          border-radius: 12px;
-          font-size: 1.125rem;
+          padding: 16px 32px;
+          border-radius: 16px;
+          font-size: 1rem;
           font-weight: 600;
           border: none;
           cursor: pointer;
-          box-shadow: 0 4px 14px rgba(45, 80, 22, 0.3);
           width: 100%;
-          max-width: 300px;
+          max-width: 320px;
+        }
+        .btn-primary-lg:hover {
+          background: #689F38;
         }
 
         .cta-note {
@@ -560,7 +570,7 @@ export default function LandingPage() {
                align-self: flex-start;
             }
             .hero-badge { align-self: flex-start; }
-            .hero-cta-group { align-items: flex-start; }
+            .cta-wrapper { justify-content: flex-start; }
            
            .bento-grid {
               grid-template-columns: repeat(2, 1fr);
