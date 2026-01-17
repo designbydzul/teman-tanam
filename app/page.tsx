@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Splash, ErrorBoundary, GlobalOfflineBanner } from '@/components/shared';
 import { AuthScreen, ForgotPassword, Onboarding } from '@/components/auth';
@@ -11,7 +11,7 @@ import { createDebugger } from '@/lib/debug';
 
 const debug = createDebugger('Page');
 
-export default function Page() {
+function PageContent() {
   // Use Next.js hook to properly track URL search params
   const searchParams = useSearchParams();
 
@@ -194,5 +194,14 @@ export default function Page() {
         <Home userName={userName || 'Teman'} />
       </ErrorBoundary>
     </div>
+  );
+}
+
+// Wrap PageContent in Suspense for useSearchParams
+export default function Page() {
+  return (
+    <Suspense fallback={<Splash onComplete={() => {}} />}>
+      <PageContent />
+    </Suspense>
   );
 }
