@@ -1,20 +1,31 @@
 import { NextResponse } from 'next/server';
 import { createDebugger } from '@/lib/debug';
+import {
+  checkRateLimit,
+  createRateLimitResponse,
+  RATE_LIMITS,
+} from '@/lib/rateLimit';
 
 const debug = createDebugger('api:send-otp');
 
 /**
  * Send OTP via WhatsApp for phone number verification
  *
- * This endpoint sends a 6-digit OTP code to the user's WhatsApp number
- * to verify ownership before enabling notifications.
+ * Security measures:
+ * - Rate limiting: 3 requests per 10 minutes per phone number
+ * - Phone number validation and sanitization
+ * - OTP codes are never logged
  */
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { whatsapp_number, otp_code } = body;
 
-    debug.log('Send OTP request:', { whatsapp_number, otp_code });
+    // SECURITY: Never log OTP codes - only log masked phone number
+    const maskedPhone = whatsapp_number
+      ? `${whatsapp_number.substring(0, 4)}****${whatsapp_number.slice(-2)}`
+      : 'unknown';
+    debug.log('Send OTP request for:', maskedPhone);
 
     // Validate input
     if (!whatsapp_number || !otp_code) {
@@ -32,10 +43,34 @@ export async function POST(request: Request) {
       );
     }
 
-    // Format phone number (add 62 prefix if not present)
-    let formattedNumber = whatsapp_number;
+    // Sanitize phone number: remove all non-numeric characters
+    let formattedNumber = whatsapp_number.replace(/[^0-9]/g, '');
+
+    // Remove leading 0 if present (convert 08xxx to 8xxx)
+    if (formattedNumber.startsWith('0')) {
+      formattedNumber = formattedNumber.substring(1);
+    }
+
+    // Add 62 prefix if not present
     if (!formattedNumber.startsWith('62')) {
       formattedNumber = '62' + formattedNumber;
+    }
+
+    // Validate Indonesian phone format: 628xxxxxxxxx (10-14 digits total)
+    if (!/^628\d{8,12}$/.test(formattedNumber)) {
+      return NextResponse.json(
+        { success: false, error: 'Format nomor tidak valid. Gunakan format 08xx atau 628xx.' },
+        { status: 400 }
+      );
+    }
+
+    // Rate limiting based on phone number to prevent OTP flooding
+    const rateLimitResult = checkRateLimit(formattedNumber, RATE_LIMITS.SEND_OTP);
+    if (!rateLimitResult.allowed) {
+      return createRateLimitResponse(
+        rateLimitResult,
+        'Terlalu banyak permintaan OTP. Tunggu beberapa menit ya!'
+      );
     }
 
     // Send OTP via Fonnte

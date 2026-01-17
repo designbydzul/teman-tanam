@@ -1,6 +1,12 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import {
+  checkRateLimit,
+  getClientIP,
+  createRateLimitResponse,
+  RATE_LIMITS,
+} from '@/lib/rateLimit';
 
 // API key will be read at request time to ensure proper loading
 
@@ -81,18 +87,29 @@ SALAH: "Hai! 👋 Tanaman kamu perlu:
 
 export async function POST(request: Request) {
   try {
+    // Rate limiting - prevent API abuse
+    const clientIP = getClientIP(request);
+    const rateLimitResult = checkRateLimit(clientIP, RATE_LIMITS.TANYA_TANAM);
+
+    if (!rateLimitResult.allowed) {
+      return createRateLimitResponse(
+        rateLimitResult,
+        'Kamu terlalu sering bertanya nih. Istirahat sebentar ya!'
+      );
+    }
+
     // Read API key at request time
     // Support both TEMAN_TANAM_ANTHROPIC_KEY and ANTHROPIC_API_KEY
     const anthropicApiKey = process.env.TEMAN_TANAM_ANTHROPIC_KEY || process.env.ANTHROPIC_API_KEY;
 
-    // Check API key
+    // Check API key - don't expose key name in production
     if (!anthropicApiKey) {
-      console.error('[tanya-tanam] TEMAN_TANAM_ANTHROPIC_KEY environment variable is not set');
+      console.error('[tanya-tanam] Anthropic API key not configured');
       return NextResponse.json(
         {
           success: false,
           error: process.env.NODE_ENV === 'development'
-            ? 'ANTHROPIC_API_KEY environment variable is not configured'
+            ? 'Anthropic API key is not configured'
             : 'Service temporarily unavailable'
         },
         { status: 503 }
