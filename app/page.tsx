@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Splash, ErrorBoundary, GlobalOfflineBanner } from '@/components/shared';
 import { AuthScreen, ForgotPassword, Onboarding } from '@/components/auth';
 import { Home } from '@/components/Home';
@@ -11,6 +12,9 @@ import { createDebugger } from '@/lib/debug';
 const debug = createDebugger('Page');
 
 export default function Page() {
+  // Use Next.js hook to properly track URL search params
+  const searchParams = useSearchParams();
+
   // Only show splash on first visit in this session
   const [showSplash, setShowSplash] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -21,16 +25,10 @@ export default function Page() {
   const [authScreen, setAuthScreen] = useState<'login' | 'forgot-password'>('login');
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
   const [isResettingPassword, setIsResettingPassword] = useState(false);
-  // State for checking if we should show auth screen
-  const [showAuthScreen, setShowAuthScreen] = useState(false);
 
-  // Check URL params on client side only
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const searchParams = new URLSearchParams(window.location.search);
-      setShowAuthScreen(searchParams.get('auth') === 'true');
-    }
-  }, []);
+  // Check if we should show auth screen based on URL params
+  // This will now update when URL changes via router.push
+  const showAuthScreen = searchParams.get('auth') === 'true';
 
   const {
     isAuthenticated,

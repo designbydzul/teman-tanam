@@ -31,7 +31,9 @@ const Splash: React.FC<SplashProps> = ({ onComplete }) => {
     <div
       style={{
         display: 'flex',
-        height: '100vh',
+        minHeight: '100vh',
+        // @ts-expect-error - 100dvh is valid but TypeScript doesn't recognize it
+        minHeight: '100dvh',
         padding: '0 60px',
         flexDirection: 'column',
         justifyContent: 'center',
