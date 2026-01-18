@@ -137,7 +137,7 @@ const SignUp: React.FC<SignUpProps> = ({ onNavigate }) => {
             justifyContent: 'center',
           }}
         >
-          <CheckCircle size={48} weight="fill" color="#7CB342" />
+          <CheckCircle size={48} weight="regular" color="#7CB342" />
         </motion.div>
 
         <motion.div
@@ -262,7 +262,7 @@ const SignUp: React.FC<SignUpProps> = ({ onNavigate }) => {
               width: '100%',
             }}
           >
-            <WifiSlash size={22} weight="bold" color="#D97706" style={{ flexShrink: 0 }} />
+            <WifiSlash size={20} weight="regular" color="#757575" style={{ flexShrink: 0 }} />
             <span
               style={{
                 fontFamily: "'Inter', sans-serif",
@@ -477,7 +477,7 @@ const SignUp: React.FC<SignUpProps> = ({ onNavigate }) => {
         >
           {isLoading ? (
             <>
-              <CircleNotch size={20} weight="bold" className="animate-spin" />
+              <CircleNotch size={20} weight="regular" className="animate-spin" />
               Mendaftar...
             </>
           ) : (

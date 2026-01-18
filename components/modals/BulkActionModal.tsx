@@ -115,7 +115,7 @@ const BulkActionModal: React.FC<BulkActionModalProps> = ({
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-              style={{ backgroundColor: '#FFFFFF', borderRadius: '12px 12px 0 0', padding: '24px', paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 0px))', maxHeight: '80vh', overflowY: 'auto' }}
+              style={{ backgroundColor: '#FFFFFF', borderRadius: '16px 16px 0 0', padding: '24px', paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 0px))', maxHeight: '80vh', overflowY: 'auto' }}
             >
               {/* Header */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
@@ -144,9 +144,9 @@ const BulkActionModal: React.FC<BulkActionModalProps> = ({
 
               {/* Photo Upload */}
               <input ref={fileInputRef} type="file" accept="image/*" onChange={handlePhotoChange} style={{ display: 'none' }} />
-              <div onClick={() => !isLoadingPhoto && !photoPreview && fileInputRef.current?.click()} style={{ width: '100%', height: photoPreview ? '200px' : '120px', border: '2px dashed #E0E0E0', borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: photoPreview ? 'default' : 'pointer', marginBottom: '16px', overflow: 'hidden', backgroundColor: '#FAFAFA', position: 'relative' }}>
+              <div onClick={() => !isLoadingPhoto && !photoPreview && fileInputRef.current?.click()} style={{ width: '100%', height: photoPreview ? '200px' : '120px', border: '2px dashed #E0E0E0', borderRadius: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: photoPreview ? 'default' : 'pointer', marginBottom: '16px', overflow: 'hidden', backgroundColor: '#FAFAFA', position: 'relative' }}>
                 {isLoadingPhoto ? (
-                  <CircleNotch size={32} weight="bold" color="#7CB342" style={{ animation: 'spin 1s linear infinite' }} />
+                  <CircleNotch size={24} weight="regular" color="#7CB342" style={{ animation: 'spin 1s linear infinite' }} />
                 ) : photoPreview ? (
                   <>
                     <img src={photoPreview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -156,18 +156,18 @@ const BulkActionModal: React.FC<BulkActionModalProps> = ({
                   </>
                 ) : (
                   <>
-                    <Camera size={32} weight="duotone" color="#999999" />
-                    <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: '#999999' }}>Tambah foto (opsional)</span>
+                    <Camera size={32} weight="regular" color="#757575" />
+                    <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: '#757575' }}>Tambah foto (opsional)</span>
                   </>
                 )}
               </div>
 
               {/* Notes textarea */}
-              <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={notesPlaceholder} style={{ width: '100%', minHeight: '100px', padding: '16px', fontSize: '1rem', fontFamily: "'Inter', sans-serif", color: '#2C2C2C', backgroundColor: '#FAFAFA', border: '2px solid transparent', borderRadius: '12px', resize: 'vertical', marginBottom: '20px', outline: 'none', boxSizing: 'border-box' }} onFocus={(e) => { e.target.style.border = '2px solid #7CB342'; }} onBlur={(e) => { e.target.style.border = '2px solid transparent'; }} />
+              <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={notesPlaceholder} style={{ width: '100%', minHeight: '100px', padding: '16px', fontSize: '1rem', fontFamily: "'Inter', sans-serif", color: '#2C2C2C', backgroundColor: '#FAFAFA', border: '2px solid transparent', borderRadius: '8px', resize: 'vertical', marginBottom: '20px', outline: 'none', boxSizing: 'border-box' }} onFocus={(e) => { e.target.style.border = '2px solid #7CB342'; }} onBlur={(e) => { e.target.style.border = '2px solid transparent'; }} />
 
               {/* Submit button */}
-              <motion.button whileTap={{ scale: 0.98 }} onClick={handleSubmit} disabled={isProcessing || !isValid} style={{ width: '100%', padding: '16px', backgroundColor: isProcessing || !isValid ? '#A5D6A7' : '#7CB342', border: 'none', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: isProcessing || !isValid ? 'default' : 'pointer' }}>
-                {isProcessing && <CircleNotch size={20} weight="bold" color="#FFFFFF" style={{ animation: 'spin 1s linear infinite' }} />}
+              <motion.button whileTap={{ scale: 0.98 }} onClick={handleSubmit} disabled={isProcessing || !isValid} style={{ width: '100%', padding: '12px 24px', backgroundColor: isProcessing || !isValid ? '#A5D6A7' : '#7CB342', border: 'none', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: isProcessing || !isValid ? 'default' : 'pointer' }}>
+                {isProcessing && <CircleNotch size={20} weight="regular" color="#FFFFFF" style={{ animation: 'spin 1s linear infinite' }} />}
                 <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '1rem', fontWeight: 600, color: '#FFFFFF' }}>{isProcessing ? 'Menyimpan...' : 'Simpan'}</span>
               </motion.button>
             </motion.div>

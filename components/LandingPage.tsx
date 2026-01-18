@@ -21,11 +21,22 @@ import {
 } from '@phosphor-icons/react';
 import { colors, radius, typography, shadows, transitions } from '@/styles/theme';
 
-export default function LandingPage() {
+interface LandingPageProps {
+  isLoggedIn?: boolean;
+  onClose?: () => void;
+}
+
+export default function LandingPage({ isLoggedIn = false, onClose }: LandingPageProps) {
   const router = useRouter();
 
   const handleGetStarted = () => {
-    router.push('/?auth=true');
+    if (isLoggedIn && onClose) {
+      // If logged in and shown from app, just close the landing page
+      onClose();
+    } else {
+      // If not logged in, go to auth screen
+      router.push('/?auth=true');
+    }
   };
 
   return (
@@ -37,7 +48,7 @@ export default function LandingPage() {
             <span className="logo-text">Teman Tanam</span>
           </div>
           <button className="nav-auth-btn" onClick={handleGetStarted}>
-            Masuk
+            {isLoggedIn ? 'Buka Aplikasi' : 'Masuk'}
           </button>
         </div>
       </nav>
@@ -79,7 +90,7 @@ export default function LandingPage() {
                   cursor: 'pointer',
                 }}
               >
-                Coba Sekarang
+                {isLoggedIn ? 'Buka Aplikasi' : 'Coba Sekarang'}
               </motion.button>
             </div>
           </motion.div>

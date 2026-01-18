@@ -28,7 +28,7 @@ export const colors = {
   // Semantic Colors
   success: '#4CAF50',
   warning: '#FF9800',
-  error: '#F44336',
+  error: '#DC2626',
   errorDark: '#DC2626',  // For delete/logout actions
   errorLight: '#FEF2F2', // Light red background
   errorBorder: '#FEE2E2', // Light red border

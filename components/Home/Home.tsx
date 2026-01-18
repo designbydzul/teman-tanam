@@ -49,6 +49,7 @@ const NotificationReminderModal = dynamic(() => import('@/components/modals/Noti
 // Lazy load other heavy components
 const EditProfile = dynamic(() => import('@/components/shared/EditProfile'), { ssr: false });
 const TanyaTanam = dynamic(() => import('@/components/chat/TanyaTanam'), { ssr: false });
+const LandingPage = dynamic(() => import('@/components/LandingPage'), { ssr: false });
 import { useLocations } from '@/hooks/useLocations';
 import { useAuth } from '@/hooks/useAuth';
 import { colors, radius, typography } from '@/styles/theme';
@@ -170,6 +171,9 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
 
   // Profile Modal state
   const [showProfileModal, setShowProfileModal] = useState<boolean>(false);
+
+  // Landing Page (Tentang Tanam) state
+  const [showLandingPage, setShowLandingPage] = useState<boolean>(false);
 
   // Stats visibility preference (synced with database, localStorage as fallback)
   const [showHomeStats, setShowHomeStats] = useState<boolean>(() => {
@@ -1184,6 +1188,8 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
         return;
       }
       setShowEditProfile(true);
+    } else if (action === 'about') {
+      setShowLandingPage(true);
     }
   };
 
@@ -1466,7 +1472,7 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
             }}
           >
             <span>{selectedLocation === 'Semua' ? 'Semua Lokasi' : selectedLocation}</span>
-            <CaretDown size={14} weight="bold" />
+            <CaretDown size={16} weight="regular" />
           </motion.button>
 
           {/* Status Dropdown Button */}
@@ -1492,7 +1498,7 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
             }}
           >
             <span>{selectedStatus === 'Semua' ? 'Semua Status' : selectedStatus}</span>
-            <CaretDown size={14} weight="bold" />
+            <CaretDown size={16} weight="regular" />
           </motion.button>
 
           {/* Spacer to push search to right */}
@@ -1592,7 +1598,7 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
                       cursor: 'pointer',
                     }}
                   >
-                    <X size={16} weight="bold" color="#757575" />
+                    <X size={16} weight="regular" color="#757575" />
                   </motion.button>
                 </div>
               </div>
@@ -1764,7 +1770,7 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
                 </svg>
               ) : (
                 // Plant icon for no plants (either empty or filtered by location)
-                <Plant size={60} weight="duotone" color="#999999" />
+                <Plant size={60} weight="regular" color="#757575" />
               )}
             </div>
 
@@ -2102,7 +2108,7 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
                   padding: 0,
                 }}
               >
-                <DotsThree size={20} weight="bold" color="#757575" />
+                <DotsThree size={20} weight="regular" color="#757575" />
               </motion.button>
             </div>
 
@@ -2310,6 +2316,22 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
         onClose={() => setShowOfflineModal(false)}
         featureName={offlineFeatureName}
       />
+
+      {/* Landing Page (Tentang Tanam) */}
+      {showLandingPage && (
+        <div
+          className="ios-fixed-container"
+          style={{
+            zIndex: 2000,
+            backgroundColor: '#FFFFFF',
+          }}
+        >
+          <LandingPage
+            isLoggedIn={true}
+            onClose={() => setShowLandingPage(false)}
+          />
+        </div>
+      )}
 
       {/* Edit Plant Modal from menu */}
       {showEditPlantModal && menuPlant && (
@@ -2885,7 +2907,7 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
                     Semua Lokasi
                   </span>
                   {selectedLocation === 'Semua' && (
-                    <Check size={20} weight="bold" color="#7CB342" />
+                    <Check size={20} weight="regular" color="#7CB342" />
                   )}
                 </button>
 
@@ -2920,7 +2942,7 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
                       {location}
                     </span>
                     {selectedLocation === location && (
-                      <Check size={20} weight="bold" color="#7CB342" />
+                      <Check size={20} weight="regular" color="#7CB342" />
                     )}
                   </button>
                 ))}
@@ -3101,7 +3123,7 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
                       {option.label}
                     </span>
                     {selectedStatus === option.value && (
-                      <Check size={20} weight="bold" color="#7CB342" />
+                      <Check size={20} weight="regular" color="#7CB342" />
                     )}
                   </button>
                 ))}

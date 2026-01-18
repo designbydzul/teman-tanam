@@ -57,7 +57,7 @@ const OfflineIndicator: React.FC<OfflineIndicatorProps> = ({
         bg: '#FFF3E0', // light orange background
         borderColor: '#FFE0B2',
         textColor: '#E65100', // dark orange text
-        icon: <WifiSlash size={18} weight="bold" color="#E65100" />,
+        icon: <WifiSlash size={20} weight="regular" color="#757575" />,
         text: offlineText,
         showRetry: false,
       };
@@ -68,7 +68,7 @@ const OfflineIndicator: React.FC<OfflineIndicatorProps> = ({
       return {
         show: true,
         bg: '#3B82F6', // blue
-        icon: <CloudArrowUp size={18} weight="bold" className="animate-pulse" />,
+        icon: <CloudArrowUp size={20} weight="regular" className="animate-pulse" />,
         text: 'Menyinkronkan data...',
         showRetry: false,
       };
@@ -79,7 +79,7 @@ const OfflineIndicator: React.FC<OfflineIndicatorProps> = ({
       return {
         show: true,
         bg: '#22C55E', // green
-        icon: <CheckCircle size={18} weight="bold" />,
+        icon: <CheckCircle size={20} weight="regular" />,
         text: 'Data tersinkronkan!',
         showRetry: false,
       };
@@ -90,7 +90,7 @@ const OfflineIndicator: React.FC<OfflineIndicatorProps> = ({
       return {
         show: true,
         bg: '#EF4444', // red
-        icon: <XCircle size={18} weight="bold" />,
+        icon: <XCircle size={20} weight="regular" />,
         text: 'Gagal sinkronkan',
         showRetry: true,
       };
@@ -101,7 +101,7 @@ const OfflineIndicator: React.FC<OfflineIndicatorProps> = ({
       return {
         show: true,
         bg: '#3B82F6', // blue
-        icon: <CloudArrowUp size={18} weight="bold" />,
+        icon: <CloudArrowUp size={20} weight="regular" />,
         text: `${pendingCount} item menunggu sinkronisasi`,
         showRetry: true,
         retryText: 'Sync',
@@ -172,7 +172,7 @@ const OfflineIndicator: React.FC<OfflineIndicatorProps> = ({
                 gap: '4px',
               }}
             >
-              <ArrowClockwise size={14} weight="bold" color={textColor} />
+              <ArrowClockwise size={16} weight="regular" color={textColor} />
               {config.retryText || 'Coba Lagi'}
             </button>
           )}

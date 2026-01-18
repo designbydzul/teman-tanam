@@ -8,9 +8,10 @@ import { colors, typography } from '@/styles/theme';
 interface LandingPageProps {
   onGetStarted: () => void;
   onLogin: () => void;
+  isLoggedIn?: boolean;
 }
 
-export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin }) => {
+export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin, isLoggedIn = false }) => {
   return (
     <div className="min-h-screen bg-white flex flex-col relative overflow-hidden font-sans mx-auto max-w-[480px] shadow-sm">
         {/* Navigation */}
@@ -22,11 +23,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin 
                 </span>
             </div>
             <button
-                onClick={onLogin}
+                onClick={isLoggedIn ? onGetStarted : onLogin}
                 className="px-4 py-2 rounded-full text-sm font-medium transition-colors"
                 style={{ color: colors.greenForest, backgroundColor: colors.greenLight }}
             >
-                Masuk
+                {isLoggedIn ? 'Buka Aplikasi' : 'Masuk'}
             </button>
         </nav>
 
@@ -50,7 +51,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin 
                     className="w-full py-4 rounded-xl text-white font-bold text-lg shadow-lg transform transition-transform active:scale-95"
                     style={{ backgroundColor: colors.greenFresh }}
                 >
-                    Mulai Sekarang
+                    {isLoggedIn ? 'Buka Aplikasi' : 'Mulai Sekarang'}
                 </button>
             </motion.div>
 

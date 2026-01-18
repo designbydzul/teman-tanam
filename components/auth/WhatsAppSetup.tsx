@@ -137,7 +137,7 @@ const WhatsAppSetup: React.FC<WhatsAppSetupProps> = ({ onComplete, onSkip }) => 
             marginBottom: '24px',
           }}
         >
-          <Bell size={40} weight="fill" color="#25D366" />
+          <Bell size={40} weight="regular" color="#7CB342" />
         </motion.div>
 
         {/* Title */}
@@ -216,7 +216,7 @@ const WhatsAppSetup: React.FC<WhatsAppSetupProps> = ({ onComplete, onSkip }) => 
                 gap: '6px',
               }}
             >
-              <WhatsappLogo size={20} weight="fill" color="#25D366" />
+              <WhatsappLogo size={20} weight="regular" color="#25D366" />
               +62
             </div>
             <input
@@ -289,7 +289,7 @@ const WhatsAppSetup: React.FC<WhatsAppSetupProps> = ({ onComplete, onSkip }) => 
             marginBottom: '12px',
           }}
         >
-          <WhatsappLogo size={20} weight="fill" />
+          <WhatsappLogo size={20} weight="regular" />
           {isSubmitting ? 'Menyimpan...' : 'Ya, Aktifkan Reminder'}
         </motion.button>
 

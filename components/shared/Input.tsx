@@ -76,8 +76,8 @@ const Input: React.FC<InputProps> = ({
           fontFamily: "'Inter', sans-serif",
           color: '#2C2C2C',
           backgroundColor: '#FAFAFA',
-          border: error ? '2px solid #F44336' : 'none',
-          borderRadius: '12px',
+          border: error ? '2px solid #DC2626' : 'none',
+          borderRadius: '8px',
           outline: 'none',
           boxShadow: isFocused && !error ? 'inset 0 0 0 2px #7CB342' : 'none',
           ...style,
@@ -106,7 +106,7 @@ const Input: React.FC<InputProps> = ({
           style={{
             margin: '6px 0 0 0',
             fontSize: '0.875rem',
-            color: '#F44336',
+            color: '#DC2626',
             fontFamily: "'Inter', sans-serif",
           }}
         >
@@ -119,7 +119,7 @@ const Input: React.FC<InputProps> = ({
           style={{
             margin: '6px 0 0 0',
             fontSize: '0.75rem',
-            color: '#999999',
+            color: '#757575',
             fontFamily: "'Inter', sans-serif",
           }}
         >

@@ -35,13 +35,13 @@ const CareActionCard = memo(function CareActionCard({
   const getIcon = () => {
     switch (actionType) {
       case 'water':
-        return <Drop size={28} weight={doneToday ? 'fill' : 'duotone'} color={actionStyle.iconColor} />;
+        return <Drop size={20} weight="regular" color={actionStyle.iconColor} />;
       case 'fertilize':
-        return <Leaf size={28} weight={doneToday ? 'fill' : 'duotone'} color={actionStyle.iconColor} />;
+        return <Leaf size={20} weight="regular" color={actionStyle.iconColor} />;
       case 'prune':
-        return <Scissors size={28} weight={doneToday ? 'fill' : 'duotone'} color={actionStyle.iconColor} />;
+        return <Scissors size={20} weight="regular" color={actionStyle.iconColor} />;
       case 'other':
-        return <Plus size={28} weight="bold" color={actionStyle.iconColor} />;
+        return <Plus size={20} weight="regular" color={actionStyle.iconColor} />;
       default:
         return null;
     }

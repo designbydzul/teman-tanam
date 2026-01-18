@@ -10,7 +10,7 @@ import React from 'react';
 // Base skeleton styles
 const baseStyle: React.CSSProperties = {
   backgroundColor: '#E0E0E0',
-  borderRadius: '4px',
+  borderRadius: '8px',
 };
 
 // Shimmer animation keyframes (defined in globals.css as skeleton-pulse)
@@ -78,7 +78,7 @@ export const SkeletonText: React.FC<SkeletonTextProps> = ({
       <SkeletonBox
         width={width}
         height={height}
-        borderRadius="4px"
+        borderRadius="8px"
         style={style}
         className={className}
       />
@@ -86,13 +86,13 @@ export const SkeletonText: React.FC<SkeletonTextProps> = ({
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', ...style }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', ...style }}>
       {Array.from({ length: lines }).map((_, i) => (
         <SkeletonBox
           key={i}
           width={i === lines - 1 ? lastLineWidth : width}
           height={height}
-          borderRadius="4px"
+          borderRadius="8px"
           className={className}
         />
       ))}

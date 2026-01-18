@@ -66,14 +66,14 @@ const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
                   width: '64px',
                   height: '64px',
                   borderRadius: '50%',
-                  backgroundColor: 'rgba(244, 67, 54, 0.1)',
+                  backgroundColor: 'rgba(220, 38, 38, 0.1)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   margin: '0 auto 20px',
                 }}
               >
-                <Trash size={32} weight="fill" color="#F44336" />
+                <Trash size={32} weight="regular" color="#DC2626" />
               </div>
 
               {/* Title */}

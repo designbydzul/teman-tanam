@@ -137,7 +137,7 @@ const PlantHeader: React.FC<PlantHeaderProps> = ({
           zIndex: 10,
         }}
       >
-        <ArrowLeft size={24} weight="bold" color={colors.gray800} aria-hidden="true" />
+        <ArrowLeft size={24} weight="regular" color={colors.gray800} aria-hidden="true" />
       </motion.button>
 
       {/* Menu Button */}
@@ -164,7 +164,7 @@ const PlantHeader: React.FC<PlantHeaderProps> = ({
           zIndex: 10,
         }}
       >
-        <DotsThree size={24} weight="bold" color={colors.gray800} aria-hidden="true" />
+        <DotsThree size={24} weight="regular" color={colors.gray800} aria-hidden="true" />
       </motion.button>
 
       {/* Dropdown Menu */}
@@ -262,12 +262,12 @@ const PlantHeader: React.FC<PlantHeaderProps> = ({
                 cursor: 'pointer',
                 fontFamily: typography.fontFamily,
                 fontSize: typography.fontSize.sm,
-                color: '#F44336',
+                color: '#DC2626',
                 textAlign: 'left',
                 borderTop: `1px solid ${colors.gray100}`,
               }}
             >
-              <Trash size={20} weight="regular" color="#F44336" aria-hidden="true" />
+              <Trash size={20} weight="regular" color="#DC2626" aria-hidden="true" />
               Hapus Tanaman
             </button>
           </motion.div>

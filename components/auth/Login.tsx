@@ -126,7 +126,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onNavigate }) => {
               width: '100%',
             }}
           >
-            <WifiSlash size={22} weight="bold" color="#D97706" style={{ flexShrink: 0 }} />
+            <WifiSlash size={20} weight="regular" color="#757575" style={{ flexShrink: 0 }} />
             <span
               style={{
                 fontFamily: "'Inter', sans-serif",
@@ -294,7 +294,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onNavigate }) => {
         >
           {isLoading ? (
             <>
-              <CircleNotch size={20} weight="bold" className="animate-spin" />
+              <CircleNotch size={20} weight="regular" className="animate-spin" />
               Masuk...
             </>
           ) : (

@@ -75,7 +75,7 @@ const ActionDrawer: React.FC<ActionDrawerProps> = ({
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
               style={{
                 backgroundColor: '#FFFFFF',
-                borderRadius: '12px 12px 0 0',
+                borderRadius: '16px 16px 0 0',
                 padding: '24px',
                 paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 0px))',
                 maxHeight: '80vh',
@@ -116,7 +116,7 @@ const ActionDrawer: React.FC<ActionDrawerProps> = ({
                     cursor: 'pointer',
                   }}
                 >
-                  <X size={20} weight="bold" color="#757575" />
+                  <X size={20} weight="regular" color="#757575" />
                 </button>
               </div>
 
@@ -133,13 +133,13 @@ const ActionDrawer: React.FC<ActionDrawerProps> = ({
                     marginBottom: '20px',
                   }}
                 >
-                  <CheckCircle size={24} weight="fill" color="#16A34A" />
+                  <CheckCircle size={24} weight="regular" color="#7CB342" />
                   <span
                     style={{
                       fontFamily: "'Inter', sans-serif",
                       fontSize: '1rem',
                       fontWeight: 500,
-                      color: '#16A34A',
+                      color: '#7CB342',
                     }}
                   >
                     {statusLabel}
@@ -162,7 +162,7 @@ const ActionDrawer: React.FC<ActionDrawerProps> = ({
                   width: '100%',
                   height: photoPreview ? '200px' : '120px',
                   border: '2px dashed #E0E0E0',
-                  borderRadius: '12px',
+                  borderRadius: '8px',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
@@ -207,17 +207,17 @@ const ActionDrawer: React.FC<ActionDrawerProps> = ({
                         cursor: 'pointer',
                       }}
                     >
-                      <X size={16} weight="bold" color="#FFFFFF" />
+                      <X size={16} weight="regular" color="#FFFFFF" />
                     </button>
                   </>
                 ) : (
                   <>
-                    <Camera size={32} weight="duotone" color="#999999" />
+                    <Camera size={32} weight="regular" color="#757575" />
                     <span
                       style={{
                         fontFamily: "'Inter', sans-serif",
                         fontSize: '14px',
-                        color: '#999999',
+                        color: '#757575',
                       }}
                     >
                       Tambah foto (opsional)
@@ -240,7 +240,7 @@ const ActionDrawer: React.FC<ActionDrawerProps> = ({
                   color: '#2C2C2C',
                   backgroundColor: '#FAFAFA',
                   border: '2px solid transparent',
-                  borderRadius: '12px',
+                  borderRadius: '8px',
                   resize: 'vertical',
                   marginBottom: '20px',
                   outline: 'none',
@@ -259,7 +259,7 @@ const ActionDrawer: React.FC<ActionDrawerProps> = ({
                   padding: '16px',
                   backgroundColor: isSubmitting ? '#A5D6A7' : '#7CB342',
                   border: 'none',
-                  borderRadius: '12px',
+                  borderRadius: '8px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -289,7 +289,7 @@ const ActionDrawer: React.FC<ActionDrawerProps> = ({
                     padding: '16px',
                     backgroundColor: '#FEF2F2',
                     border: '1px solid #FEE2E2',
-                    borderRadius: '12px',
+                    borderRadius: '8px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -297,7 +297,7 @@ const ActionDrawer: React.FC<ActionDrawerProps> = ({
                     cursor: 'pointer',
                   }}
                 >
-                  <ArrowCounterClockwise size={20} weight="bold" color="#DC2626" />
+                  <ArrowCounterClockwise size={20} weight="regular" color="#757575" />
                   <span
                     style={{
                       fontFamily: "'Inter', sans-serif",

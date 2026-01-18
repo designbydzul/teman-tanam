@@ -53,22 +53,22 @@ const Toast: React.FC<ToastProps> = ({
   const getActionConfig = () => {
     const configs = {
       success: {
-        icon: <CheckCircle size={20} weight="fill" color="#4CAF50" />,
+        icon: <CheckCircle size={20} weight="regular" color="#7CB342" />,
         bgColor: '#2C2C2C',
         textColor: '#FFFFFF',
       },
       error: {
-        icon: <XCircle size={20} weight="fill" color="#EF4444" />,
+        icon: <XCircle size={20} weight="regular" color="#DC2626" />,
         bgColor: '#2C2C2C',
         textColor: '#FFFFFF',
       },
       warning: {
-        icon: <Warning size={20} weight="fill" color="#F59E0B" />,
+        icon: <Warning size={20} weight="regular" color="#FF9800" />,
         bgColor: '#2C2C2C',
         textColor: '#FFFFFF',
       },
       info: {
-        icon: <Info size={20} weight="fill" color="#3B82F6" />,
+        icon: <Info size={20} weight="regular" color="#757575" />,
         bgColor: '#2C2C2C',
         textColor: '#FFFFFF',
       },
@@ -83,19 +83,19 @@ const Toast: React.FC<ToastProps> = ({
         bgColor: '#F1F8E9',
         borderColor: '#C5E1A5',
         textColor: '#2D5016',
-        icon: <WifiHigh size={24} weight="duotone" color="#7CB342" />,
+        icon: <WifiHigh size={20} weight="regular" color="#7CB342" />,
       },
       reconnecting: {
         bgColor: '#FEF3C7',
         borderColor: '#FDE68A',
         textColor: '#92400E',
-        icon: <ArrowsClockwise size={24} weight="duotone" color="#F59E0B" style={{ animation: 'spin 1s linear infinite' }} />,
+        icon: <ArrowsClockwise size={20} weight="regular" color="#FF9800" style={{ animation: 'spin 1s linear infinite' }} />,
       },
       offline: {
         bgColor: '#FEE2E2',
         borderColor: '#FECACA',
         textColor: '#991B1B',
-        icon: <WifiSlash size={24} weight="duotone" color="#EF4444" />,
+        icon: <WifiSlash size={20} weight="regular" color="#757575" />,
       },
     };
     return configs[networkStatus];
@@ -231,7 +231,7 @@ const Toast: React.FC<ToastProps> = ({
               opacity: isNetwork ? 0.6 : 1,
             }}
           >
-            <X size={isNetwork ? 18 : 20} weight="bold" color={isSimple ? '#757575' : config.textColor} />
+            <X size={20} weight="regular" color={isSimple ? '#757575' : config.textColor} />
           </button>
         </motion.div>
       )}

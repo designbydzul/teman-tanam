@@ -26,13 +26,13 @@ const HistoryEntry = memo(function HistoryEntry({ entry, onClick }: HistoryEntry
   const getActionIcon = (actionType: string) => {
     switch (actionType) {
       case 'siram':
-        return <Drop size={20} weight="fill" color="#2196F3" />;
+        return <Drop size={20} weight="regular" color="#3B82F6" />;
       case 'pupuk':
-        return <Leaf size={20} weight="fill" color="#4CAF50" />;
+        return <Leaf size={20} weight="regular" color="#7CB342" />;
       case 'pangkas':
-        return <Scissors size={20} weight="fill" color="#FF9800" />;
+        return <Scissors size={20} weight="regular" color="#FF9800" />;
       default:
-        return <Star size={20} weight="fill" color="#9C27B0" />;
+        return <Star size={20} weight="regular" color="#757575" />;
     }
   };
 
@@ -164,7 +164,7 @@ const HistoryEntry = memo(function HistoryEntry({ entry, onClick }: HistoryEntry
             justifyContent: 'center',
           }}
         >
-          <ImageIcon size={16} weight="fill" color={colors.gray600} />
+          <ImageIcon size={16} weight="regular" color={colors.gray600} />
         </div>
       )}
     </motion.button>

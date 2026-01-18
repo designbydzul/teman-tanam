@@ -82,7 +82,7 @@ const GlobalOfflineBanner: React.FC = () => {
               zIndex: 9999,
             }}
           >
-            <WifiSlash size={18} weight="bold" color="#E65100" />
+            <WifiSlash size={20} weight="regular" color="#757575" />
             <span
               style={{
                 color: '#E65100',

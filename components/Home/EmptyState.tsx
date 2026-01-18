@@ -29,7 +29,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({
   const getMessage = () => {
     if (hasNoPlants) {
       return {
-        icon: <Plant size={64} weight="duotone" color={colors.greenFresh} />,
+        icon: <Plant size={64} weight="regular" color={colors.greenFresh} />,
         title: 'Belum ada tanaman',
         subtitle: 'Tambahkan tanaman pertamamu untuk mulai tracking perawatan',
         showAddButton: true,
@@ -38,7 +38,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({
 
     if (isSearching) {
       return {
-        icon: <MagnifyingGlass size={64} weight="duotone" color={colors.gray400} />,
+        icon: <MagnifyingGlass size={64} weight="regular" color={colors.gray400} />,
         title: 'Tidak ditemukan',
         subtitle: 'Coba kata kunci lain atau reset filter pencarian',
         showAddButton: false,
@@ -47,7 +47,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({
 
     if (isFilteringLocation || isFilteringStatus) {
       return {
-        icon: <Plant size={64} weight="duotone" color={colors.gray400} />,
+        icon: <Plant size={64} weight="regular" color={colors.gray400} />,
         title: 'Tidak ada tanaman',
         subtitle: 'Tidak ada tanaman yang cocok dengan filter ini',
         showAddButton: false,
@@ -128,7 +128,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({
             padding: '12px 24px',
             backgroundColor: colors.greenFresh,
             border: 'none',
-            borderRadius: '12px',
+            borderRadius: '8px',
             cursor: 'pointer',
             fontFamily: typography.fontFamily,
             fontSize: typography.fontSize.base,
@@ -136,7 +136,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({
             color: '#FFFFFF',
           }}
         >
-          <Plus size={20} weight="bold" />
+          <Plus size={20} weight="regular" />
           Tambah Tanaman
         </motion.button>
       )}

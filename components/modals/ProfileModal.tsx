@@ -85,17 +85,19 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
       return;
     }
 
-    // Open Telegram group for help & community
+    // Open WhatsApp group for help & community
     if (action === 'help-community') {
-      window.open('https://t.me/+aRqNdBkX9Gs4NmU9', '_blank');
+      window.open('https://chat.whatsapp.com/KPIwLgb5FydCn4jX20Vycu', '_blank');
       onClose();
       return;
     }
 
-    // Open Tentang Tanam page
+    // Navigate to landing page (Tentang Tanam)
     if (action === 'about') {
-      window.open('https://tentang.temantanam.app', '_blank');
       onClose();
+      if (onNavigate) {
+        onNavigate(action);
+      }
       return;
     }
 
