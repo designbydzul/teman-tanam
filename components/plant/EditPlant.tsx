@@ -194,7 +194,7 @@ const EditPlant: React.FC<EditPlantProps> = ({ plant, onClose, onSave, onDelete 
     }
 
     setIsAddingLocation(true);
-    const result = await addLocation(newLocationName.trim(), '📍');
+    const result = await addLocation(newLocationName.trim());
 
     if (result.success) {
       // Refetch locations to get the new one
@@ -893,12 +893,6 @@ const EditPlant: React.FC<EditPlantProps> = ({ plant, onClose, onSave, onDelete 
               'Simpan Perubahan'
             )}
           </button>
-          <style>{`
-            @keyframes spin {
-              from { transform: rotate(0deg); }
-              to { transform: rotate(360deg); }
-            }
-          `}</style>
         </div>
       </div>
 

@@ -146,9 +146,9 @@ export function useLocations() {
   const locationNames: string[] = ['Semua', ...locations.map(loc => loc.name)];
 
   // Add a new location
-  const addLocation = async (name: string, emoji: string = '📍'): Promise<LocationOperationResult> => {
+  const addLocation = async (name: string): Promise<LocationOperationResult> => {
     if (!user?.id) {
-      return { success: false, error: 'User not authenticated' };
+      return { success: false, error: 'Kamu belum login. Silakan login dulu ya!' };
     }
 
     // Check for duplicates
@@ -238,7 +238,7 @@ export function useLocations() {
   // Update a location (only name, icon column doesn't exist in DB)
   const updateLocation = async (locationId: string, updates: { name: string }): Promise<LocationOperationResult> => {
     if (!user?.id) {
-      return { success: false, error: 'User not authenticated' };
+      return { success: false, error: 'Kamu belum login. Silakan login dulu ya!' };
     }
 
     // OFFLINE MODE: Update locally and queue for sync
@@ -306,7 +306,7 @@ export function useLocations() {
   // Delete a location
   const deleteLocation = async (locationId: string): Promise<LocationOperationResult> => {
     if (!user?.id) {
-      return { success: false, error: 'User not authenticated' };
+      return { success: false, error: 'Kamu belum login. Silakan login dulu ya!' };
     }
 
     // OFFLINE MODE: Delete locally and queue for sync

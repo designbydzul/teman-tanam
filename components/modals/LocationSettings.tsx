@@ -331,7 +331,7 @@ const LocationSettings: React.FC<LocationSettingsProps> = ({
     const locationName = newLocationName.trim();
 
     // Add to Supabase
-    const result = await addLocation(locationName, '📍');
+    const result = await addLocation(locationName);
 
     if (result.success) {
       setNewLocationName('');

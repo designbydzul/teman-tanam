@@ -17,7 +17,7 @@ const caveat = Caveat({
 
 export const metadata: Metadata = {
   title: "Teman Tanam",
-  description: "Your plant companion app",
+  description: "Aplikasi pendamping untuk merawat tanaman kesayangan kamu",
   manifest: "/manifest.json",
   icons: {
     icon: "/favicon.ico",

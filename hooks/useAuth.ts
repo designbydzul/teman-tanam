@@ -503,7 +503,12 @@ export function useAuth(): UseAuthReturn {
     debug.log('updateProfile called:', { displayName, hasPhoto: !!photoUrl });
 
     try {
-      const updateData: Record<string, unknown> = {
+      const updateData: {
+        id: string;
+        updated_at: string;
+        display_name?: string;
+        avatar_url?: string;
+      } = {
         id: user.id,
         updated_at: new Date().toISOString(),
       };

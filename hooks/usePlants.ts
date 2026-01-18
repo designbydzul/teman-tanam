@@ -34,6 +34,7 @@ import type {
   AddPlantData,
   UpdatePlantData,
   UsePlantsReturn,
+  ActionSyncData,
 } from '@/types';
 
 const debug = createDebugger('usePlants');
@@ -442,7 +443,7 @@ export function usePlants(): UsePlantsReturn {
   const addPlant = async (plantData: AddPlantData) => {
     if (!user?.id) {
       debug.error('addPlant: No user ID');
-      return { success: false, error: 'User not authenticated' };
+      return { success: false, error: 'Kamu belum login. Silakan login dulu ya!' };
     }
 
     // Store species info in notes
@@ -572,7 +573,16 @@ export function usePlants(): UsePlantsReturn {
 
   // Update a plant
   const updatePlant = async (plantId: string, updates: UpdatePlantData) => {
-    const updateData: Record<string, unknown> = {
+    const updateData: {
+      updated_at: string;
+      name?: string;
+      location_id?: string | null;
+      photo_url?: string | null;
+      notes?: string | null;
+      status?: string;
+      custom_watering_days?: number | null;
+      custom_fertilizing_days?: number | null;
+    } = {
       updated_at: new Date().toISOString(),
     };
 
@@ -745,7 +755,7 @@ export function usePlants(): UsePlantsReturn {
 
     if (!user?.id) {
       debug.error('recordAction: No user ID');
-      return { success: false, error: 'User not authenticated' };
+      return { success: false, error: 'Kamu belum login. Silakan login dulu ya!' };
     }
 
     const plantIdStr = String(plantId);
@@ -827,7 +837,7 @@ export function usePlants(): UsePlantsReturn {
 
         // Also cache the action for Riwayat tab offline viewing
         const actionsCacheKey = `${CACHE_KEYS.ACTIONS}_${plantId}`;
-        const cachedActions = getFromCache<Record<string, unknown>[]>(actionsCacheKey);
+        const cachedActions = getFromCache<ActionSyncData[]>(actionsCacheKey);
         const existingActions = cachedActions?.data || [];
         // Add new action at the beginning (most recent first)
         saveToCache(actionsCacheKey, [actionData, ...existingActions]);
@@ -843,7 +853,14 @@ export function usePlants(): UsePlantsReturn {
     }
 
     // ONLINE MODE
-    const insertData: Record<string, unknown> = {
+    const insertData: {
+      plant_id: string;
+      user_id: string;
+      action_type: string;
+      action_date: string;
+      notes?: string;
+      photo_url?: string;
+    } = {
       plant_id: plantId,
       user_id: user.id,
       action_type: actionType,

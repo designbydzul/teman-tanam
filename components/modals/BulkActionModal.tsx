@@ -9,13 +9,6 @@ import type { PlantRef } from '@/types';
 // Re-export for consumer convenience
 export type Plant = PlantRef;
 
-const spinStyle = `
-  @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
-`;
-
 export interface BulkActionSubmitData {
   notes: string;
   photoFile: File | null;
@@ -108,7 +101,6 @@ const BulkActionModal: React.FC<BulkActionModalProps> = ({
     <AnimatePresence>
       {isOpen && (
         <>
-          <style>{spinStyle}</style>
           <motion.div
             className="ios-fixed-container"
             initial={{ opacity: 0 }}

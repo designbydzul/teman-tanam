@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useCallback, startTransition } from
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { differenceInDays, isToday, startOfDay } from 'date-fns';
+import dynamic from 'next/dynamic';
 import {
   Drop,
   Leaf,
@@ -25,10 +26,12 @@ import {
   Gear,
   ChatDots,
 } from '@phosphor-icons/react';
-import { TanyaTanam } from '@/components/chat';
-import { EditPlant } from '@/components/plant';
-import { OfflineModal } from '@/components/modals';
 import { GlobalOfflineBanner, Toast } from '@/components/shared';
+
+// Lazy load heavy components that are not visible on initial render
+const TanyaTanam = dynamic(() => import('@/components/chat/TanyaTanam'), { ssr: false });
+const EditPlant = dynamic(() => import('@/components/plant/EditPlant'), { ssr: false });
+const OfflineModal = dynamic(() => import('@/components/modals/OfflineModal'), { ssr: false });
 import useOnlineStatus from '@/hooks/useOnlineStatus';
 import { supabase } from '@/lib/supabase/client';
 import { saveToCache, getFromCache, addToSyncQueue } from '@/lib/offlineStorage';

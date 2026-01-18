@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import dynamic from 'next/dynamic';
 import {
   Drop,
   Leaf,
@@ -23,11 +24,31 @@ import {
   Icon,
   MagnifyingGlass,
 } from '@phosphor-icons/react';
-import { AddPlant, AddPlantForm, AddPlantSuccess, PlantDetail, EditPlant, type AddPlantSpecies } from '@/components/plant';
-import { ProfileModal, LocationSettings, NotificationSettings, BulkWateringModal, BulkFertilizeModal, BulkPruningModal, BulkOtherActionModal, OfflineModal, NotificationReminderModal } from '@/components/modals';
-import { EditProfile, OfflineIndicator } from '@/components/shared';
-import { TanyaTanam } from '@/components/chat';
+import { type AddPlantSpecies } from '@/components/plant';
+import { OfflineIndicator } from '@/components/shared';
 import { usePlants } from '@/hooks/usePlants';
+
+// Lazy load heavy components that are not visible on initial render
+const AddPlant = dynamic(() => import('@/components/plant/AddPlant'), { ssr: false });
+const AddPlantForm = dynamic(() => import('@/components/plant/AddPlantForm'), { ssr: false });
+const AddPlantSuccess = dynamic(() => import('@/components/plant/AddPlantSuccess'), { ssr: false });
+const PlantDetail = dynamic(() => import('@/components/plant/PlantDetail'), { ssr: false });
+const EditPlant = dynamic(() => import('@/components/plant/EditPlant'), { ssr: false });
+
+// Lazy load modals (only shown on user action)
+const ProfileModal = dynamic(() => import('@/components/modals/ProfileModal'), { ssr: false });
+const LocationSettings = dynamic(() => import('@/components/modals/LocationSettings'), { ssr: false });
+const NotificationSettings = dynamic(() => import('@/components/modals/NotificationSettings'), { ssr: false });
+const BulkWateringModal = dynamic(() => import('@/components/modals/BulkWateringModal'), { ssr: false });
+const BulkFertilizeModal = dynamic(() => import('@/components/modals/BulkFertilizeModal'), { ssr: false });
+const BulkPruningModal = dynamic(() => import('@/components/modals/BulkPruningModal'), { ssr: false });
+const BulkOtherActionModal = dynamic(() => import('@/components/modals/BulkOtherActionModal'), { ssr: false });
+const OfflineModal = dynamic(() => import('@/components/modals/OfflineModal'), { ssr: false });
+const NotificationReminderModal = dynamic(() => import('@/components/modals/NotificationReminderModal'), { ssr: false });
+
+// Lazy load other heavy components
+const EditProfile = dynamic(() => import('@/components/shared/EditProfile'), { ssr: false });
+const TanyaTanam = dynamic(() => import('@/components/chat/TanyaTanam'), { ssr: false });
 import { useLocations } from '@/hooks/useLocations';
 import { useAuth } from '@/hooks/useAuth';
 import { colors, radius, typography } from '@/styles/theme';

@@ -276,7 +276,7 @@ export async function POST(request: Request) {
         return NextResponse.json(
           {
             success: false,
-            error: 'Service temporarily unavailable',
+            error: 'Maaf, layanan sedang tidak tersedia. Coba lagi nanti ya!',
             code: 'AUTH_ERROR'
           },
           { status: 503 }

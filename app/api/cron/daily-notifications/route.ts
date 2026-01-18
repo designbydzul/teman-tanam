@@ -110,6 +110,6 @@ export async function GET(request: NextRequest) {
 }
 
 // Also support POST for manual triggering (with same auth)
-export async function POST(request: NextRequest) {
-  return GET(request);
+export async function POST(_request: NextRequest) {
+  return GET(_request);
 }

@@ -240,22 +240,4 @@ const Toast: React.FC<ToastProps> = ({
   );
 };
 
-// Spin animation for reconnecting icon
-const spinKeyframes = `
-  @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
-`;
-
-// Inject spin animation
-if (typeof document !== 'undefined') {
-  const style = document.createElement('style');
-  style.textContent = spinKeyframes;
-  if (!document.head.querySelector('style[data-toast-spin]')) {
-    style.setAttribute('data-toast-spin', 'true');
-    document.head.appendChild(style);
-  }
-}
-
 export default Toast;

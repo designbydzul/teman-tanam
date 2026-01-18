@@ -94,7 +94,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
     }
 
     setIsAddingLocation(true);
-    const result = await addLocation(newLocationName.trim(), '📍');
+    const result = await addLocation(newLocationName.trim());
 
     if (result.success) {
       // Refetch locations to get the new one
@@ -528,12 +528,6 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                 >
                   {isAddingLocation ? (
                     <>
-                      <style>{`
-                        @keyframes spin {
-                          0% { transform: rotate(0deg); }
-                          100% { transform: rotate(360deg); }
-                        }
-                      `}</style>
                       <svg
                         width="20"
                         height="20"

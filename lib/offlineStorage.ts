@@ -4,6 +4,7 @@
  */
 
 import { createDebugger } from '@/lib/debug';
+import type { SyncQueueData } from '@/types';
 
 const debug = createDebugger('offlineStorage');
 
@@ -20,14 +21,14 @@ export interface SyncQueueItem {
   id: string;
   type: 'action' | 'plant' | 'photo' | 'location';
   action: 'create' | 'update' | 'delete';
-  data: Record<string, unknown>;
+  data: SyncQueueData;
   createdAt: number;
 }
 
 interface AddSyncQueueInput {
   type: 'action' | 'plant' | 'photo' | 'location';
   action: 'create' | 'update' | 'delete';
-  data: Record<string, unknown>;
+  data: SyncQueueData;
 }
 
 // ============================================

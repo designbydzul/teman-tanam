@@ -162,8 +162,8 @@ describe('Offline Storage - Sync Queue Functions', () => {
     });
 
     it('should return all queued items', () => {
-      addToSyncQueue({ type: 'plant', action: 'create', data: { name: 'Plant 1' } });
-      addToSyncQueue({ type: 'action', action: 'create', data: { type: 'water' } });
+      addToSyncQueue({ type: 'plant', action: 'create', data: { name: 'Plant 1', user_id: 'user-1' } });
+      addToSyncQueue({ type: 'action', action: 'create', data: { plant_id: 'plant-1', action_type: 'siram', action_date: '2024-01-01' } });
 
       const queue = getSyncQueue();
 
@@ -171,8 +171,8 @@ describe('Offline Storage - Sync Queue Functions', () => {
     });
 
     it('should return items in order added', () => {
-      addToSyncQueue({ type: 'plant', action: 'create', data: { name: 'First' } });
-      addToSyncQueue({ type: 'plant', action: 'create', data: { name: 'Second' } });
+      addToSyncQueue({ type: 'plant', action: 'create', data: { name: 'First', user_id: 'user-1' } });
+      addToSyncQueue({ type: 'plant', action: 'create', data: { name: 'Second', user_id: 'user-1' } });
 
       const queue = getSyncQueue();
 

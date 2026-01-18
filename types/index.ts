@@ -155,12 +155,65 @@ export interface Action {
   created_at: string;
 }
 
+// Sync queue data types for different operations
+export interface PlantSyncData {
+  id?: string;
+  tempId?: string;
+  user_id?: string;
+  species_id?: string | null;
+  location_id?: string | null;
+  name?: string | null;
+  photo_url?: string | null;
+  notes?: string | null;
+  status?: string | null;
+  watering_frequency?: number | null;
+  fertilizing_frequency?: number | null;
+  started_date?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+  isOffline?: boolean;
+  pendingSync?: boolean;
+  offlinePhoto?: string | null;
+  custom_watering_days?: number | null;
+  custom_fertilizing_days?: number | null;
+}
+
+export interface ActionSyncData {
+  id?: string;
+  tempId?: string;
+  plant_id: string;
+  user_id?: string;
+  action_type: 'siram' | 'pupuk' | 'pangkas' | 'lainnya';
+  action_date: string;
+  notes?: string | null;
+  photo_url?: string | null;
+  created_at?: string;
+}
+
+export interface LocationSyncData {
+  id?: string;
+  tempId?: string;
+  user_id?: string;
+  name: string;
+  order_index?: number;
+}
+
+export interface PhotoSyncData {
+  base64: string;
+  path: string;
+  bucket?: string;
+  plantId?: string;
+  actionId?: string;
+}
+
+export type SyncQueueData = PlantSyncData | ActionSyncData | LocationSyncData | PhotoSyncData;
+
 // Sync queue item
 export interface SyncQueueItem {
   id: string;
   type: 'plant' | 'action' | 'location' | 'photo';
   action: 'create' | 'update' | 'delete';
-  data: Record<string, unknown>;
+  data: SyncQueueData;
   createdAt: string;
 }
 

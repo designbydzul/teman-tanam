@@ -74,12 +74,12 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error('Error deleting auth user:', error);
-      return errorResponse('Failed to delete user account', HttpStatus.INTERNAL_SERVER_ERROR);
+      return errorResponse('Gagal menghapus akun. Coba lagi ya!', HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     return successResponse({ deleted: true });
   } catch (error) {
     console.error('Error in delete-account API:', error);
-    return errorResponse('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
+    return errorResponse('Oops, ada masalah. Coba lagi nanti ya!', HttpStatus.INTERNAL_SERVER_ERROR);
   }
 }

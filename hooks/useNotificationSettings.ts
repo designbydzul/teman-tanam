@@ -170,7 +170,7 @@ export function useNotificationSettings(): UseNotificationSettingsReturn {
     reminderTime?: string
   ): Promise<{ success: boolean; error?: string }> => {
     if (!user?.id) {
-      return { success: false, error: 'User not authenticated' };
+      return { success: false, error: 'Kamu belum login. Silakan login dulu ya!' };
     }
 
     try {
@@ -184,7 +184,13 @@ export function useNotificationSettings(): UseNotificationSettingsReturn {
         return { success: false, error: 'Format nomor gak valid. Contoh: 81234567890' };
       }
 
-      const updateData: Record<string, unknown> = {
+      const updateData: {
+        user_id: string;
+        whatsapp_enabled: boolean;
+        whatsapp_number: string | null;
+        updated_at: string;
+        reminder_time?: string;
+      } = {
         user_id: user.id,
         whatsapp_enabled: enabled,
         whatsapp_number: formattedNumber,

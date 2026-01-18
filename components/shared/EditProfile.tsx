@@ -10,14 +10,6 @@ import { createDebugger } from '@/lib/debug';
 
 const debug = createDebugger('EditProfile');
 
-// Add spin animation style
-const spinStyle = `
-  @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
-`;
-
 // Constants for image compression
 const MAX_FILE_SIZE = 500 * 1024; // 500KB
 const MAX_IMAGE_DIMENSION = 400; // 400x400px max for avatar
@@ -276,7 +268,7 @@ const EditProfile: React.FC<EditProfileProps> = ({
 
     try {
       if (!user?.id) {
-        setDeleteError('User not authenticated');
+        setDeleteError('Kamu belum login. Silakan login dulu ya!');
         setIsDeleting(false);
         return;
       }
@@ -367,8 +359,6 @@ const EditProfile: React.FC<EditProfileProps> = ({
     >
       {/* Global Offline Banner */}
       <GlobalOfflineBanner />
-      {/* Spin animation styles */}
-      <style>{spinStyle}</style>
 
       {/* Header */}
       <div
