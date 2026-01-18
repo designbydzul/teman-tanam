@@ -1,5 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { createApiClient } from '@/lib/supabase/api';
+import { successResponse, errorResponse, HttpStatus } from '@/lib/api';
+import { notificationSettingsSchema, formatZodError } from '@/lib/validations';
 
 /**
  * GET /api/notifications/settings
@@ -16,10 +18,7 @@ export async function GET(request: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return errorResponse('Unauthorized', HttpStatus.UNAUTHORIZED);
     }
 
     // Fetch notification settings
@@ -32,7 +31,7 @@ export async function GET(request: NextRequest) {
     if (fetchError) {
       // If no settings found, return default settings
       if (fetchError.code === 'PGRST116') {
-        return NextResponse.json({
+        return successResponse({
           whatsapp_enabled: false,
           whatsapp_number: null,
           reminder_time: '07:00:00',
@@ -40,19 +39,13 @@ export async function GET(request: NextRequest) {
       }
 
       console.error('[notification-settings] Fetch error:', fetchError);
-      return NextResponse.json(
-        { error: 'Failed to fetch settings' },
-        { status: 500 }
-      );
+      return errorResponse('Failed to fetch settings', HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
-    return NextResponse.json(settings);
+    return successResponse(settings);
   } catch (error) {
     console.error('[notification-settings] GET error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return errorResponse('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
   }
 }
 
@@ -71,53 +64,18 @@ export async function POST(request: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return errorResponse('Unauthorized', HttpStatus.UNAUTHORIZED);
     }
 
-    // Parse request body
+    // Parse and validate request body with Zod
     const body = await request.json();
-    const { whatsapp_enabled, whatsapp_number, reminder_time } = body;
+    const validationResult = notificationSettingsSchema.safeParse(body);
 
-    // Validate required fields
-    if (typeof whatsapp_enabled !== 'boolean') {
-      return NextResponse.json(
-        { error: 'whatsapp_enabled is required and must be a boolean' },
-        { status: 400 }
-      );
+    if (!validationResult.success) {
+      return errorResponse(formatZodError(validationResult.error), HttpStatus.BAD_REQUEST);
     }
 
-    // If enabled, validate phone number
-    if (whatsapp_enabled) {
-      if (!whatsapp_number) {
-        return NextResponse.json(
-          { error: 'Nomor WhatsApp harus diisi' },
-          { status: 400 }
-        );
-      }
-
-      // Validate Indonesian phone number format (628xxx)
-      const phoneRegex = /^628\d{8,12}$/;
-      if (!phoneRegex.test(whatsapp_number)) {
-        return NextResponse.json(
-          { error: 'Format nomor tidak valid. Harus dimulai dengan 628' },
-          { status: 400 }
-        );
-      }
-    }
-
-    // Validate reminder_time format (HH:MM:SS)
-    if (reminder_time) {
-      const timeRegex = /^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/;
-      if (!timeRegex.test(reminder_time)) {
-        return NextResponse.json(
-          { error: 'Format waktu tidak valid. Gunakan HH:MM:SS' },
-          { status: 400 }
-        );
-      }
-    }
+    const { whatsapp_enabled, whatsapp_number, reminder_time } = validationResult.data;
 
     // Upsert settings
     const { data, error: upsertError } = await supabase
@@ -139,21 +97,12 @@ export async function POST(request: NextRequest) {
 
     if (upsertError) {
       console.error('[notification-settings] Upsert error:', upsertError);
-      return NextResponse.json(
-        { error: 'Failed to save settings' },
-        { status: 500 }
-      );
+      return errorResponse('Failed to save settings', HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
-    return NextResponse.json({
-      success: true,
-      settings: data,
-    });
+    return successResponse({ settings: data });
   } catch (error) {
     console.error('[notification-settings] POST error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return errorResponse('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
   }
 }

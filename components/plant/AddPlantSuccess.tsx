@@ -3,24 +3,10 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
-
-interface PlantSpecies {
-  emoji: string;
-  name: string;
-  scientific: string;
-  imageUrl?: string | null;
-}
-
-interface PlantData {
-  photoPreview?: string | null;
-  customName?: string;
-  species?: PlantSpecies | null;
-  location?: string;
-  notes?: string;
-}
+import type { PlantFormData } from '@/types';
 
 interface AddPlantSuccessProps {
-  plantData: PlantData;
+  plantData: PlantFormData;
   onViewDetails: () => void;
   onAddNew: () => void;
   onBackHome: () => void;

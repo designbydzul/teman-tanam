@@ -70,7 +70,6 @@ export function useLocations() {
     const loadFromCache = (isOfflineMode: boolean = false): boolean => {
       const cached = getFromCache<LocationState[]>(LOCATIONS_CACHE_KEY);
       if (cached?.data) {
-        console.log('[useLocations] Loading from cache:', cached.data.length, 'locations');
         setLocations(cached.data);
         // Don't show error for offline mode - it's expected behavior
         if (!isOfflineMode) {
@@ -83,15 +82,12 @@ export function useLocations() {
 
     // OFFLINE MODE: Load from cache directly
     if (!isOnline) {
-      console.log('[useLocations] OFFLINE: Loading from cache');
       const cached = getFromCache<LocationState[]>(LOCATIONS_CACHE_KEY);
       // Use startTransition to mark cached data updates as lower priority than animations
       startTransition(() => {
         if (cached?.data) {
-          console.log('[useLocations] OFFLINE: Found cached locations:', cached.data.length);
           setLocations(cached.data);
         } else {
-          console.log('[useLocations] OFFLINE: No cached data available');
           setLocations([]);
         }
       });
@@ -101,8 +97,6 @@ export function useLocations() {
 
     // ONLINE MODE: Try to fetch from Supabase
     try {
-      console.log('[useLocations] ONLINE: Fetching locations for user:', user.id);
-
       const { data, error: fetchError } = await supabase
         .from('locations')
         .select('*')
@@ -110,11 +104,8 @@ export function useLocations() {
         .order('order_index', { ascending: true });
 
       if (fetchError) {
-        console.error('[useLocations] Error fetching locations:', fetchError);
         throw fetchError;
       }
-
-      console.log('[useLocations] Fetched locations:', data);
 
       // Transform locations (icon column doesn't exist in DB, use default emoji)
       const transformedLocations: LocationState[] = (data || []).map(loc => ({
@@ -129,17 +120,11 @@ export function useLocations() {
 
       // Save to cache for offline use
       saveToCache(LOCATIONS_CACHE_KEY, transformedLocations);
-      console.log('[useLocations] Saved locations to cache');
 
     } catch (err: unknown) {
-      console.error('[useLocations] Error:', err);
-
       // Try to load from cache as fallback (network error, etc.)
       const hasCache = loadFromCache(false);
-      if (hasCache) {
-        console.log('[useLocations] Using cached data as fallback');
-        // Don't show error if we have cached data - just use it silently
-      } else {
+      if (!hasCache) {
         // Only show error if we have no cached data to fall back to
         const errorMessage = err instanceof Error ? err.message : 'Unknown error';
         const isNetworkError = errorMessage.includes('Failed to fetch') ||
@@ -177,8 +162,6 @@ export function useLocations() {
     // OFFLINE MODE: Save locally and queue for sync
     if (!isOnline) {
       try {
-        console.log('[useLocations] OFFLINE: Adding location locally');
-
         const tempId = generateTempId();
 
         const newLocation: LocationState = {
@@ -209,10 +192,8 @@ export function useLocations() {
         // Update cache
         saveToCache(LOCATIONS_CACHE_KEY, updatedLocations);
 
-        console.log('[useLocations] OFFLINE: Added location to sync queue');
         return { success: true, location: newLocation, offline: true };
       } catch (err: unknown) {
-        console.error('[useLocations] OFFLINE addLocation error:', err);
         const errorMessage = err instanceof Error ? err.message : 'Unknown error';
         return { success: false, error: errorMessage };
       }
@@ -249,7 +230,6 @@ export function useLocations() {
 
       return { success: true, location: newLocation };
     } catch (err: unknown) {
-      console.error('[useLocations] Error adding location:', err);
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       return { success: false, error: errorMessage };
     }
@@ -264,8 +244,6 @@ export function useLocations() {
     // OFFLINE MODE: Update locally and queue for sync
     if (!isOnline) {
       try {
-        console.log('[useLocations] OFFLINE: Updating location locally');
-
         // Update local state
         const updatedLocations = locations.map(loc =>
           loc.id === locationId
@@ -287,10 +265,8 @@ export function useLocations() {
           },
         });
 
-        console.log('[useLocations] OFFLINE: Added location update to sync queue');
         return { success: true, offline: true };
       } catch (err: unknown) {
-        console.error('[useLocations] OFFLINE updateLocation error:', err);
         const errorMessage = err instanceof Error ? err.message : 'Unknown error';
         return { success: false, error: errorMessage };
       }
@@ -322,7 +298,6 @@ export function useLocations() {
 
       return { success: true };
     } catch (err: unknown) {
-      console.error('[useLocations] Error updating location:', err);
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       return { success: false, error: errorMessage };
     }
@@ -337,8 +312,6 @@ export function useLocations() {
     // OFFLINE MODE: Delete locally and queue for sync
     if (!isOnline) {
       try {
-        console.log('[useLocations] OFFLINE: Deleting location locally');
-
         // Update local state
         const updatedLocations = locations.filter(loc => loc.id !== locationId);
         setLocations(updatedLocations);
@@ -355,14 +328,10 @@ export function useLocations() {
               id: locationId,
             },
           });
-          console.log('[useLocations] OFFLINE: Added location delete to sync queue');
-        } else {
-          console.log('[useLocations] OFFLINE: Skipping sync queue for temp location');
         }
 
         return { success: true, offline: true };
       } catch (err: unknown) {
-        console.error('[useLocations] OFFLINE deleteLocation error:', err);
         const errorMessage = err instanceof Error ? err.message : 'Unknown error';
         return { success: false, error: errorMessage };
       }
@@ -371,13 +340,14 @@ export function useLocations() {
     // ONLINE MODE: Delete from Supabase
     try {
       // First, update any plants in this location to have no location
-      const { error: updateError } = await supabase
+      const { error: updatePlantsError } = await supabase
         .from('plants')
         .update({ location_id: null })
         .eq('location_id', locationId);
 
-      if (updateError) {
-        console.warn('[useLocations] Error updating plants:', updateError);
+      if (updatePlantsError) {
+        console.error('Error updating plants before location delete:', updatePlantsError);
+        throw updatePlantsError;
       }
 
       // Then delete the location
@@ -397,7 +367,6 @@ export function useLocations() {
 
       return { success: true };
     } catch (err: unknown) {
-      console.error('[useLocations] Error deleting location:', err);
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       return { success: false, error: errorMessage };
     }
@@ -417,7 +386,6 @@ export function useLocations() {
 
     // OFFLINE MODE: Just update locally (sync will handle it when online)
     if (!isOnline) {
-      console.log('[useLocations] OFFLINE: Reordered locations locally');
       // Note: We don't queue reorder for sync as it's complex and order will be
       // re-fetched when online. The local order is preserved in cache.
       return { success: true, offline: true };
@@ -446,7 +414,6 @@ export function useLocations() {
 
       return { success: true };
     } catch (err: unknown) {
-      console.error('[useLocations] Error reordering locations:', err);
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       return { success: false, error: errorMessage };
     }

@@ -549,10 +549,15 @@ export function usePlants(): UsePlantsReturn {
         const photoUrl = await uploadPhoto(plantData.photoBlob, data.id);
 
         if (photoUrl) {
-          await supabase
+          const { error: photoUpdateError } = await supabase
             .from('plants')
             .update({ photo_url: photoUrl })
             .eq('id', data.id);
+
+          if (photoUpdateError) {
+            debug.error('Failed to update plant photo URL:', photoUpdateError.message);
+            // Don't fail - plant was created, just photo URL update failed
+          }
         }
       }
 

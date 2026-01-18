@@ -7,12 +7,12 @@
  * Allows users to enable WhatsApp reminders for watering and fertilizing.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Bell, WhatsappLogo } from '@phosphor-icons/react';
 import { useNotificationSettings, isValidIndonesianNumber } from '@/hooks/useNotificationSettings';
 import { useToast } from '@/hooks/useToast';
-import ActionToast from '@/components/Home/ActionToast';
+import { Toast } from '@/components/shared';
 import { createDebugger } from '@/lib/debug';
 
 const debug = createDebugger('WhatsAppSetup');
@@ -28,6 +28,16 @@ const WhatsAppSetup: React.FC<WhatsAppSetupProps> = ({ onComplete, onSkip }) => 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { updateSettings } = useNotificationSettings();
   const { toast, showToast, hideToast } = useToast();
+  const completeTimer = useRef<NodeJS.Timeout | null>(null);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (completeTimer.current) {
+        clearTimeout(completeTimer.current);
+      }
+    };
+  }, []);
 
   // Validate phone number on change
   const handlePhoneChange = (value: string) => {
@@ -64,7 +74,7 @@ const WhatsAppSetup: React.FC<WhatsAppSetupProps> = ({ onComplete, onSkip }) => 
       if (result.success) {
         showToast('Siap! Kamu akan dapat reminder tiap pagi', { type: 'success' });
         // Small delay to show toast
-        setTimeout(() => {
+        completeTimer.current = setTimeout(() => {
           onComplete();
         }, 1500);
       } else {
@@ -305,9 +315,11 @@ const WhatsAppSetup: React.FC<WhatsAppSetupProps> = ({ onComplete, onSkip }) => 
       </motion.div>
 
       {/* Toast notification */}
-      <ActionToast
+      <Toast
         isVisible={!!toast}
         message={toast?.message || ''}
+        type={toast?.type}
+        variant="action"
         onClose={hideToast}
       />
     </div>

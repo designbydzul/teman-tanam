@@ -281,8 +281,49 @@ const EditProfile: React.FC<EditProfileProps> = ({
         return;
       }
 
-      // STEP 1: Delete the auth user account first via API
-      // This will cascade delete the profile automatically
+      // Delete user's avatar from storage
+      if (userPhoto) {
+        const fileName = `${user.id}/avatar.jpg`;
+        await supabase.storage.from('avatars').remove([fileName]);
+      }
+
+      // Delete all user data from tables
+      // Plants
+      const { error: plantsError } = await supabase.from('plants').delete().eq('user_id', user.id);
+      if (plantsError) {
+        debug.error('Gagal menghapus data tanaman:', plantsError.message);
+        throw new Error('Gagal menghapus data tanaman');
+      }
+
+      // Locations
+      const { error: locationsError } = await supabase.from('locations').delete().eq('user_id', user.id);
+      if (locationsError) {
+        debug.error('Gagal menghapus data lokasi:', locationsError.message);
+        throw new Error('Gagal menghapus data lokasi');
+      }
+
+      // Notification settings
+      const { error: notifSettingsError } = await supabase.from('notification_settings').delete().eq('user_id', user.id);
+      if (notifSettingsError) {
+        debug.error('Gagal menghapus pengaturan notifikasi:', notifSettingsError.message);
+        // Don't fail - this is not critical
+      }
+
+      // Notification logs
+      const { error: notifLogsError } = await supabase.from('notification_logs').delete().eq('user_id', user.id);
+      if (notifLogsError) {
+        debug.error('Gagal menghapus log notifikasi:', notifLogsError.message);
+        // Don't fail - this is not critical
+      }
+
+      // User profile
+      const { error: profileError } = await supabase.from('user_profiles').delete().eq('user_id', user.id);
+      if (profileError) {
+        debug.error('Gagal menghapus profil:', profileError.message);
+        // Don't fail - auth user deletion will clean this up
+      }
+
+      // Delete the auth user account via API
       const response = await fetch('/api/delete-account', {
         method: 'POST',
         headers: {
@@ -296,21 +337,7 @@ const EditProfile: React.FC<EditProfileProps> = ({
         throw new Error(errorData.error || 'Failed to delete account');
       }
 
-      // STEP 2: Clean up user data from other tables
-      // Delete user's avatar from storage
-      if (userPhoto) {
-        const fileName = `${user.id}/avatar.jpg`;
-        await supabase.storage.from('avatars').remove([fileName]);
-      }
-
-      // Delete all user data from tables
-      await supabase.from('plants').delete().eq('user_id', user.id);
-      await supabase.from('locations').delete().eq('user_id', user.id);
-      await supabase.from('notification_settings').delete().eq('user_id', user.id);
-      await supabase.from('notification_logs').delete().eq('user_id', user.id);
-      // Note: profiles table is auto-deleted via cascade when auth user is deleted
-
-      // STEP 3: Sign out and clear local storage
+      // Sign out and clear local storage
       await supabase.auth.signOut();
       localStorage.clear();
 

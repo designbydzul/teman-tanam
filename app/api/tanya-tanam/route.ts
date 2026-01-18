@@ -1,12 +1,13 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import { NextResponse } from 'next/server';
 import {
   checkRateLimit,
   getClientIP,
   createRateLimitResponse,
   RATE_LIMITS,
 } from '@/lib/rateLimit';
+import { successResponse, errorResponse, HttpStatus } from '@/lib/api';
 
 // API key will be read at request time to ensure proper loading
 
@@ -105,14 +106,11 @@ export async function POST(request: Request) {
     // Check API key - don't expose key name in production
     if (!anthropicApiKey) {
       console.error('[tanya-tanam] Anthropic API key not configured');
-      return NextResponse.json(
-        {
-          success: false,
-          error: process.env.NODE_ENV === 'development'
-            ? 'Anthropic API key is not configured'
-            : 'Service temporarily unavailable'
-        },
-        { status: 503 }
+      return errorResponse(
+        process.env.NODE_ENV === 'development'
+          ? 'Anthropic API key is not configured'
+          : 'Service temporarily unavailable',
+        HttpStatus.SERVICE_UNAVAILABLE
       );
     }
 
@@ -242,10 +240,7 @@ export async function POST(request: Request) {
       // Extract the text response
       const aiMessage = response.content[0].type === 'text' ? response.content[0].text : '';
 
-      return NextResponse.json({
-        success: true,
-        message: aiMessage
-      });
+      return successResponse({ message: aiMessage });
     } catch (apiError) {
       // Handle specific API errors
       const error = apiError as Error & { status?: number; error?: { type?: string } };

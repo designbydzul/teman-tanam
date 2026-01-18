@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, DotsThree, PencilSimple, Trash, ChatDots } from '@phosphor-icons/react';
 import { colors, radius, typography } from '@/styles/theme';
-import type { PlantData } from './types';
+import type { PlantUI as PlantData } from '@/types';
 
 interface PlantHeaderProps {
   plant: PlantData;
@@ -59,7 +59,7 @@ const PlantHeader: React.FC<PlantHeaderProps> = ({
         {plant.photoUrl && !imageLoadError ? (
           <img
             src={plant.photoUrl}
-            alt={plant.customName}
+            alt={plant.customName || undefined}
             style={{
               width: '100%',
               height: '100%',
@@ -70,7 +70,7 @@ const PlantHeader: React.FC<PlantHeaderProps> = ({
         ) : plant.species?.imageUrl && !speciesImageError ? (
           <img
             src={plant.species.imageUrl}
-            alt={plant.species.name || plant.customName}
+            alt={plant.species.name || plant.customName || undefined}
             style={{
               width: '60%',
               height: '60%',

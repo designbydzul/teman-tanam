@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, ChartBar, X, PencilSimple, MapPin, Question, Info, SignOut, Bell } from '@phosphor-icons/react';
@@ -35,7 +35,17 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   onToggleStats,
 }) => {
   const router = useRouter();
+  const logoutTimer = useRef<NodeJS.Timeout | null>(null);
   debug.log('render - userPhoto:', !!userPhoto);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (logoutTimer.current) {
+        clearTimeout(logoutTimer.current);
+      }
+    };
+  }, []);
 
   const handleMenuAction = async (action: MenuAction) => {
     debug.log('Menu action:', action);
@@ -50,7 +60,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     if (action === 'logout') {
       onClose();
       // Small delay to ensure modal closes before logout
-      setTimeout(async () => {
+      logoutTimer.current = setTimeout(async () => {
         try {
           // Sign out from Supabase
           await auth.signOut();

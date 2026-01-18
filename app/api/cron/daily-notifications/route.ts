@@ -6,7 +6,7 @@
  * and whose plants need care.
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import {
   getAllUsersNeedingNotification,
   logNotification,
@@ -15,6 +15,7 @@ import {
   getMessagePreview,
   isFonnteConfigured,
 } from '@/lib/notifications';
+import { successResponse, errorResponse, HttpStatus } from '@/lib/api';
 
 // Small delay between messages to avoid rate limiting
 const MESSAGE_DELAY_MS = 100;
@@ -33,30 +34,20 @@ export async function GET(request: NextRequest) {
 
   if (!cronSecret) {
     console.error('[cron] CRON_SECRET is not configured');
-    return NextResponse.json(
-      { error: 'Server misconfiguration' },
-      { status: 500 }
-    );
+    return errorResponse('Server misconfiguration', HttpStatus.INTERNAL_SERVER_ERROR);
   }
 
   if (authHeader !== `Bearer ${cronSecret}`) {
     console.warn('[cron] Unauthorized request - invalid or missing token');
-    return NextResponse.json(
-      { error: 'Unauthorized' },
-      { status: 401 }
-    );
+    return errorResponse('Unauthorized', HttpStatus.UNAUTHORIZED);
   }
 
   // Check if Fonnte is configured
   if (!isFonnteConfigured()) {
     console.error('[cron] Fonnte API is not configured');
-    return NextResponse.json(
-      { error: 'WhatsApp API not configured' },
-      { status: 500 }
-    );
+    return errorResponse('WhatsApp API not configured', HttpStatus.INTERNAL_SERVER_ERROR);
   }
 
-  console.log('[cron] Starting daily notifications job...');
   const startTime = Date.now();
 
   try {
@@ -64,17 +55,13 @@ export async function GET(request: NextRequest) {
     const usersToNotify = await getAllUsersNeedingNotification();
 
     if (usersToNotify.length === 0) {
-      console.log('[cron] No users need notifications today');
-      return NextResponse.json({
-        success: true,
+      return successResponse({
         sent: 0,
         failed: 0,
         total: 0,
         duration_ms: Date.now() - startTime,
       });
     }
-
-    console.log(`[cron] Found ${usersToNotify.length} users to notify`);
 
     let sent = 0;
     let failed = 0;
@@ -95,10 +82,8 @@ export async function GET(request: NextRequest) {
 
       if (result.success) {
         sent++;
-        console.log(`[cron] Sent notification to user ${digest.user_id}`);
       } else {
         failed++;
-        console.error(`[cron] Failed to send to user ${digest.user_id}: ${result.error}`);
       }
 
       // Small delay to avoid rate limiting
@@ -108,10 +93,8 @@ export async function GET(request: NextRequest) {
     }
 
     const duration = Date.now() - startTime;
-    console.log(`[cron] Daily notifications completed: sent=${sent}, failed=${failed}, duration=${duration}ms`);
 
-    return NextResponse.json({
-      success: true,
+    return successResponse({
       sent,
       failed,
       total: usersToNotify.length,
@@ -119,17 +102,10 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error('[cron] Job error:', errorMessage);
+    const errMsg = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[cron] Job error:', errMsg);
 
-    return NextResponse.json(
-      {
-        error: 'Internal error',
-        message: errorMessage,
-        duration_ms: Date.now() - startTime,
-      },
-      { status: 500 }
-    );
+    return errorResponse(`Internal error: ${errMsg}`, HttpStatus.INTERNAL_SERVER_ERROR);
   }
 }
 

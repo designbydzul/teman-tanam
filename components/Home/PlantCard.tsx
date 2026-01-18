@@ -1,9 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { memo } from 'react';
 import { motion } from 'framer-motion';
 import { colors, radius, typography } from '@/styles/theme';
-import type { Plant } from './types';
+import type { PlantUI as Plant } from '@/types';
 
 interface PlantCardProps {
   plant: Plant;
@@ -23,8 +23,12 @@ interface PlantCardProps {
  *
  * Displays a single plant in the grid with image, name, and status.
  * Supports multi-select mode with visual selection indicator.
+ *
+ * Wrapped in React.memo to prevent unnecessary re-renders when:
+ * - Other plants in the list change
+ * - Parent component re-renders but this plant's data hasn't changed
  */
-const PlantCard: React.FC<PlantCardProps> = ({
+const PlantCard = memo(function PlantCard({
   plant,
   isSelected,
   isMultiSelectMode,
@@ -35,9 +39,10 @@ const PlantCard: React.FC<PlantCardProps> = ({
   onClick,
   onLongPressStart,
   onLongPressEnd,
-}) => {
+}: PlantCardProps) {
   const hasPlantImage = plant.image && !failedImages.has(plant.id);
-  const hasSpeciesImage = plant.species?.imageUrl && !failedSpeciesImages.has(plant.species.id);
+  const speciesId = plant.species?.id || '';
+  const hasSpeciesImage = plant.species?.imageUrl && speciesId && !failedSpeciesImages.has(speciesId);
 
   return (
     <motion.div
@@ -111,14 +116,14 @@ const PlantCard: React.FC<PlantCardProps> = ({
                 }}
               >
                 <img
-                  src={plant.species!.imageUrl}
+                  src={plant.species?.imageUrl || ''}
                   alt={plant.species?.name || ''}
                   style={{
                     width: '100%',
                     height: '100%',
                     objectFit: 'contain',
                   }}
-                  onError={() => onSpeciesImageError(plant.species!.id)}
+                  onError={() => speciesId && onSpeciesImageError(speciesId)}
                 />
               </div>
             )}
@@ -126,14 +131,14 @@ const PlantCard: React.FC<PlantCardProps> = ({
         ) : hasSpeciesImage ? (
           /* Show species image as main image when no plant photo */
           <img
-            src={plant.species!.imageUrl}
-            alt={plant.species?.name || plant.name}
+            src={plant.species?.imageUrl || ''}
+            alt={plant.species?.name || plant.name || ''}
             style={{
               width: '70%',
               height: '70%',
               objectFit: 'contain',
             }}
-            onError={() => onSpeciesImageError(plant.species!.id)}
+            onError={() => speciesId && onSpeciesImageError(speciesId)}
           />
         ) : (
           <span style={{ fontSize: '3rem' }}>
@@ -183,6 +188,6 @@ const PlantCard: React.FC<PlantCardProps> = ({
       </p>
     </motion.div>
   );
-};
+});
 
 export default PlantCard;

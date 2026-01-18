@@ -5,8 +5,7 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, Check, X, WhatsappLogo, Clock, Bell } from '@phosphor-icons/react';
 import { useNotificationSettings, formatWhatsAppNumber, isValidIndonesianNumber } from '@/hooks/useNotificationSettings';
 import { useToast } from '@/hooks/useToast';
-import Skeleton from '@/components/shared/Skeleton';
-import ActionToast from '@/components/Home/ActionToast';
+import { Skeleton, Toast } from '@/components/shared';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 
@@ -520,9 +519,11 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ onBack }) =
       </div>
 
       {/* Toast notification */}
-      <ActionToast
+      <Toast
         isVisible={!!toast}
         message={toast?.message || ''}
+        type={toast?.type}
+        variant="action"
         onClose={hideToast}
       />
     </div>

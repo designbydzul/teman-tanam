@@ -59,6 +59,15 @@ const AddPlant: React.FC<AddPlantProps> = ({ onClose, onSelectSpecies }) => {
   const [toastContent, setToastContent] = useState<{ title: string; message: string }>({ title: '', message: '' });
   const toastTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current);
+      }
+    };
+  }, []);
+
   // Load species from cache
   const loadFromCache = (): AddPlantSpecies[] | null => {
     try {

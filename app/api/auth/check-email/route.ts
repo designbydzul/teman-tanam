@@ -1,12 +1,13 @@
-import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
+import { NextResponse } from 'next/server';
 import {
   checkRateLimit,
   getClientIP,
   createRateLimitResponse,
   RATE_LIMITS,
 } from '@/lib/rateLimit';
+import { errorResponse, HttpStatus } from '@/lib/api';
 
 // Request validation schema
 const RequestSchema = z.object({
@@ -40,10 +41,7 @@ export async function POST(request: Request) {
 
     if (!supabaseUrl || !supabaseServiceKey) {
       console.error('[check-email] Missing Supabase environment variables');
-      return NextResponse.json(
-        { success: false, error: 'Service configuration error' },
-        { status: 503 }
-      );
+      return errorResponse('Service configuration error', HttpStatus.SERVICE_UNAVAILABLE);
     }
 
     // Create admin client with service role key
@@ -59,10 +57,7 @@ export async function POST(request: Request) {
     const parseResult = RequestSchema.safeParse(body);
 
     if (!parseResult.success) {
-      return NextResponse.json(
-        { success: false, error: 'Email gak valid nih', exists: false },
-        { status: 400 }
-      );
+      return errorResponse('Email gak valid nih', HttpStatus.BAD_REQUEST);
     }
 
     const { email } = parseResult.data;
@@ -89,7 +84,7 @@ export async function POST(request: Request) {
     // Add rate limit headers to successful response
     const response = NextResponse.json({
       success: true,
-      exists: userExists,
+      data: { exists: userExists },
     });
 
     // Add rate limit headers
@@ -103,9 +98,6 @@ export async function POST(request: Request) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('[check-email] API Error:', errorMessage);
 
-    return NextResponse.json(
-      { success: false, error: 'Gagal cek email', exists: false },
-      { status: 500 }
-    );
+    return errorResponse('Gagal cek email', HttpStatus.INTERNAL_SERVER_ERROR);
   }
 }

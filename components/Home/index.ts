@@ -6,9 +6,8 @@ export { default as StatsCards } from './StatsCards';
 export { default as PlantCard } from './PlantCard';
 export { default as MultiSelectBar } from './MultiSelectBar';
 export { default as EmptyState } from './EmptyState';
-export { default as ActionToast } from './ActionToast';
-export { default as NetworkToast } from './NetworkToast';
 export { default as HomeSkeleton } from './HomeSkeleton';
 
-// Types
-export * from './types';
+// Note: ActionToast and NetworkToast have been replaced by the unified Toast component
+// from @/components/shared/Toast
+

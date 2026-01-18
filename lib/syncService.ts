@@ -279,10 +279,15 @@ export async function syncPlant(item: SyncQueueItem): Promise<SyncResult> {
           newPlant.id
         );
         if (newPhotoUrl) {
-          await supabase
+          const { error: photoUpdateError } = await supabase
             .from('plants')
             .update({ photo_url: newPhotoUrl })
             .eq('id', newPlant.id);
+
+          if (photoUpdateError) {
+            debug.warn('Failed to update photo URL during sync:', photoUpdateError.message);
+            // Don't fail - plant was created, just photo URL update failed
+          }
         }
       }
 

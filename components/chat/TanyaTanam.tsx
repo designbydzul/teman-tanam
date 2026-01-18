@@ -22,48 +22,7 @@ import { supabase } from '@/lib/supabase';
 import TanyaTanamSkeleton from './TanyaTanamSkeleton';
 import { useAuth } from '@/hooks/useAuth';
 import ReactMarkdown from 'react-markdown';
-
-interface PlantSpecies {
-  id?: string;
-  name?: string | null;
-  scientific?: string | null;
-  category?: string | null;
-  emoji?: string;
-  imageUrl?: string | null;
-  wateringFrequencyDays?: number;
-  fertilizingFrequencyDays?: number;
-  difficultyLevel?: string | null;
-  sunRequirement?: string | null;
-  growingSeason?: string | null;
-  harvestSigns?: string | null;
-  careSummary?: string | null;
-}
-
-interface Plant {
-  id: string;
-  name?: string;
-  customName?: string | null;
-  species?: PlantSpecies;
-  location?: string | null;
-  startedDate?: string | Date | null;
-  photoUrl?: string | null;
-  image?: string | null;
-  notes?: string | null;
-  lastWatered?: string | Date | null;
-  lastFertilized?: string | Date | null;
-  customWateringDays?: number | null;
-  customFertilizingDays?: number | null;
-}
-
-interface CareHistoryItem {
-  id: string;
-  plant_id: string;
-  action_type: string;
-  action_date: string;
-  notes?: string | null;
-  photo_url?: string | null;
-  created_at: string;
-}
+import type { PlantUI, ActionHistoryEntry } from '@/types';
 
 interface Message {
   id: string;
@@ -175,8 +134,8 @@ const DateDivider: React.FC<{ date: Date }> = ({ date }) => (
 );
 
 interface TanyaTanamProps {
-  plant: Plant | null;
-  plants?: Plant[];
+  plant: PlantUI | null;
+  plants?: PlantUI[];
   onBack: () => void;
 }
 
@@ -189,7 +148,7 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
   const [showOfflineModal, setShowOfflineModal] = useState(false);
 
   // State
-  const [selectedPlant, setSelectedPlant] = useState<Plant | null>(plant || null);
+  const [selectedPlant, setSelectedPlant] = useState<PlantUI | null>(plant || null);
   const [showPlantDropdown, setShowPlantDropdown] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
@@ -201,7 +160,7 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
   const [searchQuery, setSearchQuery] = useState('');
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
   const [imageError, setImageError] = useState<string | null>(null);
-  const [careHistory, setCareHistory] = useState<CareHistoryItem[]>([]);
+  const [careHistory, setCareHistory] = useState<ActionHistoryEntry[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [bottomOffset, setBottomOffset] = useState(16); // Default for desktop
@@ -273,8 +232,8 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
     role: 'user' | 'assistant',
     message: string,
     photoUrl: string | null = null
-  ) => {
-    if (!plantId || !user?.id) return null;
+  ): Promise<{ data: { id: string } | null; error: boolean }> => {
+    if (!plantId || !user?.id) return { data: null, error: false };
 
     try {
       const { data, error } = await supabase
@@ -291,12 +250,12 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
 
       if (error) {
         console.error('Error saving message:', error);
-        return null;
+        return { data: null, error: true };
       }
-      return data;
+      return { data, error: false };
     } catch (err) {
       console.error('Error saving message:', err);
-      return null;
+      return { data: null, error: true };
     }
   }, [user?.id]);
 
@@ -361,6 +320,25 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const imageErrorTimer = useRef<NodeJS.Timeout | null>(null);
+
+  // Helper to show image error with auto-dismiss and cleanup
+  const showImageErrorWithMessage = useCallback((message: string): void => {
+    if (imageErrorTimer.current) {
+      clearTimeout(imageErrorTimer.current);
+    }
+    setImageError(message);
+    imageErrorTimer.current = setTimeout(() => setImageError(null), 4000);
+  }, []);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (imageErrorTimer.current) {
+        clearTimeout(imageErrorTimer.current);
+      }
+    };
+  }, []);
 
   // Filter messages based on search query
   const filteredMessages = searchQuery.trim()
@@ -594,9 +572,7 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
     for (const file of imageFiles) {
       // Check file size
       if (file.size > MAX_FILE_SIZE) {
-        setImageError('Foto terlalu besar, maks 5MB. Coba foto dengan resolusi lebih kecil.');
-        // Auto-hide error after 4 seconds
-        setTimeout(() => setImageError(null), 4000);
+        showImageErrorWithMessage('Foto terlalu besar, maks 5MB. Coba foto dengan resolusi lebih kecil.');
         continue;
       }
 
@@ -617,8 +593,7 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
         setAttachedImages((prev) => [...prev, { file, preview }]);
       } catch (err) {
         console.error('Error processing image:', err);
-        setImageError('Gagal memproses gambar. Coba lagi ya.');
-        setTimeout(() => setImageError(null), 4000);
+        showImageErrorWithMessage('Gagal memproses gambar. Coba lagi ya.');
       }
     }
 
@@ -669,7 +644,7 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
 
     // Save user message to database
     if (selectedPlant?.id) {
-      const savedUserMsg = await saveMessageToDatabase(
+      const { data: savedUserMsg, error: saveUserError } = await saveMessageToDatabase(
         selectedPlant.id,
         'user',
         messageContent,
@@ -682,6 +657,10 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
             msg.id === userMessage.id ? { ...msg, id: savedUserMsg.id } : msg
           )
         );
+      }
+      // Show non-blocking warning if save failed (message still shown in UI)
+      if (saveUserError) {
+        showImageErrorWithMessage('Gagal menyimpan pesan. Chat mungkin tidak tersimpan.');
       }
     }
 
@@ -699,7 +678,7 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
 
     // Save AI response to database
     if (selectedPlant?.id) {
-      const savedAiMsg = await saveMessageToDatabase(
+      const { data: savedAiMsg } = await saveMessageToDatabase(
         selectedPlant.id,
         'assistant',
         aiResponse,
@@ -713,6 +692,7 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
           )
         );
       }
+      // Note: Don't show error for AI message save failure (less critical)
     }
 
     setIsLoading(false);

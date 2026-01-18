@@ -1,8 +1,8 @@
 'use client';
 
-import React from 'react';
+import React, { memo } from 'react';
 import { colors, radius, typography } from '@/styles/theme';
-import type { StatItem } from './types';
+import type { StatItem } from '@/types';
 
 interface StatsCardsProps {
   stats: StatItem[];
@@ -14,12 +14,16 @@ interface StatsCardsProps {
  * StatsCards Component
  *
  * Displays a row of 4 stat cards showing plant counts.
+ *
+ * Wrapped in React.memo to prevent re-renders when:
+ * - Parent Home component re-renders but stats haven't changed
+ * - Other parts of the page update (modals, toasts, etc.)
  */
-const StatsCards: React.FC<StatsCardsProps> = ({
+const StatsCards = memo(function StatsCards({
   stats,
   isLoading = false,
   isVisible = true,
-}) => {
+}: StatsCardsProps) {
   if (isLoading || !isVisible) {
     return null;
   }
@@ -87,6 +91,6 @@ const StatsCards: React.FC<StatsCardsProps> = ({
       ))}
     </div>
   );
-};
+});
 
 export default StatsCards;

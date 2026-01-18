@@ -1,12 +1,12 @@
 'use client';
 
-import React from 'react';
+import React, { memo } from 'react';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { Drop, Leaf, Scissors, Star, Image as ImageIcon } from '@phosphor-icons/react';
 import { colors, radius, typography } from '@/styles/theme';
-import type { ActionHistoryEntry } from './types';
+import type { ActionHistoryEntry } from '@/types';
 
 interface HistoryEntryProps {
   entry: ActionHistoryEntry;
@@ -17,8 +17,12 @@ interface HistoryEntryProps {
  * HistoryEntry Component
  *
  * Displays a single entry in the care history timeline.
+ *
+ * Wrapped in React.memo to prevent re-renders when:
+ * - New entries are added to the list (existing entries don't need to re-render)
+ * - Parent component state changes but this entry's data hasn't changed
  */
-const HistoryEntry: React.FC<HistoryEntryProps> = ({ entry, onClick }) => {
+const HistoryEntry = memo(function HistoryEntry({ entry, onClick }: HistoryEntryProps) {
   const getActionIcon = (actionType: string) => {
     switch (actionType) {
       case 'siram':
@@ -165,6 +169,6 @@ const HistoryEntry: React.FC<HistoryEntryProps> = ({ entry, onClick }) => {
       )}
     </motion.button>
   );
-};
+});
 
 export default HistoryEntry;

@@ -1,10 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { memo } from 'react';
 import { motion } from 'framer-motion';
 import { Drop, Leaf, Scissors, Plus } from '@phosphor-icons/react';
 import { colors, radius, typography } from '@/styles/theme';
-import type { ActionStyle, CareStatus } from './types';
+import type { ActionStyle, CareStatusUI as CareStatus } from '@/types';
 
 interface CareActionCardProps {
   actionType: 'water' | 'fertilize' | 'prune' | 'other';
@@ -19,15 +19,19 @@ interface CareActionCardProps {
  * CareActionCard Component
  *
  * Displays a care action card with icon, status, and click to log action.
+ *
+ * Wrapped in React.memo to prevent re-renders when:
+ * - Other action cards update (e.g., only water status changes)
+ * - Parent PlantDetail re-renders but this card's props haven't changed
  */
-const CareActionCard: React.FC<CareActionCardProps> = ({
+const CareActionCard = memo(function CareActionCard({
   actionType,
   status,
   actionStyle,
   doneToday,
   onClick,
   disabled = false,
-}) => {
+}: CareActionCardProps) {
   const getIcon = () => {
     switch (actionType) {
       case 'water':
@@ -123,6 +127,6 @@ const CareActionCard: React.FC<CareActionCardProps> = ({
       )}
     </motion.button>
   );
-};
+});
 
 export default CareActionCard;

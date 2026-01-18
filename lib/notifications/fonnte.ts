@@ -44,8 +44,6 @@ export async function sendWhatsAppMessage(
   }
 
   try {
-    console.log(`[fonnte] Sending message to ${phoneNumber.substring(0, 6)}...`);
-
     const requestBody: FonnteSendRequest = {
       target: phoneNumber,
       message: message,
@@ -62,7 +60,6 @@ export async function sendWhatsAppMessage(
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('[fonnte] HTTP error:', response.status, errorText);
       return {
         success: false,
         error: `HTTP ${response.status}: ${errorText}`,
@@ -71,18 +68,13 @@ export async function sendWhatsAppMessage(
 
     const data: FonnteSendResponse = await response.json();
 
-    console.log('[fonnte] API response:', JSON.stringify(data));
-
     if (data.status) {
-      console.log(`[fonnte] Message sent successfully, ID: ${data.id}`);
       return {
         success: true,
         messageId: data.id,
       };
     } else {
       const errorMsg = (data as any).reason || data.detail || 'Unknown error from Fonnte API';
-      console.error('[fonnte] API error:', errorMsg);
-      console.error('[fonnte] Full response:', JSON.stringify(data));
       return {
         success: false,
         error: errorMsg,
@@ -90,7 +82,6 @@ export async function sendWhatsAppMessage(
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error('[fonnte] Exception:', errorMessage);
     return {
       success: false,
       error: errorMessage,

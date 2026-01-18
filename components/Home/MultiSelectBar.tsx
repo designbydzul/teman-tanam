@@ -10,7 +10,7 @@ import {
   X,
   Trash,
 } from '@phosphor-icons/react';
-import type { BulkActionType } from './types';
+import type { BulkActionType } from '@/types';
 
 interface MultiSelectBarProps {
   selectedCount: number;

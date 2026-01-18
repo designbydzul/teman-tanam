@@ -1,7 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 import { createServerClient } from '@supabase/ssr';
-import { NextResponse, type NextRequest } from 'next/server';
+import { type NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
+import { successResponse, errorResponse, HttpStatus } from '@/lib/api';
+import { deleteAccountSchema, formatZodError } from '@/lib/validations';
 
 /**
  * API Route: Delete User Account
@@ -37,27 +39,22 @@ export async function POST(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized - You must be logged in to delete your account' },
-        { status: 401 }
-      );
+      return errorResponse('Unauthorized - You must be logged in to delete your account', HttpStatus.UNAUTHORIZED);
     }
 
-    const { userId } = await request.json();
+    const body = await request.json();
 
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'User ID is required' },
-        { status: 400 }
-      );
+    // Validate request body with Zod
+    const validationResult = deleteAccountSchema.safeParse(body);
+    if (!validationResult.success) {
+      return errorResponse(formatZodError(validationResult.error), HttpStatus.BAD_REQUEST);
     }
+
+    const { userId } = validationResult.data;
 
     // CRITICAL: Verify the authenticated user is deleting their OWN account
     if (user.id !== userId) {
-      return NextResponse.json(
-        { error: 'Forbidden - You can only delete your own account' },
-        { status: 403 }
-      );
+      return errorResponse('Forbidden - You can only delete your own account', HttpStatus.UNAUTHORIZED);
     }
 
     // Create a Supabase client with service role key for admin operations
@@ -77,18 +74,12 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error('Error deleting auth user:', error);
-      return NextResponse.json(
-        { error: 'Failed to delete user account' },
-        { status: 500 }
-      );
+      return errorResponse('Failed to delete user account', HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
-    return NextResponse.json({ success: true });
+    return successResponse({ deleted: true });
   } catch (error) {
     console.error('Error in delete-account API:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return errorResponse('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
   }
 }

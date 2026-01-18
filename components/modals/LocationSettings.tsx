@@ -33,16 +33,12 @@ import {
 } from '@phosphor-icons/react';
 import { useLocations } from '@/hooks/useLocations';
 import { GlobalOfflineBanner } from '@/components/shared';
+import type { PlantLocation } from '@/types';
 
 interface Location {
   id: string;
   name: string;
   emoji?: string;
-}
-
-interface Plant {
-  id: string;
-  location: string;
 }
 
 interface SortableLocationCardProps {
@@ -192,8 +188,8 @@ interface LocationSettingsProps {
   onBack: () => void;
   onLocationDeleted?: (locationName: string) => void;
   onLocationAdded?: (locationName: string) => void;
-  plants?: Plant[];
-  onPlantsUpdated?: (plants: Plant[]) => void;
+  plants?: PlantLocation[];
+  onPlantsUpdated?: (plants: PlantLocation[]) => void;
   isNested?: boolean; // If true, just calls onBack instead of navigating to home with toast
 }
 
@@ -252,9 +248,10 @@ const LocationSettings: React.FC<LocationSettingsProps> = ({
   useEffect(() => {
     if (showAddModal && addLocationInputRef.current) {
       // Small delay to ensure modal is fully rendered
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         addLocationInputRef.current?.focus();
       }, 100);
+      return () => clearTimeout(timer);
     }
   }, [showAddModal]);
 
@@ -262,9 +259,10 @@ const LocationSettings: React.FC<LocationSettingsProps> = ({
   useEffect(() => {
     if (showEditModal && editLocationInputRef.current) {
       // Small delay to ensure modal is fully rendered
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         editLocationInputRef.current?.focus();
       }, 100);
+      return () => clearTimeout(timer);
     }
   }, [showEditModal]);
 
@@ -286,33 +284,24 @@ const LocationSettings: React.FC<LocationSettingsProps> = ({
   );
 
   const handleDragStart = (event: DragStartEvent) => {
-    console.log('[LocationSettings] Drag started:', event.active.id);
     setActiveId(event.active.id as string);
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
-    console.log('[LocationSettings] Drag ended:', { activeId: active.id, overId: over?.id });
     setActiveId(null);
 
     if (over && active.id !== over.id) {
       const oldIndex = locations.findIndex((item: Location) => item.id === active.id);
       const newIndex = locations.findIndex((item: Location) => item.id === over.id);
       const reorderedLocations = arrayMove(locations, oldIndex, newIndex);
-      console.log('[LocationSettings] Reordering from', oldIndex, 'to', newIndex);
 
       // Update in Supabase
-      const result = await reorderLocations(reorderedLocations);
-      if (!result.success) {
-        console.error('[LocationSettings] Failed to reorder:', result.error);
-      } else {
-        console.log('[LocationSettings] Reorder successful');
-      }
+      await reorderLocations(reorderedLocations);
     }
   };
 
   const handleDragCancel = () => {
-    console.log('[LocationSettings] Drag cancelled');
     setActiveId(null);
   };
 

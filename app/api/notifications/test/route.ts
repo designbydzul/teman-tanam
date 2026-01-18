@@ -1,6 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { createApiClient } from '@/lib/supabase/api';
 import { sendWhatsAppMessage } from '@/lib/notifications/fonnte';
+import { successResponse, errorResponse, HttpStatus } from '@/lib/api';
+import { testNotificationSchema, formatZodError } from '@/lib/validations';
 
 /**
  * POST /api/notifications/test
@@ -12,9 +14,7 @@ export async function POST(request: NextRequest) {
     const authHeader = request.headers.get('authorization');
     const token = authHeader?.replace('Bearer ', '');
 
-    console.log('[test-notification] Auth header present:', !!authHeader);
-
-    const { supabase, response } = createApiClient(request);
+    const { supabase } = createApiClient(request);
 
     // Get authenticated user (using token if provided)
     const {
@@ -24,47 +24,31 @@ export async function POST(request: NextRequest) {
       ? await supabase.auth.getUser(token)
       : await supabase.auth.getUser();
 
-    console.log('[test-notification] Auth check:', {
-      hasUser: !!user,
-      userId: user?.id,
-      authError: authError?.message
-    });
-
     if (authError || !user) {
-      console.error('[test-notification] Unauthorized:', authError);
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return errorResponse('Unauthorized', HttpStatus.UNAUTHORIZED);
     }
 
-    // Parse request body
+    // Parse and validate request body with Zod
     const body = await request.json();
-    const { phone_number } = body;
+    const validationResult = testNotificationSchema.safeParse(body);
 
-    // Validate phone number
-    if (!phone_number) {
-      return NextResponse.json(
-        { error: 'Nomor WhatsApp harus diisi' },
-        { status: 400 }
-      );
+    if (!validationResult.success) {
+      return errorResponse(formatZodError(validationResult.error), HttpStatus.BAD_REQUEST);
     }
 
-    // Validate Indonesian phone number format (628xxx)
-    const phoneRegex = /^628\d{8,12}$/;
-    if (!phoneRegex.test(phone_number)) {
-      return NextResponse.json(
-        { error: 'Format nomor tidak valid. Harus dimulai dengan 628' },
-        { status: 400 }
-      );
-    }
+    const { phone_number } = validationResult.data;
 
     // Get user profile for personalization
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('name')
       .eq('user_id', user.id)
       .single();
+
+    // Profile error is non-critical - just use fallback name
+    if (profileError) {
+      console.warn('[test-notification] Could not fetch profile:', profileError.message);
+    }
 
     const userName = profile?.name || 'Teman';
 
@@ -82,14 +66,11 @@ _Pesan ini dikirim dari sistem notifikasi Teman Tanam_`;
 
     if (!result.success) {
       console.error('[test-notification] Failed to send:', result.error);
-      return NextResponse.json(
-        { error: result.error || 'Gagal mengirim pesan test' },
-        { status: 500 }
-      );
+      return errorResponse(result.error || 'Gagal mengirim pesan test', HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     // Log the test notification
-    await supabase.from('notification_logs').insert({
+    const { error: logError } = await supabase.from('notification_logs').insert({
       user_id: user.id,
       notification_type: 'test',
       recipient_number: phone_number,
@@ -98,15 +79,16 @@ _Pesan ini dikirim dari sistem notifikasi Teman Tanam_`;
       sent_at: new Date().toISOString(),
     });
 
-    return NextResponse.json({
-      success: true,
+    if (logError) {
+      console.error('[test-notification] Failed to log notification:', logError.message);
+      // Don't fail the request - the notification was sent successfully
+    }
+
+    return successResponse({
       message: 'Pesan test berhasil dikirim! Cek WhatsApp kamu ya 📱',
     });
   } catch (error) {
     console.error('[test-notification] Error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return errorResponse('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
   }
 }

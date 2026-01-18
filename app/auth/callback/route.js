@@ -26,15 +26,8 @@ export async function GET(request) {
   if (code) {
     const cookieStore = await cookies();
 
-    // Debug: Log env vars and cookies
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    console.log('[Auth Callback] URL:', supabaseUrl);
-    console.log('[Auth Callback] Key exists:', !!supabaseKey, 'Length:', supabaseKey?.length);
-
-    // Debug: Log all cookies to see if code verifier is present
-    const allCookies = cookieStore.getAll();
-    console.log('[Auth Callback] Cookies:', allCookies.map(c => ({ name: c.name, valueLength: c.value?.length })));
 
     const supabase = createServerClient(
       supabaseUrl,

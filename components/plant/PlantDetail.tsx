@@ -28,60 +28,12 @@ import {
 import { TanyaTanam } from '@/components/chat';
 import { EditPlant } from '@/components/plant';
 import { OfflineModal } from '@/components/modals';
-import { GlobalOfflineBanner } from '@/components/shared';
+import { GlobalOfflineBanner, Toast } from '@/components/shared';
 import useOnlineStatus from '@/hooks/useOnlineStatus';
 import { supabase } from '@/lib/supabase/client';
 import { saveToCache, getFromCache, addToSyncQueue } from '@/lib/offlineStorage';
 import { CACHE_KEYS } from '@/lib/constants';
-
-// TypeScript Interfaces
-interface PlantSpecies {
-  name?: string | null;
-  scientific?: string | null;
-  emoji?: string;
-  imageUrl?: string | null;
-  difficultyLevel?: string | null;
-  sunRequirement?: string | null;
-  harvestSigns?: string | null;
-  wateringFrequencyDays?: number;
-  fertilizingFrequencyDays?: number;
-}
-
-interface CareStatus {
-  status: 'done_today' | 'needs_action' | 'on_schedule' | 'unknown';
-  label: string;
-  daysUntilNext: number | null;
-  daysSinceLast: number | null;
-  doneToday: boolean;
-}
-
-interface Plant {
-  id: string;
-  customName?: string | null;
-  name?: string;
-  species?: PlantSpecies;
-  location?: string;
-  startedDate?: string | Date;
-  createdAt?: string | Date;
-  photoUrl?: string | null;
-  photoPreview?: string | null;
-  image?: string | null;
-  lastWatered?: string | Date | null;
-  lastFertilized?: string | Date | null;
-  notes?: string;
-  wateringStatus?: CareStatus;
-  fertilizingStatus?: CareStatus;
-}
-
-interface ActionHistory {
-  id: string;
-  plant_id: string;
-  action_type: 'siram' | 'pupuk' | 'pangkas' | 'panen' | 'lainnya';
-  action_date: string;
-  notes?: string | null;
-  photo_url?: string | null;
-  created_at: string;
-}
+import type { PlantUI, CareStatusUI, ActionHistoryEntry } from '@/types';
 
 interface TimelineEntry {
   type: string;
@@ -115,7 +67,7 @@ interface ActionResult {
 type AnyPlant = any;
 
 interface PlantDetailProps {
-  plant: Plant;
+  plant: PlantUI;
   onBack: () => void;
   onEdit?: (plant: AnyPlant) => void;
   onDelete?: (plant: AnyPlant) => void;
@@ -146,7 +98,7 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
   const [timelinePhotoPreview, setTimelinePhotoPreview] = useState<string | null>(null); // URL for timeline photo fullscreen
   const [showTanyaTanam, setShowTanyaTanam] = useState<boolean>(false);
   const [showEditPlant, setShowEditPlant] = useState<boolean>(false);
-  const [currentPlantData, setCurrentPlantData] = useState<Plant | null>(null);
+  const [currentPlantData, setCurrentPlantData] = useState<PlantUI | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<boolean>(false);
   const [imageLoadError, setImageLoadError] = useState<boolean>(false);
   const [speciesImageError, setSpeciesImageError] = useState<boolean>(false);
@@ -155,9 +107,29 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
   // Toast state for actions
   const [showActionToast, setShowActionToast] = useState<boolean>(false);
   const [actionToastMessage, setActionToastMessage] = useState<string>('');
+  const actionToastTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Helper to show toast with auto-hide and proper cleanup
+  const showToastWithMessage = useCallback((message: string) => {
+    if (actionToastTimerRef.current) {
+      clearTimeout(actionToastTimerRef.current);
+    }
+    setActionToastMessage(message);
+    setShowActionToast(true);
+    actionToastTimerRef.current = setTimeout(() => setShowActionToast(false), 3000);
+  }, []);
+
+  // Cleanup toast timer on unmount
+  useEffect(() => {
+    return () => {
+      if (actionToastTimerRef.current) {
+        clearTimeout(actionToastTimerRef.current);
+      }
+    };
+  }, []);
 
   // Actions history state
-  const [actionsHistory, setActionsHistory] = useState<ActionHistory[]>([]);
+  const [actionsHistory, setActionsHistory] = useState<ActionHistoryEntry[]>([]);
   const [actionsLoading, setActionsLoading] = useState<boolean>(false);
 
   // Local override for last action dates (updated after logging actions)
@@ -346,7 +318,7 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
   };
 
   // Calculate care status based on last action dates (considering overrides)
-  const calculateLocalCareStatus = (lastActionDate: string | Date | null | undefined, frequencyDays: number | null, actionType: 'siram' | 'pupuk'): CareStatus => {
+  const calculateLocalCareStatus = (lastActionDate: string | Date | null | undefined, frequencyDays: number | null, actionType: 'siram' | 'pupuk'): CareStatusUI => {
     const actionLabel = actionType === 'siram' ? 'disiram' : 'dipupuk';
     const needsLabel = actionType === 'siram' ? 'Perlu disiram' : 'Perlu dipupuk';
 
@@ -423,29 +395,23 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
 
     // Skip fetching from Supabase for offline/temp plants
     if (typeof plantData.id === 'string' && plantData.id.startsWith('temp-')) {
-      console.log('[PlantDetail] Skipping fetch for temp plant:', plantData.id);
       setActionsHistory([]);
       return;
     }
 
     // Skip fetching for non-UUID plant IDs (created offline with numeric IDs)
     if (!isValidUUID(String(plantData.id))) {
-      console.log('[PlantDetail] Skipping fetch for non-UUID plant ID:', plantData.id);
       setActionsHistory([]);
       return;
     }
 
     // Load from cache when offline
     if (!navigator.onLine) {
-      console.log('[PlantDetail] Offline, loading actions from cache');
-      const cached = getFromCache<ActionHistory[]>(cacheKey);
+      const cached = getFromCache<ActionHistoryEntry[]>(cacheKey);
       // Use startTransition to mark cached data updates as lower priority than animations
       startTransition(() => {
         if (cached?.data) {
-          console.log('[PlantDetail] Found cached actions:', cached.data.length);
           setActionsHistory(cached.data);
-        } else {
-          console.log('[PlantDetail] No cached actions found');
         }
       });
       return;
@@ -460,39 +426,30 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
         .order('action_date', { ascending: false });
 
       if (error) {
-        console.error('[PlantDetail] Error fetching actions:', error);
         // Try to load from cache on error
-        const cached = getFromCache<ActionHistory[]>(cacheKey);
+        const cached = getFromCache<ActionHistoryEntry[]>(cacheKey);
         // Use startTransition to mark cached data updates as lower priority than animations
         startTransition(() => {
           if (cached?.data) {
-            console.log('[PlantDetail] Using cached actions as fallback');
             setActionsHistory(cached.data);
           }
         });
         return;
       }
 
-      console.log('[PlantDetail] Fetched actions:', data);
       setActionsHistory(data || []);
 
       // Save to cache for offline use
       if (data && data.length > 0) {
         saveToCache(cacheKey, data);
-        console.log('[PlantDetail] Saved actions to cache');
       }
-    } catch (err) {
+    } catch {
       // Try to load from cache on network errors
-      const cached = getFromCache<ActionHistory[]>(cacheKey);
+      const cached = getFromCache<ActionHistoryEntry[]>(cacheKey);
       // Use startTransition to mark cached data updates as lower priority than animations
       startTransition(() => {
         if (cached?.data) {
-          console.log('[PlantDetail] Network error, using cached actions');
           setActionsHistory(cached.data);
-        } else if (!navigator.onLine) {
-          console.log('[PlantDetail] Network error while offline, no cache available');
-        } else {
-          console.error('[PlantDetail] Error:', err);
         }
       });
     } finally {
@@ -579,14 +536,14 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
   };
 
   // Group actions by date for timeline display
-  const groupedActions = actionsHistory.reduce((groups: Record<string, ActionHistory[]>, action) => {
+  const groupedActions = actionsHistory.reduce((groups: Record<string, ActionHistoryEntry[]>, action) => {
     const dateKey = action.action_date;
     if (!groups[dateKey]) {
       groups[dateKey] = [];
     }
     groups[dateKey].push(action);
     return groups;
-  }, {} as Record<string, ActionHistory[]>);
+  }, {} as Record<string, ActionHistoryEntry[]>);
 
   // Convert to array format for rendering
   const timeline: TimelineGroup[] = Object.entries(groupedActions).map(([date, actions]) => ({
@@ -635,27 +592,13 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
       actionType === 'fertilize' ? 'pupuk' :
       actionType === 'pangkas' ? 'pangkas' : 'lainnya';
 
-    console.log('[PlantDetail] handleActionLog called:', {
-      actionType,
-      dbActionType,
-      plantId: plantData.id,
-      plantName,
-      notes,
-      hasPhoto: !!photo,
-    });
-
     // Call the onRecordAction prop to save to Supabase
     if (onRecordAction) {
       const plantId = String(plantData.id);
-      console.log('[PlantDetail] Calling onRecordAction with:', plantId, dbActionType, notes, !!photo);
       const result = await onRecordAction(plantId, dbActionType, notes, photo);
-      console.log('[PlantDetail] onRecordAction result:', result);
 
       if (!result.success) {
-        console.error('[PlantDetail] Failed to record action:', result.error);
-        setActionToastMessage(`Gagal mencatat: ${result.error}`);
-        setShowActionToast(true);
-        setTimeout(() => setShowActionToast(false), 3000);
+        showToastWithMessage(`Gagal mencatat: ${result.error}`);
         return { success: false };
       }
 
@@ -669,8 +612,6 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
 
       // Refetch actions history to update the Riwayat tab
       fetchActionsHistory();
-    } else {
-      console.warn('[PlantDetail] onRecordAction prop not provided');
     }
 
     let message = '';
@@ -685,9 +626,7 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
         message = `Aksi ${actionType} sudah dicatat`;
     }
 
-    setActionToastMessage(message);
-    setShowActionToast(true);
-    setTimeout(() => setShowActionToast(false), 3000);
+    showToastWithMessage(message);
     return { success: true };
   };
 
@@ -697,28 +636,15 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
     const dbActionType = actionType === 'water' ? 'siram' : actionType === 'fertilize' ? 'pupuk' : actionType;
     const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
 
-    console.log('[PlantDetail] handleDeleteTodayAction called:', {
-      actionType,
-      dbActionType,
-      plantId: plantData.id,
-      today,
-    });
-
     // Skip for offline/temp plants
     if (!isValidUUID(String(plantData.id))) {
-      console.log('[PlantDetail] Skipping delete for non-UUID plant ID');
-      setActionToastMessage('Tidak dapat membatalkan aksi untuk tanaman offline');
-      setShowActionToast(true);
-      setTimeout(() => setShowActionToast(false), 3000);
+      showToastWithMessage('Tidak dapat membatalkan aksi untuk tanaman offline');
       return { success: false };
     }
 
     // Skip if offline
     if (!navigator.onLine) {
-      console.log('[PlantDetail] Skipping delete - device is offline');
-      setActionToastMessage('Tidak dapat membatalkan aksi saat offline');
-      setShowActionToast(true);
-      setTimeout(() => setShowActionToast(false), 3000);
+      showToastWithMessage('Tidak dapat membatalkan aksi saat offline');
       return { success: false };
     }
 
@@ -734,18 +660,12 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
         .limit(1);
 
       if (fetchError) {
-        console.error('[PlantDetail] Error fetching today action:', fetchError);
-        setActionToastMessage('Gagal membatalkan aksi');
-        setShowActionToast(true);
-        setTimeout(() => setShowActionToast(false), 3000);
+        showToastWithMessage('Gagal membatalkan aksi');
         return { success: false };
       }
 
       if (!todayActions || todayActions.length === 0) {
-        console.log('[PlantDetail] No action found to delete');
-        setActionToastMessage('Tidak ada aksi untuk dibatalkan');
-        setShowActionToast(true);
-        setTimeout(() => setShowActionToast(false), 3000);
+        showToastWithMessage('Tidak ada aksi untuk dibatalkan');
         return { success: false };
       }
 
@@ -756,14 +676,9 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
         .eq('id', todayActions[0].id);
 
       if (deleteError) {
-        console.error('[PlantDetail] Error deleting action:', deleteError);
-        setActionToastMessage('Gagal membatalkan aksi');
-        setShowActionToast(true);
-        setTimeout(() => setShowActionToast(false), 3000);
+        showToastWithMessage('Gagal membatalkan aksi');
         return { success: false };
       }
-
-      console.log('[PlantDetail] Action deleted successfully');
 
       // Clear the local override so it recalculates from the remaining actions
       if (actionType === 'water') {
@@ -776,22 +691,17 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
       fetchActionsHistory();
 
       const actionLabel = actionType === 'water' ? 'Penyiraman' : 'Pemupukan';
-      setActionToastMessage(`${actionLabel} ${plantName} dibatalkan`);
-      setShowActionToast(true);
-      setTimeout(() => setShowActionToast(false), 3000);
+      showToastWithMessage(`${actionLabel} ${plantName} dibatalkan`);
 
       return { success: true };
-    } catch (err) {
-      console.error('[PlantDetail] Error in handleDeleteTodayAction:', err);
-      setActionToastMessage('Gagal membatalkan aksi');
-      setShowActionToast(true);
-      setTimeout(() => setShowActionToast(false), 3000);
+    } catch {
+      showToastWithMessage('Gagal membatalkan aksi');
       return { success: false };
     }
   };
 
   // Handle fertilizing photo selection
-  const handleFertilizingPhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFertilizingPhotoSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setFertilizingPhoto(file);
@@ -801,7 +711,7 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
       };
       reader.readAsDataURL(file);
     }
-  };
+  }, []);
 
   // Handle fertilizing form submit
   const handleFertilizingSubmit = async (): Promise<void> => {
@@ -842,12 +752,12 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
   };
 
   // Handle fertilizing card tap - always show drawer
-  const handleFertilizingCardTap = () => {
+  const handleFertilizingCardTap = useCallback(() => {
     setShowFertilizingDrawer(true);
-  };
+  }, []);
 
   // Handle pruning photo selection
-  const handlePruningPhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePruningPhotoSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setPruningPhoto(file);
@@ -857,7 +767,7 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
       };
       reader.readAsDataURL(file);
     }
-  };
+  }, []);
 
   // Handle pruning submit
   const handlePruningSubmit = async (): Promise<void> => {
@@ -878,12 +788,12 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
   };
 
   // Handle pruning card tap - always show drawer
-  const handlePruningCardTap = () => {
+  const handlePruningCardTap = useCallback(() => {
     setShowPruningDrawer(true);
-  };
+  }, []);
 
   // Handle other action photo selection
-  const handleOtherActionPhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleOtherActionPhotoSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setOtherActionPhoto(file);
@@ -893,14 +803,12 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
       };
       reader.readAsDataURL(file);
     }
-  };
+  }, []);
 
   // Handle other action submit
   const handleOtherActionSubmit = async (): Promise<void> => {
     if (!otherActionName.trim()) {
-      setActionToastMessage('Nama aksi harus diisi');
-      setShowActionToast(true);
-      setTimeout(() => setShowActionToast(false), 3000);
+      showToastWithMessage('Nama aksi harus diisi');
       return;
     }
 
@@ -912,7 +820,7 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
       const combinedNotes = otherActionNotes
         ? `[${otherActionName.trim()}] ${otherActionNotes}`
         : `[${otherActionName.trim()}]`;
-      const result = await handleActionLog('lainnya', { notes: combinedNotes, photo: otherActionPhoto });
+      await handleActionLog('lainnya', { notes: combinedNotes, photo: otherActionPhoto });
 
       // Always close drawer and reset state after submit attempt
       setOtherActionName('');
@@ -922,11 +830,8 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
       setShowOtherActionDrawer(false);
 
       // Note: handleActionLog already shows toast messages for both success and failure
-    } catch (err) {
-      console.error('[PlantDetail] Other action submit error:', err);
-      setActionToastMessage('Gagal menyimpan aksi. Coba lagi.');
-      setShowActionToast(true);
-      setTimeout(() => setShowActionToast(false), 3000);
+    } catch {
+      showToastWithMessage('Gagal menyimpan aksi. Coba lagi.');
       // Still close the drawer on error so user isn't stuck
       setOtherActionName('');
       setOtherActionNotes('');
@@ -939,18 +844,16 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
   };
 
   // Handle other action card tap - always show drawer
-  const handleOtherActionCardTap = () => {
+  const handleOtherActionCardTap = useCallback(() => {
     setShowOtherActionDrawer(true);
-  };
+  }, []);
 
   // Delete a specific history action by ID
   const handleDeleteHistoryAction = async (actionId: string): Promise<ActionResult> => {
     if (!actionId) {
-      console.error('[PlantDetail] handleDeleteHistoryAction: No action ID provided');
       return { success: false };
     }
 
-    console.log('[PlantDetail] handleDeleteHistoryAction:', actionId);
     setIsDeletingHistory(true);
 
     // Helper to update local state and cache after deletion
@@ -961,7 +864,7 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
       // Update cache
       if (plantData?.id) {
         const cacheKey = `${CACHE_KEYS.ACTIONS}_${plantData.id}`;
-        const cached = getFromCache<ActionHistory[]>(cacheKey);
+        const cached = getFromCache<ActionHistoryEntry[]>(cacheKey);
         if (cached?.data) {
           const updatedActions = cached.data.filter(action => action.id !== actionId);
           saveToCache(cacheKey, updatedActions);
@@ -974,16 +877,12 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
       setSelectedHistoryEntry(null);
 
       // Show success toast
-      setActionToastMessage('Catatan dihapus');
-      setShowActionToast(true);
-      setTimeout(() => setShowActionToast(false), 3000);
+      showToastWithMessage('Catatan dihapus');
     };
 
     try {
       // OFFLINE MODE: Delete locally and queue for sync
       if (!isOnline) {
-        console.log('[PlantDetail] OFFLINE: Deleting action locally');
-
         // Only queue for sync if it's a real UUID (not a temp ID created offline)
         if (!actionId.startsWith('temp-')) {
           addToSyncQueue({
@@ -991,7 +890,6 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
             action: 'delete',
             data: { id: actionId },
           });
-          console.log('[PlantDetail] OFFLINE: Added action delete to sync queue');
         }
 
         updateLocalStateAfterDelete();
@@ -1005,22 +903,15 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
         .eq('id', actionId);
 
       if (deleteError) {
-        console.error('[PlantDetail] Error deleting action:', deleteError);
-        setActionToastMessage('Gagal menghapus catatan');
-        setShowActionToast(true);
-        setTimeout(() => setShowActionToast(false), 3000);
+        showToastWithMessage('Gagal menghapus catatan');
         return { success: false };
       }
 
-      console.log('[PlantDetail] Action deleted successfully');
       updateLocalStateAfterDelete();
 
       return { success: true };
-    } catch (err) {
-      console.error('[PlantDetail] Error in handleDeleteHistoryAction:', err);
-      setActionToastMessage('Gagal menghapus catatan');
-      setShowActionToast(true);
-      setTimeout(() => setShowActionToast(false), 3000);
+    } catch {
+      showToastWithMessage('Gagal menghapus catatan');
       return { success: false };
     } finally {
       setIsDeletingHistory(false);
@@ -2226,13 +2117,9 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
               if (result.success) {
                 setCurrentPlantData(updatedPlant);
                 setShowEditPlant(false);
-                setShowActionToast(true);
-                setActionToastMessage('Perubahan berhasil disimpan');
-                setTimeout(() => setShowActionToast(false), 3000);
+                showToastWithMessage('Perubahan berhasil disimpan');
               } else {
-                setShowActionToast(true);
-                setActionToastMessage('Gagal menyimpan perubahan');
-                setTimeout(() => setShowActionToast(false), 3000);
+                showToastWithMessage('Gagal menyimpan perubahan');
               }
             } else {
               // Fallback if no save callback provided
@@ -2250,66 +2137,13 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
       )}
 
       {/* Action Toast */}
-      <AnimatePresence>
-        {showActionToast && (
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 50 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            style={{
-              position: 'fixed',
-              bottom: '24px',
-              left: '24px',
-              right: '24px',
-              backgroundColor: '#FFFFFF',
-              borderRadius: '16px',
-              padding: '16px 20px',
-              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '12px',
-              zIndex: 4000,
-            }}
-          >
-            <p
-              style={{
-                fontFamily: "'Inter', sans-serif",
-                fontSize: '1rem',
-                fontWeight: 600,
-                color: '#2C2C2C',
-                margin: 0,
-                flex: 1,
-              }}
-            >
-              {actionToastMessage}
-            </p>
-            <button
-              onClick={() => setShowActionToast(false)}
-              style={{
-                background: 'none',
-                border: 'none',
-                padding: '4px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-              }}
-            >
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <path
-                  d="M15 5L5 15M5 5l10 10"
-                  stroke="#757575"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <Toast
+        isVisible={showActionToast}
+        message={actionToastMessage}
+        variant="simple"
+        position="bottom"
+        onClose={() => setShowActionToast(false)}
+      />
 
       {/* Delete Confirmation Modal */}
       <AnimatePresence>

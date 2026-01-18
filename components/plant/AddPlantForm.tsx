@@ -10,17 +10,9 @@ import { useLocations } from '@/hooks/useLocations';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { generatePlantName } from '@/lib/plantNameGenerator';
 import { createDebugger } from '@/lib/debug';
+import type { PlantSpeciesUI } from '@/types';
 
 const debug = createDebugger('AddPlantForm');
-
-interface PlantSpecies {
-  id: string;
-  name: string;
-  scientific: string;
-  category?: string;
-  imageUrl?: string | null;
-  emoji?: string;
-}
 
 interface FormData {
   customName: string;
@@ -34,14 +26,14 @@ interface FormData {
 }
 
 interface SubmitData extends FormData {
-  species: PlantSpecies;
+  species: PlantSpeciesUI;
   id: string;
   createdAt: Date;
   photoBlob: Blob | File | null;
 }
 
 interface AddPlantFormProps {
-  species: PlantSpecies;
+  species: PlantSpeciesUI;
   onClose: () => void;
   onSubmit: (data: SubmitData) => Promise<void>;
   existingPlantCount?: number;
@@ -75,6 +67,16 @@ const AddPlantForm: React.FC<AddPlantFormProps> = ({ species, onClose, onSubmit,
   const dateInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const locationInputRef = useRef<HTMLInputElement>(null);
+  const dateErrorTimer = useRef<NodeJS.Timeout | null>(null);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (dateErrorTimer.current) {
+        clearTimeout(dateErrorTimer.current);
+      }
+    };
+  }, []);
 
   // Get locations from Supabase via useLocations hook
   const { locations: supabaseLocations, refetch: refetchLocations, addLocation } = useLocations();
@@ -145,9 +147,10 @@ const AddPlantForm: React.FC<AddPlantFormProps> = ({ species, onClose, onSubmit,
   useEffect(() => {
     if (showAddLocationModal && locationInputRef.current) {
       // Small delay to ensure modal is fully rendered
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         locationInputRef.current?.focus();
       }, 100);
+      return () => clearTimeout(timer);
     }
   }, [showAddLocationModal]);
 
@@ -205,8 +208,11 @@ const AddPlantForm: React.FC<AddPlantFormProps> = ({ species, onClose, onSubmit,
         const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
         const formattedToday = `${todayObj.getDate()} ${months[todayObj.getMonth()]} ${todayObj.getFullYear()}`;
         setFormData({ ...formData, startedDate: formattedToday, customDate: today });
-        // Clear error after 3 seconds
-        setTimeout(() => setDateError(''), 3000);
+        // Clear error after 3 seconds with cleanup
+        if (dateErrorTimer.current) {
+          clearTimeout(dateErrorTimer.current);
+        }
+        dateErrorTimer.current = setTimeout(() => setDateError(''), 3000);
         return;
       }
 

@@ -8,32 +8,9 @@ import { useLocations } from '@/hooks/useLocations';
 import { Drop, Leaf, ArrowCounterClockwise, ArrowLeft, Trash, X } from '@phosphor-icons/react';
 import { createDebugger } from '@/lib/debug';
 import { compressImage } from '@/lib/imageUtils';
+import type { PlantUI } from '@/types';
 
 const debug = createDebugger('EditPlant');
-
-interface PlantSpecies {
-  name?: string | null;
-  scientific?: string | null;
-  category?: string | null;
-  wateringFrequencyDays?: number;
-  fertilizingFrequencyDays?: number;
-  emoji?: string;
-}
-
-interface Plant {
-  id: string;
-  name?: string;
-  customName?: string | null;
-  location?: string;
-  startedDate?: string | Date;
-  notes?: string;
-  photoUrl?: string | null;
-  photoPreview?: string | null;
-  image?: string | null;
-  species?: PlantSpecies;
-  customWateringDays?: number | null;
-  customFertilizingDays?: number | null;
-}
 
 interface FormData {
   customName: string;
@@ -49,10 +26,10 @@ interface FormData {
 }
 
 interface EditPlantProps {
-  plant: Plant;
+  plant: PlantUI;
   onClose: () => void;
-  onSave: (plant: Plant) => void;
-  onDelete?: (plant: Plant) => void;
+  onSave: (plant: PlantUI) => void;
+  onDelete?: (plant: PlantUI) => void;
 }
 
 const EditPlant: React.FC<EditPlantProps> = ({ plant, onClose, onSave, onDelete }) => {

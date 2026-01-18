@@ -66,7 +66,7 @@ export async function calculateUserCareNeeds(
     // 1. Get user's active plants with their species info
     const { data: plantsData, error: plantsError } = await supabaseAdmin
       .from('plants')
-      .select<string, PlantWithCareInfo>(`
+      .select(`
         id,
         name,
         user_id,
@@ -90,15 +90,15 @@ export async function calculateUserCareNeeds(
       return null;
     }
 
-    const plants = plantsData;
+    const plants = plantsData as unknown as PlantWithCareInfo[];
     const plantIds = plants.map(p => p.id);
 
     // 2. Get last actions for each plant
-    // OPTIMIZATION: Use RPC to fetch only the latest action per plant per action_type
-    // This avoids fetching ALL historical actions when we only need the most recent
-    // See: supabase/migrations/20260117_add_get_latest_actions_function.sql
     const { data: actionsData, error: actionsError } = await supabaseAdmin
-      .rpc('get_latest_actions_for_plants', { plant_ids: plantIds });
+      .from('actions')
+      .select('plant_id, action_type, action_date')
+      .in('plant_id', plantIds)
+      .order('action_date', { ascending: false });
 
     if (actionsError) {
       console.error(`[care-checker] Error fetching actions for user ${userId}:`, actionsError);
@@ -106,13 +106,15 @@ export async function calculateUserCareNeeds(
     }
 
     // Build a map of last action dates per plant
-    // Each entry from RPC is already the latest for that action_type
     const lastActions: Record<string, Record<string, string>> = {};
     (actionsData as ActionRecord[] || []).forEach(action => {
       if (!lastActions[action.plant_id]) {
         lastActions[action.plant_id] = {};
       }
-      lastActions[action.plant_id][action.action_type] = action.action_date;
+      // Only keep the most recent action of each type
+      if (!lastActions[action.plant_id][action.action_type]) {
+        lastActions[action.plant_id][action.action_type] = action.action_date;
+      }
     });
 
     // 3. Calculate care status for each plant
@@ -203,26 +205,16 @@ interface NotificationSettingsRecord {
 }
 
 /**
- * Get all users who need notification at the current hour
+ * Get all users who need notification today
  */
 export async function getAllUsersNeedingNotification(): Promise<UserCareDigest[]> {
   try {
-    // Get current hour in WIB (UTC+7)
-    const now = new Date();
-    const wibOffset = 7 * 60; // WIB is UTC+7
-    const wibTime = new Date(now.getTime() + wibOffset * 60 * 1000);
-    const currentHour = wibTime.getUTCHours().toString().padStart(2, '0');
-    const currentHourTime = `${currentHour}:00:00`;
-
-    console.log(`[care-checker] Current WIB hour: ${currentHour}:00`);
-
-    // 1. Get all users with WhatsApp notifications enabled for this hour
+    // 1. Get all users with WhatsApp notifications enabled
     const { data: usersData, error: usersError } = await supabaseAdmin
       .from('notification_settings')
-      .select('user_id, whatsapp_number, reminder_time')
+      .select('user_id, whatsapp_number')
       .eq('whatsapp_enabled', true)
-      .not('whatsapp_number', 'is', null)
-      .eq('reminder_time', currentHourTime);
+      .not('whatsapp_number', 'is', null);
 
     if (usersError) {
       console.error('[care-checker] Error fetching users with notifications:', usersError);
@@ -230,12 +222,10 @@ export async function getAllUsersNeedingNotification(): Promise<UserCareDigest[]
     }
 
     if (!usersData || usersData.length === 0) {
-      console.log('[care-checker] No users scheduled for this hour');
       return [];
     }
 
     const users = usersData as NotificationSettingsRecord[];
-    console.log(`[care-checker] Found ${users.length} users scheduled for ${currentHour}:00`);
 
     // 2. Calculate care needs for each user
     const usersNeedingNotification: UserCareDigest[] = [];
@@ -247,7 +237,6 @@ export async function getAllUsersNeedingNotification(): Promise<UserCareDigest[]
       }
     }
 
-    console.log(`[care-checker] ${usersNeedingNotification.length} users need notifications at ${currentHour}:00`);
     return usersNeedingNotification;
   } catch (error) {
     console.error('[care-checker] Error getting users needing notification:', error);
