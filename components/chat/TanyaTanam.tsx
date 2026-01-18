@@ -448,7 +448,7 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
       location: selectedPlant.location ?? undefined,
       startedDate: selectedPlant.startedDate ? new Date(selectedPlant.startedDate) : undefined,
       // Priority: user's plant photo > species illustration
-      coverPhotoUrl: selectedPlant.photoUrl || selectedPlant.image || selectedPlant.species?.imageUrl || undefined,
+      coverPhotoUrl: selectedPlant.image || selectedPlant.species?.imageUrl || undefined,
       notes: selectedPlant.notes ?? undefined,
       lastWatered: selectedPlant.lastWatered ? new Date(selectedPlant.lastWatered) : undefined,
       lastFertilized: selectedPlant.lastFertilized ? new Date(selectedPlant.lastFertilized) : undefined,

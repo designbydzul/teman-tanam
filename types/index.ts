@@ -2,6 +2,7 @@
  * Shared type definitions for Teman Tanam
  */
 
+import React from 'react';
 import { User, Session } from '@supabase/supabase-js';
 
 // Profile from Supabase
@@ -84,9 +85,9 @@ export interface PlantRaw {
 
 // Care status for watering/fertilizing
 export interface CareStatus {
-  status: 'needs_action' | 'done_today' | 'on_schedule';
+  status: 'needs_action' | 'done_today' | 'on_schedule' | 'unknown';
   label: string;
-  daysUntilNext: number;
+  daysUntilNext: number | null;
   daysSinceLast: number | null;
   doneToday: boolean;
 }
@@ -108,6 +109,8 @@ export interface Plant {
   location: string;
   locationId: string | null;
   image: string | null;
+  photoUrl?: string | null;
+  photoPreview?: string | null;
   species: {
     id?: string;
     name?: string;
@@ -127,7 +130,7 @@ export interface Plant {
   // Custom care frequencies (overrides species defaults when set)
   customWateringDays: number | null;
   customFertilizingDays: number | null;
-  startedDate: Date;
+  startedDate: Date | string;
   lastWatered: Date | null;
   lastFertilized: Date | null;
   lastPruned?: Date | null;
@@ -135,7 +138,7 @@ export interface Plant {
   fertilizingStatus: CareStatus;
   harvestStatus: HarvestStatus;
   notes: string;
-  createdAt: Date;
+  createdAt: Date | string;
   isOffline?: boolean;
   pendingSync?: boolean;
 }
@@ -250,13 +253,16 @@ export interface AddPlantFormSubmitData {
   species: {
     id: string;
     name: string;
-    category?: string;
+    category?: string | null;
     imageUrl?: string | null;
     emoji?: string;
   };
   createdAt: Date;
   photoBlob: Blob | File | null;
 }
+
+// Bulk action type for multi-select operations
+export type BulkActionType = 'siram' | 'pupuk' | 'pangkas' | 'lainnya';
 
 // Plant data returned from EditPlant component
 export interface EditPlantData {
@@ -280,4 +286,101 @@ export interface EditPlantData {
   };
   customWateringDays?: number | null;
   customFertilizingDays?: number | null;
+}
+
+// =============================================================================
+// Type Aliases for Component Compatibility
+// =============================================================================
+
+// UI type aliases (for backwards compatibility)
+export type PlantUI = Plant;
+export type CareStatusUI = CareStatus;
+export type PlantLocation = Plant; // Plants with location info for LocationSettings
+
+// UI-friendly species type (maps DB snake_case to camelCase)
+export interface PlantSpeciesUI {
+  id: string;
+  name: string; // common_name
+  scientific?: string | null; // latin_name
+  category?: string | null;
+  imageUrl?: string | null; // image_url
+  emoji?: string;
+  wateringFrequencyDays?: number;
+  fertilizingFrequencyDays?: number;
+  difficultyLevel?: string;
+  sunRequirement?: string;
+  growingSeason?: string;
+  harvestSigns?: string | null;
+  careSummary?: string;
+}
+
+// Network status for offline/online indicators
+export type NetworkStatus = 'online' | 'offline' | 'reconnecting';
+
+// Stat item for dashboard stats
+export interface StatItem {
+  label: string;
+  value: number;
+  Icon: React.ComponentType<{ size?: number; weight?: string; color?: string }>;
+}
+
+// Plant reference for bulk operations (minimal plant data)
+export interface PlantRef {
+  id: string;
+  name: string;
+  customName?: string | null;
+  species?: {
+    name?: string;
+    emoji?: string;
+  };
+}
+
+// Action history entry for plant detail view (compatible with ActionRecord in plantContextBuilder)
+export interface ActionHistoryEntry {
+  id: string;
+  plant_id: string;
+  action_type: string;
+  action_date: string;
+  notes?: string | null;
+  photo_url?: string | null;
+  created_at: string;
+}
+
+// Action style configuration for care action cards
+export interface ActionStyle {
+  bgColor: string;
+  iconBg: string;
+  iconColor: string;
+  borderColor: string;
+  textColor: string;
+  color: string;
+  text: string;
+  label: string;
+}
+
+// Simplified species type for add plant flow
+export interface AddPlantSpecies {
+  id: string;
+  name: string;
+  category?: string;
+  imageUrl?: string | null;
+  emoji?: string;
+  scientific?: string | null;
+}
+
+// Form data for plant creation flow
+export interface PlantFormData {
+  id?: string;
+  customName?: string;
+  species?: AddPlantSpecies | null;
+  location?: string;
+  startedDate?: Date | string;
+  photoPreview?: string | null;
+  notes?: string;
+  photo?: File | null;
+  compressedPhoto?: Blob | File | null;
+  photoBlob?: Blob | File | null;
+  customLocation?: string;
+  customDate?: string;
+  createdAt?: Date;
 }

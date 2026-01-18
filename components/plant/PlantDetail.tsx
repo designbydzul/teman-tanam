@@ -2108,7 +2108,7 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
       {/* Edit Plant Modal */}
       {showEditPlant && (
         <EditPlant
-          plant={currentPlantData || plantData}
+          plant={currentPlantData || sourcePlant as PlantUI}
           onClose={() => setShowEditPlant(false)}
           onSave={async (updatedPlant) => {
             // Save to Supabase via parent callback
