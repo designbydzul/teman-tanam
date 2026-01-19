@@ -10,6 +10,7 @@ import {
   FirstAidKit,
   Plant,
   DotsThree,
+  ArrowsClockwise,
 } from '@phosphor-icons/react';
 import type { HistoryTabProps, TimelineEntry } from './types';
 
@@ -28,7 +29,9 @@ const getActionIcon = (type: string): React.ReactNode => {
     case 'prune':
       return <Scissors size={20} weight="regular" color="#757575" />;
     case 'harvest':
-      return <Basket size={20} weight="regular" color="#757575" />;
+      return <Basket size={20} weight="fill" color="#FFD54F" />;
+    case 'phase_change':
+      return <ArrowsClockwise size={20} weight="fill" color="#7CB342" />;
     case 'diagnose':
       return <FirstAidKit size={20} weight="regular" color="#757575" />;
     case 'add':
@@ -36,6 +39,49 @@ const getActionIcon = (type: string): React.ReactNode => {
     default:
       return <DotsThree size={20} weight="regular" color="#757575" />;
   }
+};
+
+// Check if entry is a phase change
+const isPhaseChange = (type: string): boolean => type === 'phase_change';
+
+// Check if entry is a harvest
+const isHarvest = (type: string): boolean => type === 'harvest';
+
+// Get entry style based on type (milestone entries get special styling)
+const getEntryStyle = (type: string): React.CSSProperties => {
+  if (isPhaseChange(type)) {
+    return {
+      backgroundColor: 'rgba(124, 179, 66, 0.08)',
+      border: '1px solid rgba(124, 179, 66, 0.3)',
+    };
+  }
+  if (isHarvest(type)) {
+    return {
+      backgroundColor: 'rgba(255, 213, 79, 0.08)',
+      border: '1px solid rgba(255, 213, 79, 0.3)',
+    };
+  }
+  return {
+    backgroundColor: '#FFFFFF',
+    border: '1px solid #E4E4E7',
+  };
+};
+
+// Get icon container style based on type
+const getIconContainerStyle = (type: string): React.CSSProperties => {
+  if (isPhaseChange(type)) {
+    return {
+      backgroundColor: 'rgba(124, 179, 66, 0.15)',
+    };
+  }
+  if (isHarvest(type)) {
+    return {
+      backgroundColor: 'rgba(255, 213, 79, 0.2)',
+    };
+  }
+  return {
+    backgroundColor: '#FAFAFA',
+  };
 };
 
 const HistoryTab: React.FC<HistoryTabProps> = ({
@@ -127,9 +173,8 @@ const HistoryTab: React.FC<HistoryTabProps> = ({
                 key={entry.id || entryIndex}
                 onClick={() => onEntryClick(entry, group.date)}
                 style={{
-                  backgroundColor: '#FFFFFF',
+                  ...getEntryStyle(entry.type),
                   borderRadius: '12px',
-                  border: '1px solid #E4E4E7',
                   padding: '16px',
                   marginBottom: '12px',
                   cursor: 'pointer',
@@ -144,7 +189,7 @@ const HistoryTab: React.FC<HistoryTabProps> = ({
                     width: '40px',
                     height: '40px',
                     borderRadius: '50%',
-                    backgroundColor: '#FAFAFA',
+                    ...getIconContainerStyle(entry.type),
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -161,7 +206,7 @@ const HistoryTab: React.FC<HistoryTabProps> = ({
                       fontFamily: "'Inter', sans-serif",
                       fontSize: '1rem',
                       fontWeight: 600,
-                      color: '#2C2C2C',
+                      color: isPhaseChange(entry.type) ? '#2D5016' : isHarvest(entry.type) ? '#795548' : '#2C2C2C',
                       margin: 0,
                     }}
                   >

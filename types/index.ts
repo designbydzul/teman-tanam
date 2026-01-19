@@ -4,6 +4,13 @@
 
 import React from 'react';
 import { User, Session } from '@supabase/supabase-js';
+import type { ActionType as ActionTypeFromConstants } from '@/lib/constants';
+
+// Re-export ActionType from constants (single source of truth)
+export type ActionType = ActionTypeFromConstants;
+
+// Re-export Precondition type from precondition-config
+export type { Precondition } from '@/lib/precondition-config';
 
 // Profile from Supabase
 export interface Profile {
@@ -27,6 +34,12 @@ export interface Location {
 // Plant species category type
 export type PlantSpeciesCategory = 'Sayuran' | 'Rempah' | 'Bunga' | 'Tanaman Hias';
 
+// Lifecycle type for Plant Life Journey
+export type PlantLifecycleType = 'annual_harvest' | 'perennial_harvest' | 'perpetual';
+
+// Lifecycle phase for individual plants
+export type LifecyclePhase = 'seedling' | 'growing' | 'flowering' | 'fruiting' | 'harvest_ready' | 'harvested' | 'resting' | 'mature';
+
 // Plant species from Supabase
 export interface PlantSpecies {
   id: string;
@@ -48,6 +61,11 @@ export interface PlantSpecies {
   water_needs: string;
   common_problems: string;
   harvest_signs: string | null;
+
+  // Lifecycle tracking for Plant Life Journey
+  lifecycle_type: PlantLifecycleType;
+  harvest_days_min: number | null;
+  harvest_days_max: number | null;
 
   // Growing context
   container_friendly: boolean;
@@ -77,9 +95,12 @@ export interface PlantRaw {
   custom_watering_days: number | null;
   custom_fertilizing_days: number | null;
   // Plant life journey / phase tracking
+  precondition: string | null;
   current_phase: string | null;
   phase_started_at: string | null;
   expected_harvest_date: string | null;
+  first_harvest_at: string | null;
+  total_harvests: number;
   plant_species?: PlantSpecies | null;
   locations?: Location | null;
   // Offline flags
@@ -142,21 +163,25 @@ export interface Plant {
   fertilizingStatus: CareStatus;
   harvestStatus: HarvestStatus;
   // Plant life journey / phase tracking
+  precondition: string | null;
   currentPhase: string | null;
   phaseStartedAt: Date | null;
   expectedHarvestDate: Date | null;
+  firstHarvestAt: Date | null;
+  totalHarvests: number;
   notes: string;
   createdAt: Date | string;
   isOffline?: boolean;
   pendingSync?: boolean;
 }
 
+
 // Action from Supabase
 export interface Action {
   id: string;
   plant_id: string;
   user_id: string;
-  action_type: 'siram' | 'pupuk';
+  action_type: ActionType;
   action_date: string;
   notes: string | null;
   photo_url: string | null;
@@ -184,6 +209,9 @@ export interface PlantSyncData {
   offlinePhoto?: string | null;
   custom_watering_days?: number | null;
   custom_fertilizing_days?: number | null;
+  precondition?: string | null;
+  current_phase?: string | null;
+  phase_started_at?: string | null;
 }
 
 export interface ActionSyncData {
@@ -191,7 +219,7 @@ export interface ActionSyncData {
   tempId?: string;
   plant_id: string;
   user_id?: string;
-  action_type: 'siram' | 'pupuk' | 'pangkas' | 'lainnya';
+  action_type: ActionType;
   action_date: string;
   notes?: string | null;
   photo_url?: string | null;
@@ -255,7 +283,7 @@ export interface UsePlantsReturn {
   addPlant: (plantData: AddPlantData) => Promise<{ success: boolean; plant?: unknown; error?: string; offline?: boolean }>;
   updatePlant: (plantId: string, updates: UpdatePlantData) => Promise<{ success: boolean; plant?: unknown; error?: string }>;
   deletePlant: (plantId: string) => Promise<{ success: boolean; error?: string }>;
-  recordAction: (plantId: string, actionType: 'siram' | 'pupuk' | 'pangkas' | 'lainnya', notes?: string | null, photoFile?: File | null) => Promise<{ success: boolean; action?: unknown; error?: string; offline?: boolean }>;
+  recordAction: (plantId: string, actionType: ActionType, notes?: string | null, photoFile?: File | null) => Promise<{ success: boolean; action?: unknown; error?: string; offline?: boolean }>;
   isOnline: boolean;
   syncStatus: 'idle' | 'syncing' | 'success' | 'error';
   pendingCount: number;
@@ -269,10 +297,12 @@ export interface AddPlantData {
   speciesId?: string | null;
   speciesName?: string;
   speciesEmoji?: string;
+  speciesCategory?: string | null;
   locationId?: string | null;
   startedDate?: string;
   notes?: string;
   photoBlob?: Blob;
+  precondition?: string;
 }
 
 // Update plant input data
@@ -289,6 +319,8 @@ export interface UpdatePlantData {
   currentPhase?: string | null;
   phaseStartedAt?: Date | null;
   expectedHarvestDate?: Date | null;
+  firstHarvestAt?: Date | null;
+  totalHarvests?: number;
 }
 
 // Locations hook return type
@@ -324,10 +356,11 @@ export interface AddPlantFormSubmitData {
   };
   createdAt: Date;
   photoBlob: Blob | File | null;
+  precondition?: string;
 }
 
 // Bulk action type for multi-select operations
-export type BulkActionType = 'siram' | 'pupuk' | 'pangkas' | 'lainnya';
+export type BulkActionType = ActionType;
 
 // Plant data returned from EditPlant component
 export interface EditPlantData {
@@ -377,6 +410,10 @@ export interface PlantSpeciesUI {
   growingSeason?: string;
   harvestSigns?: string | null;
   careSummary?: string;
+  // Lifecycle tracking for Plant Life Journey
+  lifecycleType?: PlantLifecycleType;
+  harvestDaysMin?: number | null;
+  harvestDaysMax?: number | null;
 }
 
 // Network status for offline/online indicators

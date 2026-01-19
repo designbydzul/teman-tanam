@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Camera, DiceFive } from '@phosphor-icons/react';
+import { X, Camera, DiceFive, Info } from '@phosphor-icons/react';
 import { LocationSettings } from '@/components/modals';
 import { GlobalOfflineBanner } from '@/components/shared';
 import { compressImage } from '@/lib/imageUtils';
@@ -10,7 +10,13 @@ import { useLocations } from '@/hooks/useLocations';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { generatePlantName } from '@/lib/plantNameGenerator';
 import { createDebugger } from '@/lib/debug';
-import type { PlantSpeciesUI } from '@/types';
+import {
+  getPreconditionOptions,
+  getPreconditionLabel,
+  getPreconditionDescription,
+  type Precondition,
+} from '@/lib/precondition-config';
+import type { PlantSpeciesUI, PlantSpeciesCategory } from '@/types';
 
 const debug = createDebugger('AddPlantForm');
 
@@ -23,6 +29,7 @@ interface FormData {
   notes: string;
   photo: File | null;
   compressedPhoto: Blob | File | null;
+  precondition: Precondition | '';
 }
 
 interface SubmitData extends FormData {
@@ -30,6 +37,7 @@ interface SubmitData extends FormData {
   id: string;
   createdAt: Date;
   photoBlob: Blob | File | null;
+  precondition: Precondition | '';
 }
 
 interface AddPlantFormProps {
@@ -41,6 +49,12 @@ interface AddPlantFormProps {
 
 const AddPlantForm: React.FC<AddPlantFormProps> = ({ species, onClose, onSubmit, existingPlantCount = 0 }) => {
   const { isOnline } = useOnlineStatus();
+
+  // Get precondition options based on species category
+  const preconditionOptions = useMemo(() => {
+    return getPreconditionOptions(species.category as PlantSpeciesCategory);
+  }, [species.category]);
+
   const [formData, setFormData] = useState<FormData>({
     customName: '',
     location: '',
@@ -50,6 +64,7 @@ const AddPlantForm: React.FC<AddPlantFormProps> = ({ species, onClose, onSubmit,
     notes: '',
     photo: null,
     compressedPhoto: null,
+    precondition: preconditionOptions[0] || 'bibit',
   });
 
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
@@ -85,8 +100,8 @@ const AddPlantForm: React.FC<AddPlantFormProps> = ({ species, onClose, onSubmit,
     .map((loc: { name: string }) => loc.name)
     .filter((name: string) => name && name !== 'Semua');
 
-  // Name is optional now, location is required
-  const isValid = formData.location;
+  // Name is optional now, location and precondition are required
+  const isValid = formData.location && formData.precondition;
 
   const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -557,6 +572,69 @@ const AddPlantForm: React.FC<AddPlantFormProps> = ({ species, onClose, onSubmit,
                   >
                     {dateError}
                   </p>
+                )}
+              </div>
+
+              {/* Precondition Pills */}
+              <div style={{ marginBottom: '24px' }}>
+                <label
+                  style={{
+                    display: 'block',
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: '14px',
+                    color: '#757575',
+                    marginBottom: '12px',
+                  }}
+                >
+                  Kondisi awal tanaman?
+                </label>
+                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                  {preconditionOptions.map((precondition) => (
+                    <button
+                      key={precondition}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, precondition })}
+                      style={{
+                        padding: '12px 24px',
+                        fontSize: '1rem',
+                        fontFamily: "'Inter', sans-serif",
+                        fontWeight: 500,
+                        color: formData.precondition === precondition ? '#2D5016' : '#757575',
+                        backgroundColor: formData.precondition === precondition ? '#F1F8E9' : 'transparent',
+                        border: formData.precondition === precondition ? '2px solid #7CB342' : '2px solid #E0E0E0',
+                        borderRadius: '24px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                      }}
+                    >
+                      {getPreconditionLabel(precondition)}
+                    </button>
+                  ))}
+                </div>
+                {/* Helper text showing description of selected precondition */}
+                {formData.precondition && (
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      marginTop: '8px',
+                      padding: '8px 12px',
+                      backgroundColor: '#F5F5F5',
+                      borderRadius: '8px',
+                    }}
+                  >
+                    <Info size={16} weight="regular" color="#757575" />
+                    <span
+                      style={{
+                        fontFamily: "'Inter', sans-serif",
+                        fontSize: '12px',
+                        color: '#757575',
+                      }}
+                    >
+                      {getPreconditionDescription(formData.precondition)}
+                    </span>
+                  </div>
                 )}
               </div>
 

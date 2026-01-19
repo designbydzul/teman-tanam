@@ -4,6 +4,12 @@
  */
 
 import { supabase } from '@/lib/supabase/client';
+import {
+  getPhaseDisplay,
+  getHarvestTimelineMessage,
+  getDaysUntilHarvest,
+} from '@/lib/lifecycle-config';
+import type { LifecyclePhase, PlantLifecycleType } from '@/types';
 
 // Types
 interface ActionRecord {
@@ -31,6 +37,10 @@ interface PlantData {
     growingSeason?: string;
     harvestSigns?: string | null;
     careSummary?: string;
+    // Lifecycle fields
+    lifecycleType?: PlantLifecycleType;
+    harvestDaysMin?: number | null;
+    harvestDaysMax?: number | null;
   } | null;
   location?: string | null;
   startedDate?: Date | null;
@@ -40,6 +50,11 @@ interface PlantData {
   // Custom care frequencies (override species defaults)
   customWateringDays?: number | null;
   customFertilizingDays?: number | null;
+  // Lifecycle fields
+  currentPhase?: LifecyclePhase | string | null;
+  phaseStartedAt?: Date | null;
+  totalHarvests?: number;
+  firstHarvestAt?: Date | null;
 }
 
 interface CareHistoryEntry {
@@ -101,6 +116,18 @@ export interface EnhancedPlantContext {
 
   // Action notes from history
   recentNotes: string[];
+
+  // Lifecycle context (new!)
+  lifecycleType: PlantLifecycleType | null;
+  currentPhase: LifecyclePhase | null;
+  phaseLabel: string | null;
+  phaseIcon: string | null;
+  daysInPhase: number | null;
+  totalHarvests: number;
+  firstHarvestAt: string | null;
+  daysUntilHarvest: number | null;
+  harvestTimelineMessage: string | null;
+  isHarvestable: boolean;
 }
 
 // Action type mapping
@@ -308,6 +335,39 @@ export function buildEnhancedPlantContext(
     })
     .slice(0, 5); // Max 5 notes
 
+  // Lifecycle context
+  const lifecycleType = plant.species?.lifecycleType || null;
+  const currentPhase = plant.currentPhase as LifecyclePhase | null;
+  const phaseDisplay = currentPhase ? getPhaseDisplay(currentPhase) : null;
+  const phaseLabel = phaseDisplay?.label || null;
+  const phaseIcon = phaseDisplay?.icon || null;
+
+  // Days in current phase
+  const daysInPhase = plant.phaseStartedAt
+    ? daysBetween(now, new Date(plant.phaseStartedAt))
+    : null;
+
+  // Harvest info
+  const totalHarvests = plant.totalHarvests || 0;
+  const firstHarvestAtFormatted = plant.firstHarvestAt
+    ? formatDateRelative(new Date(plant.firstHarvestAt))
+    : null;
+
+  // Calculate harvest timeline
+  const plantAge = careDuration || 0;
+  const harvestDaysMin = plant.species?.harvestDaysMin || null;
+  const harvestDaysMax = plant.species?.harvestDaysMax || null;
+  const daysUntilHarvestCalc = getDaysUntilHarvest(plantAge, harvestDaysMin);
+  const harvestTimelineMsg = getHarvestTimelineMessage(
+    plantAge,
+    harvestDaysMin,
+    harvestDaysMax,
+    currentPhase
+  );
+
+  // Is this a harvestable plant?
+  const isHarvestable = lifecycleType === 'annual_harvest' || lifecycleType === 'perennial_harvest';
+
   return {
     name,
     species,
@@ -339,6 +399,17 @@ export function buildEnhancedPlantContext(
     wateringPattern,
     fertilizingPattern,
     recentNotes,
+    // Lifecycle context
+    lifecycleType,
+    currentPhase,
+    phaseLabel,
+    phaseIcon,
+    daysInPhase,
+    totalHarvests,
+    firstHarvestAt: firstHarvestAtFormatted,
+    daysUntilHarvest: daysUntilHarvestCalc,
+    harvestTimelineMessage: harvestTimelineMsg,
+    isHarvestable,
   };
 }
 
@@ -513,6 +584,65 @@ export function formatContextForAI(context: EnhancedPlantContext): string {
   const wateringNote = context.isCustomWatering ? ' (kustom user)' : ' (default jenis)';
   const fertilizingNote = context.isCustomFertilizing ? ' (kustom user)' : ' (default jenis)';
   parts.push(`Frekuensi perawatan: siram setiap ${context.wateringFrequencyDays} hari${wateringNote}, pupuk setiap ${context.fertilizingFrequencyDays} hari${fertilizingNote}`);
+
+  // Lifecycle context section (new!)
+  if (context.currentPhase || context.isHarvestable) {
+    parts.push('');
+    parts.push('<lifecycle_context>');
+
+    // Current phase
+    if (context.currentPhase && context.phaseLabel) {
+      parts.push(`- Fase saat ini: ${context.phaseIcon || ''} ${context.phaseLabel}`);
+      if (context.daysInPhase !== null) {
+        parts.push(`- Sudah di fase ini: ${context.daysInPhase} hari`);
+      }
+    }
+
+    // Plant age
+    if (context.careDuration !== null) {
+      parts.push(`- Usia tanaman: ${context.careDuration} hari`);
+    }
+
+    // Lifecycle type description
+    if (context.lifecycleType) {
+      const typeLabels: Record<string, string> = {
+        annual_harvest: 'Tanaman panen satu kali (semusim)',
+        perennial_harvest: 'Tanaman panen berkali-kali',
+        perpetual: 'Tanaman hias (tidak dipanen)',
+      };
+      parts.push(`- Jenis siklus: ${typeLabels[context.lifecycleType] || context.lifecycleType}`);
+    }
+
+    // Harvest info for harvestable plants
+    if (context.isHarvestable) {
+      if (context.totalHarvests > 0) {
+        parts.push(`- Total panen: ${context.totalHarvests} kali`);
+        if (context.firstHarvestAt) {
+          parts.push(`- Panen pertama: ${context.firstHarvestAt}`);
+        }
+      } else {
+        parts.push('- Belum pernah dipanen');
+      }
+
+      // Harvest timeline
+      if (context.harvestTimelineMessage) {
+        parts.push(`- Estimasi panen: ${context.harvestTimelineMessage}`);
+      } else if (context.daysUntilHarvest !== null) {
+        if (context.daysUntilHarvest <= 0) {
+          parts.push('- ✨ Tanaman mungkin sudah siap dipanen');
+        } else {
+          parts.push(`- Perkiraan panen: sekitar ${context.daysUntilHarvest} hari lagi`);
+        }
+      }
+
+      // Special note for harvest_ready phase
+      if (context.currentPhase === 'harvest_ready') {
+        parts.push('- ⚠️ SIAP PANEN - User bisa mulai panen kapan saja');
+      }
+    }
+
+    parts.push('</lifecycle_context>');
+  }
 
   // Notes from actions
   if (context.recentNotes.length > 0) {

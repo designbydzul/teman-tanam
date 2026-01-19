@@ -887,10 +887,12 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
       speciesId: plantData.species?.id || null, // Real UUID from Supabase
       speciesName: plantData.species?.name, // Store species name for emoji lookup
       speciesEmoji: plantData.species?.emoji || '🌱', // Store emoji directly
+      speciesCategory: plantData.species?.category || null, // Store category for lifecycle type
       locationId: locationId,
       notes: plantData.notes || '',
       startedDate: plantData.customDate || new Date().toISOString(),
       photoBlob: plantData.photoBlob || undefined, // Compressed photo blob for upload
+      precondition: plantData.precondition || 'bibit', // Plant Life Journey precondition
     };
 
     console.log('[Home] Calling addSupabasePlant with:', {

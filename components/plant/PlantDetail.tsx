@@ -27,6 +27,7 @@ import {
   ChatDots,
 } from '@phosphor-icons/react';
 import { GlobalOfflineBanner, Toast } from '@/components/shared';
+import HarvestStats from '@/components/plants/HarvestStats';
 
 // Lazy load heavy components that are not visible on initial render
 const TanyaTanam = dynamic(() => import('@/components/chat/TanyaTanam'), { ssr: false });
@@ -34,10 +35,11 @@ const EditPlant = dynamic(() => import('@/components/plant/EditPlant'), { ssr: f
 const OfflineModal = dynamic(() => import('@/components/modals/OfflineModal'), { ssr: false });
 // const PlantLifeJourney = dynamic(() => import('@/components/plant/PlantLifeJourney'), { ssr: false });
 import useOnlineStatus from '@/hooks/useOnlineStatus';
+import { useLifecyclePhase } from '@/hooks/useLifecyclePhase';
 import { supabase } from '@/lib/supabase/client';
 import { saveToCache, getFromCache, addToSyncQueue } from '@/lib/offlineStorage';
 import { CACHE_KEYS } from '@/lib/constants';
-import type { PlantUI, CareStatusUI, ActionHistoryEntry } from '@/types';
+import type { PlantUI, CareStatusUI, ActionHistoryEntry, Plant as PlantType, LifecyclePhase } from '@/types';
 
 interface TimelineEntry {
   type: string;
@@ -77,7 +79,7 @@ interface PlantDetailProps {
   onDelete?: (plant: AnyPlant) => void;
   onRecordAction?: (
     plantId: string,
-    actionType: 'siram' | 'pupuk' | 'pangkas' | 'lainnya',
+    actionType: 'siram' | 'pupuk' | 'pangkas' | 'panen' | 'lainnya',
     notes?: string | null,
     photo?: File | null
   ) => Promise<{ success: boolean; action?: unknown; error?: string; offline?: boolean }>;
@@ -95,6 +97,13 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
   // Online status for offline handling
   const { isOnline } = useOnlineStatus();
   const [showOfflineModal, setShowOfflineModal] = useState(false);
+
+  // Lifecycle phase management
+  const {
+    updatePhase: updateLifecyclePhase,
+    lifecycleType,
+    harvestInfo,
+  } = useLifecyclePhase(String(plant?.id || ''), plant as unknown as PlantType);
 
   const [activeTab, setActiveTab] = useState<'perawatan' | 'riwayat'>('perawatan');
   const [showMenu, setShowMenu] = useState<boolean>(false);
@@ -160,6 +169,13 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
   const [pruningPhoto, setPruningPhoto] = useState<File | null>(null);
   const [pruningPhotoPreview, setPruningPhotoPreview] = useState<string | null>(null);
   const pruningPhotoInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Harvest drawer state
+  const [showHarvestDrawer, setShowHarvestDrawer] = useState<boolean>(false);
+  const [harvestNotes, setHarvestNotes] = useState<string>('');
+  const [harvestPhoto, setHarvestPhoto] = useState<File | null>(null);
+  const [harvestPhotoPreview, setHarvestPhotoPreview] = useState<string | null>(null);
+  const harvestPhotoInputRef = useRef<HTMLInputElement | null>(null);
 
   // Other action drawer state
   const [showOtherActionDrawer, setShowOtherActionDrawer] = useState<boolean>(false);
@@ -239,6 +255,14 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
   // Get care schedule from species (null if not available)
   const wateringFrequencyDays = sourcePlant?.species?.wateringFrequencyDays || null;
   const fertilizingFrequencyDays = sourcePlant?.species?.fertilizingFrequencyDays || null;
+
+  // Determine if this plant is harvestable based on category
+  const speciesCategory = sourcePlant?.species?.category?.toLowerCase() || '';
+  const isHarvestable = speciesCategory === 'sayuran' || speciesCategory === 'rempah';
+
+  // Check if harvest is ready based on currentPhase
+  const currentPhase = sourcePlant?.currentPhase || null;
+  const isHarvestReady = currentPhase === 'harvest_ready';
 
   // Helper function to get subtitle text, color, and icon style for action cards
   // Colors: Green (#7CB342) - just done, Orange (#FF9800) - attention soon, Red (#F44336) - needs action
@@ -591,10 +615,11 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
 
     // Map UI action types to database action types
     // UI: 'water', 'fertilize' -> DB: 'siram', 'pupuk'
-    const dbActionType: 'siram' | 'pupuk' | 'pangkas' | 'lainnya' =
+    const dbActionType: 'siram' | 'pupuk' | 'pangkas' | 'panen' | 'lainnya' =
       actionType === 'water' ? 'siram' :
       actionType === 'fertilize' ? 'pupuk' :
-      actionType === 'pangkas' ? 'pangkas' : 'lainnya';
+      actionType === 'pangkas' ? 'pangkas' :
+      actionType === 'panen' ? 'panen' : 'lainnya';
 
     // Call the onRecordAction prop to save to Supabase
     if (onRecordAction) {
@@ -625,6 +650,9 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
         break;
       case 'fertilize':
         message = `Pemupukan ${plantName} sudah dicatat`;
+        break;
+      case 'panen':
+        message = `Panen ${plantName} sudah dicatat! 🎉`;
         break;
       default:
         message = `Aksi ${actionType} sudah dicatat`;
@@ -794,6 +822,55 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
   // Handle pruning card tap - always show drawer
   const handlePruningCardTap = useCallback(() => {
     setShowPruningDrawer(true);
+  }, []);
+
+  // Handle harvest photo selection
+  const handleHarvestPhotoSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setHarvestPhoto(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setHarvestPhotoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  }, []);
+
+  // Handle harvest submit
+  const handleHarvestSubmit = async (): Promise<void> => {
+    setIsSubmittingAction(true);
+
+    try {
+      const result = await handleActionLog('panen', { notes: harvestNotes, photo: harvestPhoto });
+
+      if (result?.success) {
+        // Update phase to 'harvested' after successful harvest logging
+        try {
+          const phaseResult = await updateLifecyclePhase('harvested' as LifecyclePhase);
+          if (phaseResult.success) {
+            // For perennial plants, they go to 'resting' after harvest
+            // The useLifecyclePhase hook handles this transition automatically
+            console.log('Phase updated successfully:', phaseResult.message);
+          }
+        } catch (phaseError) {
+          // Log but don't fail - action was recorded successfully
+          console.warn('Failed to update phase:', phaseError);
+        }
+
+        setHarvestNotes('');
+        setHarvestPhoto(null);
+        setHarvestPhotoPreview(null);
+        setShowHarvestDrawer(false);
+      }
+    } finally {
+      setIsSubmittingAction(false);
+    }
+  };
+
+  // Handle harvest card tap - always show drawer
+  const handleHarvestCardTap = useCallback(() => {
+    setShowHarvestDrawer(true);
   }, []);
 
   // Handle other action photo selection
@@ -1402,59 +1479,176 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
                   </div>
                 </motion.div>
 
-                {/* Aksi Lainya Card */}
-                <motion.div
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handleOtherActionCardTap}
-                  style={{
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: '12px',
-                    border: '1px solid #E4E4E7',
-                    padding: '16px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'flex-start',
-                  }}
-                >
-                  <div
+                {/* Panen Card - Only show when plant is in harvest_ready phase */}
+                {isHarvestReady ? (
+                  <motion.div
+                    whileTap={{ scale: 0.95 }}
+                    onClick={handleHarvestCardTap}
                     style={{
-                      width: '40px',
-                      height: '40px',
-                      borderRadius: '50%',
-                      backgroundColor: '#FAFAFA',
+                      backgroundColor: 'rgba(255, 213, 79, 0.1)',
+                      borderRadius: '12px',
+                      border: '2px solid #FFD54F',
+                      padding: '16px',
+                      cursor: 'pointer',
                       display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                      flexDirection: 'column',
+                      alignItems: 'flex-start',
+                      boxShadow: '0 0 12px rgba(255, 213, 79, 0.3)',
                     }}
                   >
-                    <DotsThree size={20} weight="regular" color="#757575" />
-                  </div>
-                  <div style={{ marginTop: 'auto', paddingTop: '16px' }}>
-                    <h3
+                    <div
                       style={{
-                        fontFamily: "'Inter', sans-serif",
-                        fontSize: '1rem',
-                        fontWeight: 600,
-                        color: '#2C2C2C',
-                        margin: '0 0 4px 0',
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '50%',
+                        backgroundColor: 'rgba(255, 213, 79, 0.3)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
                       }}
                     >
-                      Aksi Lainya
-                    </h3>
-                    <p
+                      <Basket
+                        size={20}
+                        weight="fill"
+                        color="#FFD54F"
+                      />
+                    </div>
+                    <div style={{ marginTop: 'auto', paddingTop: '16px' }}>
+                      <h3
+                        style={{
+                          fontFamily: "'Inter', sans-serif",
+                          fontSize: '1rem',
+                          fontWeight: 600,
+                          color: '#2D5016',
+                          margin: '0 0 4px 0',
+                        }}
+                      >
+                        Panen
+                      </h3>
+                      <p
+                        style={{
+                          fontFamily: "'Inter', sans-serif",
+                          fontSize: '14px',
+                          color: '#FFD54F',
+                          fontWeight: 500,
+                          margin: 0,
+                        }}
+                      >
+                        Siap dipanen!
+                      </p>
+                    </div>
+                  </motion.div>
+                ) : (
+                  /* Aksi Lainya Card - Show here if NOT harvest ready */
+                  <motion.div
+                    whileTap={{ scale: 0.95 }}
+                    onClick={handleOtherActionCardTap}
+                    style={{
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: '12px',
+                      border: '1px solid #E4E4E7',
+                      padding: '16px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'flex-start',
+                    }}
+                  >
+                    <div
                       style={{
-                        fontFamily: "'Inter', sans-serif",
-                        fontSize: '14px',
-                        color: '#757575',
-                        margin: 0,
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '50%',
+                        backgroundColor: '#FAFAFA',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
                       }}
                     >
-                      Catat aksi
-                    </p>
-                  </div>
-                </motion.div>
+                      <DotsThree size={20} weight="regular" color="#757575" />
+                    </div>
+                    <div style={{ marginTop: 'auto', paddingTop: '16px' }}>
+                      <h3
+                        style={{
+                          fontFamily: "'Inter', sans-serif",
+                          fontSize: '1rem',
+                          fontWeight: 600,
+                          color: '#2C2C2C',
+                          margin: '0 0 4px 0',
+                        }}
+                      >
+                        Aksi Lainya
+                      </h3>
+                      <p
+                        style={{
+                          fontFamily: "'Inter', sans-serif",
+                          fontSize: '14px',
+                          color: '#757575',
+                          margin: 0,
+                        }}
+                      >
+                        Catat aksi
+                      </p>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* Aksi Lainya Card - 5th card, only show when Panen card is visible */}
+                {isHarvestReady && (
+                  <motion.div
+                    whileTap={{ scale: 0.95 }}
+                    onClick={handleOtherActionCardTap}
+                    style={{
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: '12px',
+                      border: '1px solid #E4E4E7',
+                      padding: '16px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'flex-start',
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '50%',
+                        backgroundColor: '#FAFAFA',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <DotsThree size={20} weight="regular" color="#757575" />
+                    </div>
+                    <div style={{ marginTop: 'auto', paddingTop: '16px' }}>
+                      <h3
+                        style={{
+                          fontFamily: "'Inter', sans-serif",
+                          fontSize: '1rem',
+                          fontWeight: 600,
+                          color: '#2C2C2C',
+                          margin: '0 0 4px 0',
+                        }}
+                      >
+                        Aksi Lainya
+                      </h3>
+                      <p
+                        style={{
+                          fontFamily: "'Inter', sans-serif",
+                          fontSize: '14px',
+                          color: '#757575',
+                          margin: 0,
+                        }}
+                      >
+                        Catat aksi
+                      </p>
+                    </div>
+                  </motion.div>
+                )}
               </div>
+
 
           </div>
         ) : (
@@ -2980,6 +3174,243 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
                   }}
                 >
                   {isSubmittingAction ? 'Menyimpan...' : 'Simpan'}
+                </span>
+              </button>
+            </motion.div>
+            </div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Harvest Drawer */}
+      <AnimatePresence>
+        {showHarvestDrawer && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              className="ios-fixed-container"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => {
+                setShowHarvestDrawer(false);
+                setHarvestNotes('');
+                setHarvestPhoto(null);
+                setHarvestPhotoPreview(null);
+              }}
+              style={{
+                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                zIndex: 5000,
+              }}
+            />
+
+            {/* Drawer Container - for centering */}
+            <div
+              style={{
+                position: 'fixed',
+                bottom: 0,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '100%',
+                maxWidth: 'var(--app-max-width)',
+                zIndex: 5001,
+              }}
+            >
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              style={{
+                backgroundColor: '#FFFFFF',
+                borderRadius: '12px 12px 0 0',
+                padding: '24px',
+                paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 0px))',
+                maxHeight: '80vh',
+                overflowY: 'auto',
+              }}
+            >
+              {/* Header */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: '20px',
+                }}
+              >
+                <h2
+                  style={{
+                    fontFamily: "'Caveat', cursive",
+                    fontSize: '1.75rem',
+                    fontWeight: 600,
+                    color: '#2D5016',
+                    margin: 0,
+                  }}
+                >
+                  🎉 Catat Panen
+                </h2>
+                <button
+                  onClick={() => {
+                    setShowHarvestDrawer(false);
+                    setHarvestNotes('');
+                    setHarvestPhoto(null);
+                    setHarvestPhotoPreview(null);
+                  }}
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '50%',
+                    backgroundColor: '#F5F5F5',
+                    border: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M15 5L5 15M5 5l10 10"
+                      stroke="#757575"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Harvest Ready Banner */}
+              {isHarvestReady && (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '14px 16px',
+                    backgroundColor: 'rgba(255, 213, 79, 0.15)',
+                    border: '1px solid rgba(255, 213, 79, 0.4)',
+                    borderRadius: '12px',
+                    marginBottom: '16px',
+                  }}
+                >
+                  <span style={{ fontSize: '24px' }}>✨</span>
+                  <span
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: '14px',
+                      color: '#2C2C2C',
+                    }}
+                  >
+                    Selamat! Tanamanmu siap dipanen!
+                  </span>
+                </div>
+              )}
+
+              {/* Photo Upload */}
+              <input
+                type="file"
+                accept="image/*"
+                ref={harvestPhotoInputRef}
+                onChange={handleHarvestPhotoSelect}
+                style={{ display: 'none' }}
+              />
+
+              <div
+                onClick={() => harvestPhotoInputRef.current?.click()}
+                style={{
+                  width: '100%',
+                  height: harvestPhotoPreview ? '200px' : '120px',
+                  border: '2px dashed #E0E0E0',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  cursor: 'pointer',
+                  marginBottom: '16px',
+                  overflow: 'hidden',
+                  backgroundColor: '#FAFAFA',
+                }}
+              >
+                {harvestPhotoPreview ? (
+                  <img
+                    src={harvestPhotoPreview}
+                    alt="Preview"
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                    }}
+                  />
+                ) : (
+                  <>
+                    <Camera size={32} weight="duotone" color="#999999" />
+                    <span
+                      style={{
+                        fontFamily: "'Inter', sans-serif",
+                        fontSize: '14px',
+                        color: '#999999',
+                      }}
+                    >
+                      Foto hasil panen (opsional)
+                    </span>
+                  </>
+                )}
+              </div>
+
+              {/* Notes Textarea */}
+              <textarea
+                value={harvestNotes}
+                onChange={(e) => setHarvestNotes(e.target.value)}
+                placeholder="Jumlah panen, kualitas, catatan lainnya..."
+                style={{
+                  width: '100%',
+                  minHeight: '100px',
+                  padding: '16px',
+                  fontSize: '1rem',
+                  fontFamily: "'Inter', sans-serif",
+                  color: '#2C2C2C',
+                  backgroundColor: '#FAFAFA',
+                  border: '2px solid transparent',
+                  borderRadius: '12px',
+                  resize: 'vertical',
+                  marginBottom: '20px',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+                onFocus={(e) => (e.currentTarget as HTMLElement).style.border = '2px solid #7CB342'}
+                onBlur={(e) => (e.currentTarget as HTMLElement).style.border = '2px solid transparent'}
+              />
+
+              {/* Submit Button */}
+              <button
+                onClick={handleHarvestSubmit}
+                disabled={isSubmittingAction}
+                style={{
+                  width: '100%',
+                  padding: '16px',
+                  backgroundColor: isSubmittingAction ? '#FFE082' : '#FFD54F',
+                  border: 'none',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  cursor: isSubmittingAction ? 'default' : 'pointer',
+                }}
+              >
+                <Basket size={20} weight="fill" color="#2D5016" />
+                <span
+                  style={{
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: '1rem',
+                    fontWeight: 600,
+                    color: '#2D5016',
+                  }}
+                >
+                  {isSubmittingAction ? 'Menyimpan...' : 'Catat Panen'}
                 </span>
               </button>
             </motion.div>

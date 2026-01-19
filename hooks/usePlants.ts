@@ -26,6 +26,7 @@ import {
   getSpeciesEmoji,
   isValidUUID,
 } from '@/lib/constants';
+import { getStartingPhase } from '@/lib/precondition-config';
 import type {
   Plant,
   PlantRaw,
@@ -248,9 +249,12 @@ export function usePlants(): UsePlantsReturn {
         fertilizingStatus,
         harvestStatus,
         // Plant life journey / phase tracking
+        precondition: plant.precondition || null,
         currentPhase: plant.current_phase || null,
         phaseStartedAt: plant.phase_started_at ? new Date(plant.phase_started_at) : null,
         expectedHarvestDate: plant.expected_harvest_date ? new Date(plant.expected_harvest_date) : null,
+        firstHarvestAt: plant.first_harvest_at ? new Date(plant.first_harvest_at) : null,
+        totalHarvests: plant.total_harvests ?? 0,
         notes: cleanNotes,
         createdAt: new Date(plant.created_at),
         isOffline: plant.isOffline || false,
@@ -477,6 +481,10 @@ export function usePlants(): UsePlantsReturn {
           }
         }
 
+        // Calculate initial phase from precondition
+        const startedDate = plantData.startedDate || now.toISOString();
+        const initialPhase = getStartingPhase(plantData.precondition);
+
         const localPlant: PlantRaw = {
           id: tempId,
           user_id: user.id,
@@ -484,17 +492,20 @@ export function usePlants(): UsePlantsReturn {
           location_id: plantData.locationId || null,
           name: plantData.customName || plantData.name || null,
           photo_url: offlinePhoto,
-          started_date: plantData.startedDate || now.toISOString(),
+          started_date: startedDate,
           notes: notesWithSpecies || null,
           status: 'active',
           created_at: now.toISOString(),
           updated_at: null,
           custom_watering_days: null,
           custom_fertilizing_days: null,
-          // Phase tracking (null for new plants)
-          current_phase: null,
-          phase_started_at: null,
+          // Phase tracking - set from precondition
+          precondition: plantData.precondition || null,
+          current_phase: initialPhase,
+          phase_started_at: startedDate,
           expected_harvest_date: null,
+          first_harvest_at: null,
+          total_harvests: 0,
           isOffline: true,
           pendingSync: true,
         };
@@ -526,15 +537,23 @@ export function usePlants(): UsePlantsReturn {
 
     // ONLINE MODE
     try {
+      // Calculate initial phase from precondition
+      const startedDate = plantData.startedDate || new Date().toISOString();
+      const initialPhase = getStartingPhase(plantData.precondition);
+
       const insertData = {
         user_id: user.id,
         species_id: plantData.speciesId || null,
         location_id: plantData.locationId || null,
         name: plantData.customName || plantData.name,
         photo_url: null as string | null,
-        started_date: plantData.startedDate || new Date().toISOString(),
+        started_date: startedDate,
         notes: notesWithSpecies || null,
         status: 'active',
+        // Phase tracking - set from precondition
+        precondition: plantData.precondition || null,
+        current_phase: initialPhase,
+        phase_started_at: startedDate,
       };
 
       debug.log('addPlant: Inserting data', { userId: user.id, name: insertData.name });
@@ -791,6 +810,22 @@ export function usePlants(): UsePlantsReturn {
     if (!isValidUUID(plantIdStr)) {
       debug.warn('recordAction: Invalid UUID for plant_id:', plantId);
       const today = new Date();
+      const actionDate = today.toISOString().split('T')[0];
+
+      // Create action data for local caching
+      const tempId = generateTempId();
+      const actionData = {
+        id: tempId,
+        plant_id: plantId,
+        user_id: user.id,
+        action_type: actionType,
+        action_date: actionDate,
+        notes: notes || null,
+        isOffline: true,
+        pendingSync: true,
+        created_at: today.toISOString(),
+      };
+
       setPlants(prev => prev.map(plant => {
         if (plant.id === plantId) {
           const updates = { ...plant };
@@ -799,12 +834,25 @@ export function usePlants(): UsePlantsReturn {
             updates.status = PLANT_STATUS.HEALTHY;
           } else if (actionType === ACTION_TYPES.FERTILIZE) {
             updates.lastFertilized = today;
+          } else if (actionType === ACTION_TYPES.HARVEST) {
+            updates.totalHarvests = (updates.totalHarvests || 0) + 1;
+            if (!updates.firstHarvestAt) {
+              updates.firstHarvestAt = today;
+            }
           }
           return updates;
         }
         return plant;
       }));
-      return { success: true, offline: true };
+
+      // Cache the action for Riwayat tab offline viewing
+      const actionsCacheKey = `${CACHE_KEYS.ACTIONS}_${plantId}`;
+      const cachedActions = getFromCache<ActionSyncData[]>(actionsCacheKey);
+      const existingActions = cachedActions?.data || [];
+      saveToCache(actionsCacheKey, [actionData, ...existingActions]);
+      debug.log('TEMP PLANT: Cached action for plant', plantId);
+
+      return { success: true, action: actionData, offline: true };
     }
 
     const today = new Date();

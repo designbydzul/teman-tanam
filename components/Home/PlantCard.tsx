@@ -1,9 +1,11 @@
 'use client';
 
-import React, { memo } from 'react';
+import React, { memo, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { colors, radius, typography } from '@/styles/theme';
-import type { PlantUI as Plant } from '@/types';
+import PhaseBadge from '@/components/plants/PhaseBadge';
+import { getPhaseDisplay } from '@/lib/lifecycle-config';
+import type { PlantUI as Plant, LifecyclePhase } from '@/types';
 
 interface PlantCardProps {
   plant: Plant;
@@ -44,6 +46,13 @@ const PlantCard = memo(function PlantCard({
   const speciesId = plant.species?.id || '';
   const hasSpeciesImage = plant.species?.imageUrl && speciesId && !failedSpeciesImages.has(speciesId);
 
+  // Get current phase info
+  const currentPhase = plant.currentPhase as LifecyclePhase | null;
+  const isHarvestReady = currentPhase === 'harvest_ready';
+  const phaseDisplay = useMemo(() => {
+    return currentPhase ? getPhaseDisplay(currentPhase) : null;
+  }, [currentPhase]);
+
   return (
     <motion.div
       whileTap={{ scale: 0.95 }}
@@ -80,8 +89,13 @@ const PlantCard = memo(function PlantCard({
           position: 'relative',
           border: isMultiSelectMode && isSelected
             ? `3px solid ${colors.greenFresh}`
+            : isHarvestReady
+            ? `3px solid ${colors.yellowSun}`
             : '3px solid transparent',
-          transition: 'border-color 0.2s ease',
+          boxShadow: isHarvestReady
+            ? `0 0 12px ${colors.yellowSun}50`
+            : 'none',
+          transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
         }}
       >
         {hasPlantImage ? (
@@ -155,7 +169,7 @@ const PlantCard = memo(function PlantCard({
           fontWeight: typography.fontWeight.semibold,
           lineHeight: typography.lineHeight.normal,
           color: colors.greenForest,
-          margin: '0 0 2px 0',
+          margin: '0 0 4px 0',
           textAlign: 'center',
           whiteSpace: 'nowrap',
           overflow: 'hidden',
@@ -167,25 +181,42 @@ const PlantCard = memo(function PlantCard({
         {plant.name}
       </h3>
 
-      {/* Plant Status */}
-      <p
-        style={{
-          fontFamily: typography.fontFamily,
-          fontSize: typography.fontSize.xs,
-          fontWeight: typography.fontWeight.normal,
-          lineHeight: typography.lineHeight.normal,
-          color: plant.statusColor || colors.gray600,
-          margin: 0,
-          textAlign: 'center',
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          width: '100%',
-          boxSizing: 'border-box',
-        }}
-      >
-        {plant.status}
-      </p>
+      {/* Phase Badge or Status */}
+      {currentPhase ? (
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            width: '100%',
+          }}
+        >
+          <PhaseBadge
+            phase={currentPhase}
+            size="sm"
+            showIcon
+            showLabel
+          />
+        </div>
+      ) : (
+        <p
+          style={{
+            fontFamily: typography.fontFamily,
+            fontSize: typography.fontSize.xs,
+            fontWeight: typography.fontWeight.normal,
+            lineHeight: typography.lineHeight.normal,
+            color: plant.statusColor || colors.gray600,
+            margin: 0,
+            textAlign: 'center',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            width: '100%',
+            boxSizing: 'border-box',
+          }}
+        >
+          {plant.status}
+        </p>
+      )}
     </motion.div>
   );
 });

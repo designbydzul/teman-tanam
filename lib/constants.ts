@@ -8,6 +8,8 @@ export const ACTION_TYPES = {
   WATER: 'siram',
   FERTILIZE: 'pupuk',
   PRUNE: 'pangkas',
+  HARVEST: 'panen',
+  PHASE_CHANGE: 'fase',
   OTHER: 'lainnya',
 } as const;
 

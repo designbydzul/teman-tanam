@@ -4,7 +4,8 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, DotsThree, PencilSimple, Trash, ChatDots } from '@phosphor-icons/react';
 import { colors, radius, typography } from '@/styles/theme';
-import type { PlantUI as PlantData } from '@/types';
+import PlantLifecycleSection from './PlantLifecycleSection';
+import type { PlantUI as PlantData, Plant } from '@/types';
 
 interface PlantHeaderProps {
   plant: PlantData;
@@ -14,6 +15,8 @@ interface PlantHeaderProps {
   onDelete: () => void;
   onTanyaTanam: () => void;
   onImageClick: () => void;
+  /** Optional callback when lifecycle phase is updated */
+  onPhaseUpdated?: () => void;
 }
 
 /**
@@ -29,6 +32,7 @@ const PlantHeader: React.FC<PlantHeaderProps> = ({
   onDelete,
   onTanyaTanam,
   onImageClick,
+  onPhaseUpdated,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [imageLoadError, setImageLoadError] = useState(false);
@@ -322,18 +326,20 @@ const PlantHeader: React.FC<PlantHeaderProps> = ({
           }}
         >
           {/* Location badge */}
-          <span
-            style={{
-              padding: '6px 12px',
-              backgroundColor: colors.gray100,
-              borderRadius: radius.full,
-              fontFamily: typography.fontFamily,
-              fontSize: typography.fontSize.xs,
-              color: colors.gray600,
-            }}
-          >
-            {plant.location}
-          </span>
+          {plant.location && (
+            <span
+              style={{
+                padding: '6px 12px',
+                backgroundColor: colors.gray100,
+                borderRadius: radius.full,
+                fontFamily: typography.fontFamily,
+                fontSize: typography.fontSize.xs,
+                color: colors.gray600,
+              }}
+            >
+              {plant.location}
+            </span>
+          )}
 
           {/* Days since started */}
           {daysSinceStarted !== null && (
@@ -350,6 +356,12 @@ const PlantHeader: React.FC<PlantHeaderProps> = ({
             </span>
           )}
         </div>
+
+        {/* Plant Lifecycle Section */}
+        <PlantLifecycleSection
+          plant={plant as Plant}
+          onPhaseUpdated={onPhaseUpdated}
+        />
       </div>
     </div>
   );

@@ -4,6 +4,7 @@
  */
 
 import { differenceInDays, isToday, startOfDay } from 'date-fns';
+import { getPhaseDisplay } from '@/lib/lifecycle-config';
 import type { ActionStatusStyle, TimelineEntry, TimelineGroup, PlantUI, CareStatusUI, ActionHistoryEntry } from './types';
 
 /**
@@ -54,6 +55,9 @@ export const getActionLabel = (actionType: string, notes: string | null | undefi
       return 'Pemangkasan';
     case 'panen':
       return 'Panen';
+    case 'fase':
+      // Phase change - extract phases from notes (format: "oldPhase→newPhase")
+      return getPhaseChangeLabel(notes);
     case 'lainnya':
       // Extract custom action name from notes (format: "[CustomName] optional notes")
       const match = notes?.match(/^\[([^\]]+)\]/);
@@ -67,11 +71,37 @@ export const getActionLabel = (actionType: string, notes: string | null | undefi
 };
 
 /**
+ * Gets phase change label from notes
+ * Notes format: "oldPhase→newPhase" or "oldPhase→newPhase|additionalInfo"
+ */
+export const getPhaseChangeLabel = (notes: string | null | undefined): string => {
+  if (!notes) return 'Perubahan Fase';
+
+  // Parse notes format: "oldPhase→newPhase" or with additional info
+  const phasePart = notes.split('|')[0];
+  const phases = phasePart?.split('→');
+
+  if (phases && phases.length === 2) {
+    const oldDisplay = getPhaseDisplay(phases[0].trim());
+    const newDisplay = getPhaseDisplay(phases[1].trim());
+    return `${oldDisplay.icon} ${oldDisplay.label} → ${newDisplay.icon} ${newDisplay.label}`;
+  }
+
+  return 'Perubahan Fase';
+};
+
+/**
  * Extracts clean notes without the [CustomName] prefix for 'lainnya' actions
+ * For 'fase' actions, extracts additional info after the pipe character
  */
 export const getCleanNotes = (actionType: string, notes: string | null | undefined): string | null => {
   if (actionType === 'lainnya' && notes) {
     return notes.replace(/^\[[^\]]+\]\s*/, '').trim() || null;
+  }
+  if (actionType === 'fase' && notes) {
+    // Notes format: "oldPhase→newPhase|additionalInfo"
+    const parts = notes.split('|');
+    return parts.length > 1 ? parts[1].trim() : null;
   }
   return notes || null;
 };
@@ -89,6 +119,8 @@ export const mapActionTypeForIcon = (actionType: string): string => {
       return 'prune';
     case 'panen':
       return 'harvest';
+    case 'fase':
+      return 'phase_change';
     default:
       return actionType;
   }

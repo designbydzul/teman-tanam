@@ -128,6 +128,12 @@ export interface CareActionsTabProps {
   onFertilizingTap: () => void;
   onPruningTap: () => void;
   onOtherActionTap: () => void;
+  /** Called when harvest card is tapped */
+  onHarvestTap?: () => void;
+  /** Whether plant is ready for harvest */
+  isHarvestReady?: boolean;
+  /** Whether this is a harvestable plant type */
+  isHarvestable?: boolean;
 }
 
 // Props for HistoryTab

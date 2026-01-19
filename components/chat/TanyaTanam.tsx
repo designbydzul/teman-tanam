@@ -52,6 +52,10 @@ interface PlantData {
     growingSeason?: string;
     harvestSigns?: string | null;
     careSummary?: string;
+    // Lifecycle fields
+    lifecycleType?: 'annual_harvest' | 'perennial_harvest' | 'perpetual';
+    harvestDaysMin?: number | null;
+    harvestDaysMax?: number | null;
   };
   speciesEmoji: string;
   location?: string | null;
@@ -62,6 +66,11 @@ interface PlantData {
   lastFertilized?: Date | null;
   customWateringDays?: number | null;
   customFertilizingDays?: number | null;
+  // Lifecycle fields
+  currentPhase?: string | null;
+  phaseStartedAt?: Date | null;
+  totalHarvests?: number;
+  firstHarvestAt?: Date | null;
 }
 
 // Helper to get chat storage key for a plant
@@ -443,6 +452,10 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
         growingSeason: selectedPlant.species?.growingSeason ?? undefined,
         harvestSigns: selectedPlant.species?.harvestSigns ?? undefined,
         careSummary: selectedPlant.species?.careSummary ?? undefined,
+        // Lifecycle fields
+        lifecycleType: (selectedPlant.species as { lifecycleType?: 'annual_harvest' | 'perennial_harvest' | 'perpetual' })?.lifecycleType ?? undefined,
+        harvestDaysMin: (selectedPlant.species as { harvestDaysMin?: number })?.harvestDaysMin ?? undefined,
+        harvestDaysMax: (selectedPlant.species as { harvestDaysMax?: number })?.harvestDaysMax ?? undefined,
       },
       speciesEmoji: selectedPlant.species?.emoji || '🌱',
       location: selectedPlant.location ?? undefined,
@@ -455,6 +468,11 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
       // Custom care frequencies (override species defaults)
       customWateringDays: selectedPlant.customWateringDays ?? undefined,
       customFertilizingDays: selectedPlant.customFertilizingDays ?? undefined,
+      // Lifecycle fields
+      currentPhase: selectedPlant.currentPhase ?? undefined,
+      phaseStartedAt: selectedPlant.phaseStartedAt ? new Date(selectedPlant.phaseStartedAt) : undefined,
+      totalHarvests: selectedPlant.totalHarvests ?? 0,
+      firstHarvestAt: selectedPlant.firstHarvestAt ? new Date(selectedPlant.firstHarvestAt) : undefined,
     }
     : null;
 

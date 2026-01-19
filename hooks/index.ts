@@ -21,3 +21,9 @@ export {
   type NotificationLog,
   type UseNotificationSettingsReturn,
 } from './useNotificationSettings';
+export {
+  useLifecyclePhase,
+  type HarvestInfo,
+  type PhaseUpdateResult,
+  type UseLifecyclePhaseReturn,
+} from './useLifecyclePhase';

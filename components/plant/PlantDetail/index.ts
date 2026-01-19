@@ -13,6 +13,7 @@ export { default as PlantHeader } from './PlantHeader';
 export { default as ActionDrawer } from './ActionDrawer';
 export { default as CareActionsTab } from './CareActionsTab';
 export { default as HistoryTab } from './HistoryTab';
+export { default as PlantLifecycleSection } from './PlantLifecycleSection';
 
 // Types
 export * from './types';
