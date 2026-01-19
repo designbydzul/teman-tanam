@@ -247,6 +247,10 @@ export function usePlants(): UsePlantsReturn {
         wateringStatus,
         fertilizingStatus,
         harvestStatus,
+        // Plant life journey / phase tracking
+        currentPhase: plant.current_phase || null,
+        phaseStartedAt: plant.phase_started_at ? new Date(plant.phase_started_at) : null,
+        expectedHarvestDate: plant.expected_harvest_date ? new Date(plant.expected_harvest_date) : null,
         notes: cleanNotes,
         createdAt: new Date(plant.created_at),
         isOffline: plant.isOffline || false,
@@ -487,6 +491,10 @@ export function usePlants(): UsePlantsReturn {
           updated_at: null,
           custom_watering_days: null,
           custom_fertilizing_days: null,
+          // Phase tracking (null for new plants)
+          current_phase: null,
+          phase_started_at: null,
+          expected_harvest_date: null,
           isOffline: true,
           pendingSync: true,
         };
@@ -582,6 +590,9 @@ export function usePlants(): UsePlantsReturn {
       status?: string;
       custom_watering_days?: number | null;
       custom_fertilizing_days?: number | null;
+      current_phase?: string | null;
+      phase_started_at?: string | null;
+      expected_harvest_date?: string | null;
     } = {
       updated_at: new Date().toISOString(),
     };
@@ -608,6 +619,18 @@ export function usePlants(): UsePlantsReturn {
     if (updates.customFertilizingDays !== undefined) {
       updateData.custom_fertilizing_days = updates.customFertilizingDays;
     }
+    // Plant life journey / phase tracking
+    if (updates.currentPhase !== undefined) {
+      updateData.current_phase = updates.currentPhase;
+    }
+    if (updates.phaseStartedAt !== undefined) {
+      updateData.phase_started_at = updates.phaseStartedAt ? updates.phaseStartedAt.toISOString() : null;
+    }
+    if (updates.expectedHarvestDate !== undefined) {
+      updateData.expected_harvest_date = updates.expectedHarvestDate ? updates.expectedHarvestDate.toISOString() : null;
+    }
+
+    debug.log('updatePlant called:', { plantId, updates, updateData });
 
     // OFFLINE MODE
     if (!isOnline) {
@@ -635,6 +658,9 @@ export function usePlants(): UsePlantsReturn {
               notes: updates.notes ?? p.notes,
               customWateringDays: updates.customWateringDays ?? p.customWateringDays,
               customFertilizingDays: updates.customFertilizingDays ?? p.customFertilizingDays,
+              currentPhase: updates.currentPhase ?? p.currentPhase,
+              phaseStartedAt: updates.phaseStartedAt ?? p.phaseStartedAt,
+              expectedHarvestDate: updates.expectedHarvestDate ?? p.expectedHarvestDate,
             };
           }
           return p;
@@ -653,6 +679,9 @@ export function usePlants(): UsePlantsReturn {
                 notes: updates.notes ?? p.notes,
                 customWateringDays: updates.customWateringDays ?? p.customWateringDays,
                 customFertilizingDays: updates.customFertilizingDays ?? p.customFertilizingDays,
+                currentPhase: updates.currentPhase ?? p.currentPhase,
+                phaseStartedAt: updates.phaseStartedAt ?? p.phaseStartedAt,
+                expectedHarvestDate: updates.expectedHarvestDate ?? p.expectedHarvestDate,
               };
             }
             return p;

@@ -32,6 +32,7 @@ import { GlobalOfflineBanner, Toast } from '@/components/shared';
 const TanyaTanam = dynamic(() => import('@/components/chat/TanyaTanam'), { ssr: false });
 const EditPlant = dynamic(() => import('@/components/plant/EditPlant'), { ssr: false });
 const OfflineModal = dynamic(() => import('@/components/modals/OfflineModal'), { ssr: false });
+// const PlantLifeJourney = dynamic(() => import('@/components/plant/PlantLifeJourney'), { ssr: false });
 import useOnlineStatus from '@/hooks/useOnlineStatus';
 import { supabase } from '@/lib/supabase/client';
 import { saveToCache, getFromCache, addToSyncQueue } from '@/lib/offlineStorage';
@@ -851,6 +852,34 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
     setShowOtherActionDrawer(true);
   }, []);
 
+  // Handle phase advance for Plant Life Journey (commented out for now)
+  // const handlePhaseAdvance = useCallback(async (
+  //   newPhaseKey: string,
+  //   newPhaseStartedAt: Date
+  // ): Promise<{ success: boolean; error?: string }> => {
+  //   if (!onSavePlant || !sourcePlant) {
+  //     return { success: false, error: 'No save handler' };
+  //   }
+  //   try {
+  //     const plantToSave = {
+  //       ...sourcePlant,
+  //       currentPhase: newPhaseKey,
+  //       phaseStartedAt: newPhaseStartedAt,
+  //     };
+  //     const result = await onSavePlant(plantToSave);
+  //     if (result.success) {
+  //       setCurrentPlantData({
+  //         ...sourcePlant,
+  //         currentPhase: newPhaseKey,
+  //         phaseStartedAt: newPhaseStartedAt,
+  //       });
+  //     }
+  //     return result;
+  //   } catch (err) {
+  //     return { success: false, error: (err as Error).message };
+  //   }
+  // }, [onSavePlant, sourcePlant]);
+
   // Delete a specific history action by ID
   const handleDeleteHistoryAction = async (actionId: string): Promise<ActionResult> => {
     if (!actionId) {
@@ -1105,7 +1134,7 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
             {plantData.customName}
           </h1>
 
-          {/* Metadata Row: Time • Location • Notes */}
+          {/* Metadata Row: Location • Time • Notes */}
           <p
             style={{
               fontFamily: "'Inter', sans-serif",
@@ -1115,10 +1144,10 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
             }}
           >
             {[
-              daysSinceStarted === 0 ? 'Baru mulai hari ini! 🌱' : (daysSinceStarted != null ? `${daysSinceStarted} hari merawat` : null),
-              plantData.location,
+              plantData.location ? `Dirawat di ${plantData.location}` : null,
+              daysSinceStarted === 0 ? 'Baru dimulai hari ini' : (daysSinceStarted != null ? `Sejak ${daysSinceStarted} hari yang lalu` : null),
               plantData.notes
-            ].filter(Boolean).join(' • ')}
+            ].filter(Boolean).join('  •  ')}
           </p>
 
         </div>
@@ -1127,7 +1156,7 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
         <div
           style={{
             display: 'flex',
-            margin: '0 16px',
+            margin: '16px 16px 0 16px',
             backgroundColor: '#F5F5F5',
             borderRadius: '12px',
             padding: '4px',
@@ -1192,7 +1221,7 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onBack, onEdit, onDele
                   fontSize: '14px',
                   fontWeight: 400,
                   color: '#757575',
-                  margin: '0 0 12px 0',
+                  margin: '16px 0 12px 0',
                 }}
               >
                 Yang dapat anda lakukan

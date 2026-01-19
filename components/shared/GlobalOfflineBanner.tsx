@@ -21,6 +21,19 @@ const GlobalOfflineBanner: React.FC = () => {
   const { isOnline } = useOnlineStatus();
   const [pendingCount, setPendingCount] = React.useState(0);
 
+  // Track the initial offline state to avoid animating on mount when already offline
+  const initialOfflineRef = React.useRef(!isOnline);
+  const [hasAnimated, setHasAnimated] = React.useState(false);
+
+  // After mount, allow animations for future status changes
+  React.useEffect(() => {
+    // Small delay to ensure mount is complete
+    const timer = setTimeout(() => {
+      setHasAnimated(true);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
+
   // Update pending count when offline
   React.useEffect(() => {
     if (!isOnline) {
@@ -44,58 +57,98 @@ const GlobalOfflineBanner: React.FC = () => {
     ? `Kamu sedang offline · ${pendingCount} aksi tersimpan`
     : 'Kamu sedang offline';
 
+  // If we mounted while offline and haven't animated yet, skip the animation
+  const shouldSkipAnimation = initialOfflineRef.current && !hasAnimated;
+
   return (
     <>
       {/* Spacer element to push content down when banner is visible */}
-      <AnimatePresence>
-        {!isOnline && (
-          <motion.div
-            initial={{ height: 0 }}
-            animate={{ height: BANNER_HEIGHT }}
-            exit={{ height: 0 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            style={{ flexShrink: 0 }}
-          />
-        )}
-      </AnimatePresence>
+      {!isOnline && shouldSkipAnimation ? (
+        // No animation - just render at full height immediately
+        <div style={{ height: BANNER_HEIGHT, flexShrink: 0 }} />
+      ) : (
+        <AnimatePresence initial={false}>
+          {!isOnline && (
+            <motion.div
+              initial={{ height: 0 }}
+              animate={{ height: BANNER_HEIGHT }}
+              exit={{ height: 0 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+              style={{ flexShrink: 0 }}
+            />
+          )}
+        </AnimatePresence>
+      )}
 
       {/* Fixed banner at top of viewport */}
-      <AnimatePresence>
-        {!isOnline && (
-          <motion.div
-            initial={{ y: -50, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -50, opacity: 0 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+      {!isOnline && shouldSkipAnimation ? (
+        // No animation - just render immediately
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            backgroundColor: '#FFF3E0',
+            borderBottom: '1px solid #FFE0B2',
+            padding: '10px 16px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            zIndex: 9999,
+          }}
+        >
+          <WifiSlash size={20} weight="regular" color="#757575" />
+          <span
             style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              backgroundColor: '#FFF3E0',
-              borderBottom: '1px solid #FFE0B2',
-              padding: '10px 16px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-              zIndex: 9999,
+              color: '#E65100',
+              fontSize: '14px',
+              fontWeight: 500,
+              fontFamily: "'Inter', sans-serif",
             }}
           >
-            <WifiSlash size={20} weight="regular" color="#757575" />
-            <span
+            {offlineText}
+          </span>
+        </div>
+      ) : (
+        <AnimatePresence initial={false}>
+          {!isOnline && (
+            <motion.div
+              initial={{ y: -50, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: -50, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
               style={{
-                color: '#E65100',
-                fontSize: '14px',
-                fontWeight: 500,
-                fontFamily: "'Inter', sans-serif",
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                backgroundColor: '#FFF3E0',
+                borderBottom: '1px solid #FFE0B2',
+                padding: '10px 16px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                zIndex: 9999,
               }}
             >
-              {offlineText}
-            </span>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              <WifiSlash size={20} weight="regular" color="#757575" />
+              <span
+                style={{
+                  color: '#E65100',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  fontFamily: "'Inter', sans-serif",
+                }}
+              >
+                {offlineText}
+              </span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      )}
     </>
   );
 };

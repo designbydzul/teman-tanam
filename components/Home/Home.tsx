@@ -2223,7 +2223,7 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
           onEdit={handlePlantEdit}
           onDelete={handlePlantDelete}
           onRecordAction={recordAction}
-          onSavePlant={async (updatedPlant: EditPlantData) => {
+          onSavePlant={async (updatedPlant: EditPlantData & { currentPhase?: string | null; phaseStartedAt?: Date | null; expectedHarvestDate?: Date | null }) => {
             // Find location_id from location name
             const locationObj = supabaseLocations.find(loc => loc.name === updatedPlant.location);
             const locationId = locationObj?.id;
@@ -2239,8 +2239,22 @@ const Home: React.FC<HomeProps> = ({ userName }) => {
               updates.locationId = locationId;
             }
 
+            // Plant life journey / phase tracking
+            if (updatedPlant.currentPhase !== undefined) {
+              updates.currentPhase = updatedPlant.currentPhase;
+            }
+            if (updatedPlant.phaseStartedAt !== undefined) {
+              updates.phaseStartedAt = updatedPlant.phaseStartedAt;
+            }
+            if (updatedPlant.expectedHarvestDate !== undefined) {
+              updates.expectedHarvestDate = updatedPlant.expectedHarvestDate;
+            }
+
+            console.log('[Home.tsx] onSavePlant called with:', { updatedPlant, updates });
+
             // Save to Supabase
             const result = await updateSupabasePlant(selectedPlant.id!, updates);
+            console.log('[Home.tsx] updateSupabasePlant result:', result);
             return result;
           }}
         />

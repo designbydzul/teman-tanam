@@ -76,6 +76,10 @@ export interface PlantRaw {
   // Custom care frequencies (overrides species defaults)
   custom_watering_days: number | null;
   custom_fertilizing_days: number | null;
+  // Plant life journey / phase tracking
+  current_phase: string | null;
+  phase_started_at: string | null;
+  expected_harvest_date: string | null;
   plant_species?: PlantSpecies | null;
   locations?: Location | null;
   // Offline flags
@@ -137,6 +141,10 @@ export interface Plant {
   wateringStatus: CareStatus;
   fertilizingStatus: CareStatus;
   harvestStatus: HarvestStatus;
+  // Plant life journey / phase tracking
+  currentPhase: string | null;
+  phaseStartedAt: Date | null;
+  expectedHarvestDate: Date | null;
   notes: string;
   createdAt: Date | string;
   isOffline?: boolean;
@@ -277,6 +285,10 @@ export interface UpdatePlantData {
   status?: string;
   customWateringDays?: number | null;
   customFertilizingDays?: number | null;
+  // Plant life journey / phase tracking
+  currentPhase?: string | null;
+  phaseStartedAt?: Date | null;
+  expectedHarvestDate?: Date | null;
 }
 
 // Locations hook return type
@@ -436,4 +448,44 @@ export interface PlantFormData {
   customLocation?: string;
   customDate?: string;
   createdAt?: Date;
+}
+
+// =============================================================================
+// Plant Phase / Life Journey Types
+// =============================================================================
+
+// Raw phase definition from Supabase (snake_case)
+export interface PlantPhaseDefinitionRaw {
+  id: string;
+  category: PlantSpeciesCategory;
+  phase_key: string;
+  phase_name: string;
+  phase_order: number;
+  icon: string;
+  color: string;
+  description: string;
+  care_tips: string[];
+  created_at: string;
+}
+
+// Transformed phase definition for UI (camelCase)
+export interface PlantPhaseDefinition {
+  id: string;
+  category: PlantSpeciesCategory;
+  phaseKey: string;
+  phaseName: string;
+  phaseOrder: number;
+  icon: string;       // Emoji
+  color: string;      // Hex color code
+  description: string;
+  careTips: string[];
+}
+
+// Return type for usePlantPhases hook
+export interface UsePlantPhasesReturn {
+  phases: PlantPhaseDefinition[];
+  loading: boolean;
+  error: string | null;
+  getPhaseByKey: (key: string) => PlantPhaseDefinition | undefined;
+  getNextPhase: (currentKey: string) => PlantPhaseDefinition | undefined;
 }

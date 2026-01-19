@@ -108,6 +108,7 @@ export const CACHE_KEYS = {
   ACTIONS: 'actions', // Stores actions by plant_id
   TEMP_ID_MAP: 'temp_id_map',
   SYNC_QUEUE: 'syncQueue',
+  PLANT_PHASES: 'plant_phases', // Stores phase definitions by category
 } as const;
 
 // Timeout values (in milliseconds)
