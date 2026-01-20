@@ -140,30 +140,42 @@ const Toast: React.FC<ToastProps> = ({
   return createPortal(
     <AnimatePresence>
       {isVisible && (
-        <motion.div
-          initial={animationVariants.initial}
-          animate={animationVariants.animate}
-          exit={animationVariants.exit}
-          transition={{ type: 'spring', stiffness: 300, damping: isSimple ? 25 : 30 }}
+        <div
           style={{
             position: 'fixed',
-            ...(isSimple ? { left: '24px', right: '24px' } : { left: '50%', transform: 'translateX(-50%)' }),
-            backgroundColor: config.bgColor,
-            border: isNetwork ? `1px solid ${(config as ReturnType<typeof getNetworkConfig>).borderColor}` : 'none',
-            padding: '16px 20px',
-            borderRadius: '16px',
-            display: 'flex',
-            alignItems: isNetwork ? 'flex-start' : 'center',
-            justifyContent: 'space-between',
-            gap: '12px',
+            top: 0,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: '100%',
+            maxWidth: 'var(--app-max-width)',
+            height: '100%',
+            pointerEvents: 'none',
             zIndex: isSimple ? 4000 : 10001,
-            boxShadow: isSimple ? '0 4px 20px rgba(0, 0, 0, 0.15)' : isNetwork ? '0 4px 20px rgba(0, 0, 0, 0.1)' : '0 4px 20px rgba(0, 0, 0, 0.25)',
-            maxWidth: isSimple ? undefined : 'calc(100vw - 48px)',
-            width: isNetwork ? '340px' : 'auto',
-            ...positionStyles,
-            ...(isSimple ? { bottom: '24px' } : {}),
           }}
         >
+          <motion.div
+            initial={animationVariants.initial}
+            animate={animationVariants.animate}
+            exit={animationVariants.exit}
+            transition={{ type: 'spring', stiffness: 300, damping: isSimple ? 25 : 30 }}
+            style={{
+              position: 'absolute',
+              left: '24px',
+              right: '24px',
+              backgroundColor: config.bgColor,
+              border: isNetwork ? `1px solid ${(config as ReturnType<typeof getNetworkConfig>).borderColor}` : 'none',
+              padding: '16px 20px',
+              borderRadius: '16px',
+              display: 'flex',
+              alignItems: isNetwork ? 'flex-start' : 'center',
+              justifyContent: 'space-between',
+              gap: '12px',
+              boxShadow: isSimple ? '0 4px 20px rgba(0, 0, 0, 0.15)' : isNetwork ? '0 4px 20px rgba(0, 0, 0, 0.1)' : '0 4px 20px rgba(0, 0, 0, 0.25)',
+              pointerEvents: 'auto',
+              ...positionStyles,
+              ...(isSimple ? { bottom: '24px' } : {}),
+            }}
+          >
           {/* Icon */}
           {shouldShowIcon && config.icon && (
             <div style={{ flexShrink: 0, marginTop: isNetwork ? '2px' : 0 }}>
@@ -234,6 +246,7 @@ const Toast: React.FC<ToastProps> = ({
             <X size={20} weight="regular" color={isSimple ? '#757575' : config.textColor} />
           </button>
         </motion.div>
+        </div>
       )}
     </AnimatePresence>,
     document.body

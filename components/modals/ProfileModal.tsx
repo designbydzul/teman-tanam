@@ -3,7 +3,7 @@
 import React, { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, ChartBar, X, PencilSimple, MapPin, Question, Info, SignOut, Bell } from '@phosphor-icons/react';
+import { User, ChartBar, X, PencilSimple, MapPin, Question, SignOut, Bell } from '@phosphor-icons/react';
 import { auth } from '@/lib/supabase';
 import { createDebugger } from '@/lib/debug';
 
@@ -396,48 +396,6 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                   }}
                 >
                   Bantuan & Komunitas
-                </span>
-              </motion.button>
-
-              {/* Tentang Tanam */}
-              <motion.button
-                whileTap={{ scale: 0.98 }}
-                onClick={() => handleMenuAction('about')}
-                style={{
-                  width: '100%',
-                  padding: '12px 16px',
-                  backgroundColor: '#FFFFFF',
-                  border: '1px solid #E4E4E7',
-                  borderRadius: '12px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  cursor: 'pointer',
-                }}
-              >
-                <div
-                  style={{
-                    width: '40px',
-                    height: '40px',
-                    borderRadius: '50%',
-                    backgroundColor: '#FAFAFA',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                  }}
-                >
-                  <Info size={20} weight="regular" color="#757575" />
-                </div>
-                <span
-                  style={{
-                    fontFamily: "'Inter', sans-serif",
-                    fontSize: '1rem',
-                    fontWeight: 500,
-                    color: '#2C2C2C',
-                  }}
-                >
-                  Tentang Tanam
                 </span>
               </motion.button>
 

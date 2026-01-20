@@ -9,9 +9,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, WhatsappLogo, Clock, Check, X } from '@phosphor-icons/react';
+import { ArrowLeft, WhatsappLogo, Check, X } from '@phosphor-icons/react';
 import { useNotificationSettings, isValidIndonesianNumber } from '@/hooks/useNotificationSettings';
-import { GlobalOfflineBanner } from '@/components/shared';
+import { GlobalOfflineBanner, Toast } from '@/components/shared';
 import { createDebugger } from '@/lib/debug';
 
 const debug = createDebugger('NotificationSettings');
@@ -499,23 +499,8 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                     padding: '16px',
                     backgroundColor: '#F0F4E8',
                     borderRadius: '12px',
-                    border: '1px solid #E0E0E0',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-                    <Clock size={20} weight="regular" color="#7CB342" />
-                    <h4
-                      style={{
-                        fontFamily: "'Inter', sans-serif",
-                        fontSize: '0.875rem',
-                        fontWeight: 600,
-                        color: '#2C2C2C',
-                        margin: 0,
-                      }}
-                    >
-                      Waktu Reminder
-                    </h4>
-                  </div>
                   <p
                     style={{
                       fontFamily: "'Inter', sans-serif",
@@ -761,37 +746,14 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
       </AnimatePresence>
 
       {/* Toast */}
-      <AnimatePresence>
-        {showToast && (
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 50 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            style={{
-              position: 'fixed',
-              bottom: 'calc(80px + env(safe-area-inset-bottom, 0px))',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              maxWidth: 'calc(100% - 48px)',
-              backgroundColor: '#2C2C2C',
-              color: '#FFFFFF',
-              padding: '12px 20px',
-              borderRadius: '12px',
-              fontSize: '0.9375rem',
-              fontFamily: "'Inter', sans-serif",
-              zIndex: 10000,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-            }}
-          >
-            <Check size={20} weight="bold" color="#7CB342" />
-            {toastMessage}
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <Toast
+        isVisible={showToast}
+        message={toastMessage}
+        type="success"
+        variant="simple"
+        showIcon
+        onClose={() => setShowToast(false)}
+      />
     </div>
   );
 };
