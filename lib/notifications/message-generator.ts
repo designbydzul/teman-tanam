@@ -18,56 +18,35 @@ export function generateDailyDigestMessage(digest: UserCareDigest): string {
   // Header
   lines.push('🌱 Teman Tanam');
   lines.push('');
-  lines.push(`Hai! Ada ${digest.total_plants_needing_attention} tanaman butuh perhatian:`);
+  lines.push('Pagi! Tanaman kamu kangen nih~');
   lines.push('');
 
   // Plants needing water
   if (digest.plants_needing_water.length > 0) {
-    lines.push('💧 Perlu disiram:');
+    lines.push('💧 Mau disiram:');
     for (const plant of digest.plants_needing_water) {
-      const daysText = formatDaysSince(plant.days_since_water);
-      lines.push(`• ${plant.plant_name} ${daysText}`);
+      lines.push(`- ${plant.plant_name}`);
     }
     lines.push('');
   }
 
   // Plants needing fertilizer
   if (digest.plants_needing_fertilizer.length > 0) {
-    lines.push('🌿 Perlu dipupuk:');
+    lines.push('🌿 Mau dipupuk:');
     for (const plant of digest.plants_needing_fertilizer) {
-      const daysText = formatDaysSince(plant.days_since_fertilizer);
-      lines.push(`• ${plant.plant_name} ${daysText}`);
+      lines.push(`- ${plant.plant_name}`);
     }
     lines.push('');
   }
 
   // Footer
+  lines.push('Semangat merawat hari ini! 💚');
+  lines.push('');
   lines.push('temantanam.app');
 
   return lines.join('\n');
 }
 
-/**
- * Format "days since" text for display
- *
- * @param days - Number of days since last action (null if never done)
- * @returns Formatted string like "(3 hari lalu)" or "(belum pernah)"
- */
-function formatDaysSince(days: number | null): string {
-  if (days === null) {
-    return '(belum pernah)';
-  }
-
-  if (days === 0) {
-    return '(hari ini)';
-  }
-
-  if (days === 1) {
-    return '(kemarin)';
-  }
-
-  return `(${days} hari lalu)`;
-}
 
 /**
  * Get a preview of the message (first 100 characters)

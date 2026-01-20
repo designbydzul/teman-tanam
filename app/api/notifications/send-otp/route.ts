@@ -83,7 +83,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const message = `🔐 *Kode Verifikasi TemanTanam*\n\nKode OTP kamu: *${otp_code}*\n\nJangan bagikan kode ini ke siapa pun ya!\n\nKode ini berlaku selama 5 menit.`;
+    const message = `🔐 Teman Tanam\n\nKode verifikasi kamu: ${otp_code}\n\nBerlaku 5 menit. Jangan kasih ke orang lain ya! 🤫\n\ntemantanam.app`;
 
     const response = await fetch('https://api.fonnte.com/send', {
       method: 'POST',

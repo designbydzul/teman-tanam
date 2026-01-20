@@ -1018,10 +1018,10 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
                                   <em style={{ fontStyle: 'italic' }}>{children}</em>
                                 ),
                                 ul: ({ children }) => (
-                                  <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>{children}</ul>
+                                  <ul style={{ margin: '8px 0', paddingLeft: '20px', listStyleType: 'disc' }}>{children}</ul>
                                 ),
                                 ol: ({ children }) => (
-                                  <ol style={{ margin: '8px 0', paddingLeft: '20px' }}>{children}</ol>
+                                  <ol style={{ margin: '8px 0', paddingLeft: '20px', listStyleType: 'decimal' }}>{children}</ol>
                                 ),
                                 li: ({ children }) => (
                                   <li style={{ marginBottom: '4px' }}>{children}</li>
