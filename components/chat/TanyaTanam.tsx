@@ -522,9 +522,9 @@ const TanyaTanam: React.FC<TanyaTanamProps> = ({ plant, plants = [], onBack }) =
       const data = await response.json();
 
       if (data.success) {
-        return data.message;
+        return data.data.message;
       } else {
-        return 'Waduh, ada masalah koneksi nih. Coba lagi ya!';
+        return data.error || 'Waduh, ada masalah koneksi nih. Coba lagi ya!';
       }
     } catch (error) {
       console.error('Tanya Tanam API Error:', error);
